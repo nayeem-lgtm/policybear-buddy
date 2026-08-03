@@ -141,7 +141,7 @@ const departments = [
 const teams = ["Team Alpha", "Team Bravo", "Team Charlie", "Team Delta"];
 
 function pick<T>(arr: T[], i: number): T {
-  return arr[i % arr.length];
+  return arr[i % arr.length] as T;
 }
 
 const roleByIndex: Role[] = [
@@ -200,8 +200,8 @@ const statusByIndex: PresenceStatus[] = [
 
 export const employees: Employee[] = Array.from({ length: 24 }, (_, i) => {
   const name = `${pick(firstNames, i)} ${pick(lastNames, i + 3)}`;
-  const role = roleByIndex[i];
-  const status = statusByIndex[i];
+  const role = pick(roleByIndex, i);
+  const status = pick(statusByIndex, i);
   return {
     id: `EMP-${1000 + i}`,
     name,
@@ -267,7 +267,7 @@ export const employees: Employee[] = Array.from({ length: 24 }, (_, i) => {
     hireDate: `202${3 + (i % 3)}-0${(i % 9) + 1}-1${i % 9}`,
     manager: "Owen Klein",
     phone: `+1 (415) 555-0${100 + i}`,
-    trainingProgress: [100, 84, 62, 45, 92, 30, 77][i % 7],
+    trainingProgress: pick([100, 84, 62, 45, 92, 30, 77], i),
     avatarInitials: name
       .split(" ")
       .map((n) => n[0])
@@ -276,7 +276,7 @@ export const employees: Employee[] = Array.from({ length: 24 }, (_, i) => {
 });
 
 export const currentUser = {
-  ...employees[0],
+  ...pick(employees, 0),
   name: "Amelia Carter",
   role: "Agent" as Role,
   roles: ROLES,
@@ -333,7 +333,7 @@ export const customers: Customer[] = Array.from({ length: 42 }, (_, i) => {
     publisher: pick(["BlueRock Media", "Northline Leads", "Sunbelt Direct", "Vertex Ads"], i),
     campaign: pick(["ACA Q3 Inbound", "U65 Retarget", "Medicare Spanish", "Open Enrollment"], i),
     status: pick(custStatuses, i),
-    assignedAgent: employees[i % 12].name,
+    assignedAgent: pick(employees, i % 12).name,
     lastContact: `2026-0${(i % 8) + 1}-1${i % 9}`,
     policies: i % 3,
     tags: i % 4 === 0 ? ["Callback", "Spanish"] : i % 3 === 0 ? ["High Intent"] : [],
@@ -376,9 +376,9 @@ const dispositions = [
 export const calls: CallRecord[] = Array.from({ length: 60 }, (_, i) => ({
   id: `CALL-${9000 + i}`,
   callId: `CT-${480000 + i * 17}`,
-  customer: customers[i % customers.length].name,
-  phone: customers[i % customers.length].phone,
-  agent: employees[i % 14].name,
+  customer: pick(customers, i % customers.length).name,
+  phone: pick(customers, i % customers.length).phone,
+  agent: pick(employees, i % 14).name,
   publisher: pick(["BlueRock Media", "Northline Leads", "Sunbelt Direct", "Vertex Ads"], i),
   campaign: pick(["ACA Q3 Inbound", "U65 Retarget", "Medicare Spanish", "Open Enrollment"], i),
   direction: i % 5 === 0 ? "Outbound" : "Inbound",
@@ -414,9 +414,9 @@ export interface Callback {
 
 export const callbacks: Callback[] = Array.from({ length: 28 }, (_, i) => ({
   id: `CB-${3100 + i}`,
-  customer: customers[(i * 3) % customers.length].name,
-  phone: customers[(i * 3) % customers.length].phone,
-  agent: employees[i % 12].name,
+  customer: pick(customers, (i * 3) % customers.length).name,
+  phone: pick(customers, (i * 3) % customers.length).phone,
+  agent: pick(employees, i % 12).name,
   scheduledFor: `2026-08-0${(i % 6) + 3} ${9 + (i % 7)}:${i % 2 ? "30" : "00"}`,
   timeZone: pick(["PT", "CT", "ET", "MT"], i),
   reason: pick(
@@ -475,8 +475,8 @@ const policyStatuses = [
 export const policies: Policy[] = Array.from({ length: 46 }, (_, i) => ({
   id: `POL-${7400 + i}`,
   policyNumber: `PB-${2026}-${40000 + i * 13}`,
-  customer: customers[i % customers.length].name,
-  agent: employees[i % 12].name,
+  customer: pick(customers, i % customers.length).name,
+  agent: pick(employees, i % 12).name,
   carrier: pick(carriers, i),
   plan: pick(
     ["Silver 94 HMO", "Bronze Essential PPO", "Gold Select HMO", "Silver Value+", "Bronze Standard"],
@@ -540,9 +540,9 @@ export const quotePlans: QuotePlan[] = Array.from({ length: 18 }, (_, i) => {
     subsidizedPremium: Math.max(0, premium - subsidy),
     deductible: 500 + ((i * 350) % 7000),
     oopMax: 3500 + ((i * 900) % 6000),
-    pcpCopay: [0, 5, 15, 25, 35][i % 5],
-    specialistCopay: [20, 40, 60, 75][i % 4],
-    genericRx: [0, 3, 5, 10][i % 4],
+    pcpCopay: pick([0, 5, 15, 25, 35], i),
+    specialistCopay: pick([20, 40, 60, 75], i),
+    genericRx: pick([0, 3, 5, 10], i),
     network: pick(["Statewide", "Regional", "Local Plus", "National"], i),
     hsaEligible: i % 4 === 0,
     rating: 3 + (i % 3) * 0.5,
@@ -574,10 +574,10 @@ export interface QAReview {
 
 export const qaReviews: QAReview[] = Array.from({ length: 34 }, (_, i) => ({
   id: `QA-${2200 + i}`,
-  callId: calls[i % calls.length].callId,
-  agent: employees[i % 12].name,
-  reviewer: employees[4].name,
-  customer: customers[i % customers.length].name,
+  callId: pick(calls, i % calls.length).callId,
+  agent: pick(employees, i % 12).name,
+  reviewer: pick(employees, 4).name,
+  customer: pick(customers, i % customers.length).name,
   publisher: pick(["BlueRock Media", "Northline Leads", "Sunbelt Direct", "Vertex Ads"], i),
   submittedAt: `2026-08-0${(i % 3) + 1}`,
   deadline: `2026-08-0${(i % 3) + 4}`,
@@ -948,10 +948,10 @@ export const tasks: TaskItem[] = Array.from({ length: 22 }, (_, i) => ({
     i,
   ),
   recordType: pick(["Policy", "Call", "Attendance", "Payroll", "QA", "Customer"], i),
-  related: customers[i % customers.length].name,
+  related: pick(customers, i % customers.length).name,
   priority: pick(["Low", "Normal", "High", "Urgent"] as const, i),
   dueDate: `2026-08-0${(i % 8) + 1}`,
-  assignedBy: employees[(i + 3) % 12].name,
+  assignedBy: pick(employees, (i + 3) % 12).name,
   status: pick(["Not Started", "In Progress", "Waiting", "Completed"] as const, i),
   latestComment: "Waiting on customer callback confirmation.",
 }));
@@ -1034,8 +1034,8 @@ export const incidents = Array.from({ length: 14 }, (_, i) => ({
   ),
   severity: pick(["Low", "Medium", "High", "Critical"], i),
   category: pick(["Technical", "Compliance", "HR", "Vendor"], i),
-  reportedBy: employees[i % 12].name,
-  assignedTo: employees[(i + 5) % 12].name,
+  reportedBy: pick(employees, i % 12).name,
+  assignedTo: pick(employees, (i + 5) % 12).name,
   status: pick(["Open", "Investigating", "Resolved", "Closed"], i),
   reportedAt: `2026-08-0${(i % 3) + 1}`,
   slaDue: `2026-08-0${(i % 3) + 3}`,
@@ -1048,7 +1048,7 @@ export const expenses = Array.from({ length: 18 }, (_, i) => ({
   amount: 120 + ((i * 233) % 5400),
   dueDate: `2026-08-${10 + (i % 18)}`,
   status: pick(["Draft", "Pending Approval", "Approved", "Paid", "Overdue"], i),
-  submittedBy: employees[(i + 2) % 12].name,
+  submittedBy: pick(employees, (i + 2) % 12).name,
   department: pick(departments, i),
 }));
 
@@ -1059,7 +1059,7 @@ export const documents = Array.from({ length: 16 }, (_, i) => ({
     i,
   ),
   category: pick(["HR", "Compliance", "Carrier", "Finance", "Operations"], i),
-  owner: employees[(i + 4) % 12].name,
+  owner: pick(employees, (i + 4) % 12).name,
   updated: `2026-0${(i % 8) + 1}-1${i % 9}`,
   size: `${(0.3 + (i % 9) * 0.7).toFixed(1)} MB`,
   access: pick(["All Employees", "Managers", "HR Only", "Executive"], i),
@@ -1068,7 +1068,7 @@ export const documents = Array.from({ length: 16 }, (_, i) => ({
 
 export const auditLogs = Array.from({ length: 30 }, (_, i) => ({
   id: `AUD-${5000 + i}`,
-  actor: employees[i % 14].name,
+  actor: pick(employees, i % 14).name,
   action: pick(
     ["Updated policy", "Approved payroll", "Corrected attendance event", "Changed user role", "Exported report", "Deleted callback"],
     i,
@@ -1082,7 +1082,7 @@ export const auditLogs = Array.from({ length: 30 }, (_, i) => ({
 
 export const leaveRequests = Array.from({ length: 16 }, (_, i) => ({
   id: `LV-${200 + i}`,
-  employee: employees[i % 14].name,
+  employee: pick(employees, i % 14).name,
   type: pick(["PTO", "Sick", "Unpaid", "Bereavement", "Jury Duty"], i),
   startDate: `2026-08-${8 + (i % 16)}`,
   endDate: `2026-08-${10 + (i % 16)}`,
@@ -1095,10 +1095,10 @@ export const leaveRequests = Array.from({ length: 16 }, (_, i) => ({
 
 export const chargebacks = Array.from({ length: 12 }, (_, i) => ({
   id: `CHB-${150 + i}`,
-  policyNumber: policies[i].policyNumber,
-  customer: policies[i].customer,
-  agent: policies[i].agent,
-  carrier: policies[i].carrier,
+  policyNumber: pick(policies, i).policyNumber,
+  customer: pick(policies, i).customer,
+  agent: pick(policies, i).agent,
+  carrier: pick(policies, i).carrier,
   amount: 60 + ((i * 47) % 340),
   reason: pick(["Cancelled before effectuation", "Non-payment", "Carrier rejection", "Duplicate enrollment"], i),
   month: "August 2026",
