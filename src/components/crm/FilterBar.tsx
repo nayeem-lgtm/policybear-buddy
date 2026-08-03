@@ -65,7 +65,7 @@ export function FilterBar({
           value={values[f.key] ?? "all"}
           onValueChange={(v) => onChange?.(f.key, v)}
         >
-          <SelectTrigger size="sm" className="h-9 w-auto min-w-[9.5rem] gap-1.5">
+          <SelectTrigger className="h-9 w-auto min-w-[9.5rem] gap-1.5">
             <Filter className="size-3.5 text-muted-foreground" />
             <SelectValue placeholder={f.label} />
           </SelectTrigger>
