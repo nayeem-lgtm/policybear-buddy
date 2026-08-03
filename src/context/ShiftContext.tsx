@@ -181,16 +181,56 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
     ]);
   }, []);
 
+  const logEvent = useCallback((event: ShiftEvent) => setEvents((prev) => [...prev, event]), []);
+
+  const startAlarmTest = useCallback(
+    (kind: "Break" | "Lunch" = "Break") => {
+      setTestKind(kind);
+      setStatusState(kind);
+      setStatusSeconds(0);
+      setAlarmAcknowledgedAt(null);
+      setAutoCallAnswered(false);
+      logEvent({
+        time: clockLabel(),
+        event: "Alarm test started",
+        detail: `${kind} overrun simulation — no attendance exception recorded`,
+        tone: "warning",
+      });
+    },
+    [logEvent],
+  );
+
+  const stopAlarmTest = useCallback(() => {
+    setTestKind(null);
+    setStatusState("Available");
+    setStatusSeconds(0);
+    setAlarmAcknowledgedAt(null);
+    setAutoCallAnswered(false);
+    logEvent({
+      time: clockLabel(),
+      event: "Alarm test ended",
+      detail: "Presence returned to Available",
+      tone: "info",
+    });
+  }, [logEvent]);
+
   const value: ShiftContextValue = {
     status,
     statusSeconds,
     signedIn: status !== "Signed Out",
     demoMode,
     setDemoMode,
+    config,
+    updateConfig: (patch) => setConfig((c) => ({ ...c, ...patch })),
+    resetConfig: () => setConfig(DEFAULT_ALARM_CONFIG),
     allowanceSeconds,
     overrunSeconds,
     alarmActive,
     autoCallRinging,
+    escalated,
+    testing: testKind !== null,
+    startAlarmTest,
+    stopAlarmTest,
     events,
     setStatus,
     acknowledgeAlarm: () => setAlarmAcknowledgedAt(Date.now()),
@@ -199,6 +239,7 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
     toggleConfirmation: (key) =>
       setConfirmations((c) => ({ ...c, [key]: !c[key] })),
   };
+
 
   return <ShiftContext.Provider value={value}>{children}</ShiftContext.Provider>;
 }
