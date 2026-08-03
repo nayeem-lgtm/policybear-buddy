@@ -41,16 +41,48 @@ export interface ShiftEvent {
   tone: "success" | "info" | "brand" | "muted" | "warning" | "danger";
 }
 
+/** Operator-configurable alarm + auto-call policy (Break Alarm Control screen). */
+export interface AlarmConfig {
+  breakAllowanceSeconds: number;
+  lunchAllowanceSeconds: number;
+  autoCallAfterSeconds: number;
+  escalateAfterSeconds: number;
+  alarmEnabled: boolean;
+  soundEnabled: boolean;
+  autoCallEnabled: boolean;
+  allowAcknowledge: boolean;
+  supervisor: string;
+}
+
+export const DEFAULT_ALARM_CONFIG: AlarmConfig = {
+  breakAllowanceSeconds: BREAK_ALLOWANCE_SECONDS,
+  lunchAllowanceSeconds: LUNCH_ALLOWANCE_SECONDS,
+  autoCallAfterSeconds: AUTO_CALL_AFTER_OVERRUN_SECONDS,
+  escalateAfterSeconds: ESCALATION_AFTER_OVERRUN_SECONDS,
+  alarmEnabled: true,
+  soundEnabled: true,
+  autoCallEnabled: true,
+  allowAcknowledge: true,
+  supervisor: "Owen Klein · Team Lead",
+};
+
 interface ShiftContextValue {
   status: PresenceStatus;
   statusSeconds: number;
   signedIn: boolean;
   demoMode: boolean;
   setDemoMode: (v: boolean) => void;
+  config: AlarmConfig;
+  updateConfig: (patch: Partial<AlarmConfig>) => void;
+  resetConfig: () => void;
   allowanceSeconds: number | null;
   overrunSeconds: number;
   alarmActive: boolean;
   autoCallRinging: boolean;
+  escalated: boolean;
+  testing: boolean;
+  startAlarmTest: (kind?: "Break" | "Lunch") => void;
+  stopAlarmTest: () => void;
   events: ShiftEvent[];
   setStatus: (status: PresenceStatus, detail?: string) => void;
   acknowledgeAlarm: () => void;
@@ -58,6 +90,7 @@ interface ShiftContextValue {
   confirmations: Record<string, boolean>;
   toggleConfirmation: (key: string) => void;
 }
+
 
 const ShiftContext = createContext<ShiftContextValue | null>(null);
 
