@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Activity,
   AlarmClock,
+  BellRing,
   BadgeDollarSign,
   Banknote,
   BarChart3,
@@ -86,6 +87,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
       { title: "Live Operations", url: "/live-operations", icon: Radio },
       { title: "HR Attendance", url: "/attendance", icon: CalendarClock },
       { title: "Exceptions", url: "/attendance-exceptions", icon: Siren },
+      { title: "Break Alarm Control", url: "/break-alarm", icon: BellRing },
     ],
   },
   {

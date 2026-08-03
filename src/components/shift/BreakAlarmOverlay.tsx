@@ -17,13 +17,17 @@ export function BreakAlarmOverlay() {
     answerAutoCall,
     setStatus,
     status,
+    config,
+    testing,
+    stopAlarmTest,
+    escalated,
   } = useShift();
 
   const audioCtxRef = useRef<AudioContext | null>(null);
   const stopRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    if (!alarmActive) {
+    if (!alarmActive || !config.soundEnabled) {
       stopRef.current?.();
       stopRef.current = null;
       return;
@@ -57,7 +61,7 @@ export function BreakAlarmOverlay() {
       cancelled = true;
       clearInterval(interval);
     };
-  }, [alarmActive, autoCallRinging]);
+  }, [alarmActive, autoCallRinging, config.soundEnabled]);
 
   if (!alarmActive) return null;
 
@@ -68,7 +72,7 @@ export function BreakAlarmOverlay() {
           <TriangleAlert className="size-10" />
         </div>
         <p className="mt-6 text-xs font-semibold tracking-[0.3em] uppercase opacity-80">
-          Break allowance exceeded
+          {testing ? "Alarm test in progress" : "Break allowance exceeded"}
         </p>
         <h1 className="mt-3 text-5xl font-bold tabular">
           +{formatDuration(overrunSeconds)}
@@ -96,7 +100,19 @@ export function BreakAlarmOverlay() {
           </div>
         )}
 
+        {escalated && !testing && (
+          <p className="mt-4 text-xs font-medium tracking-wide uppercase opacity-90">
+            Escalated to HR · attendance exception filed
+          </p>
+        )}
+
         <div className="mt-8 flex flex-wrap justify-center gap-3">
+          {testing && (
+            <Button size="lg" variant="secondary" onClick={stopAlarmTest}>
+              End test
+            </Button>
+          )}
+          {!testing && (
           <Button
             size="lg"
             variant="secondary"
@@ -105,6 +121,8 @@ export function BreakAlarmOverlay() {
             <AlarmClock className="size-4" />
             Return to Available
           </Button>
+          )}
+          {config.allowAcknowledge && (
           <Button
             size="lg"
             variant="ghost"
@@ -113,6 +131,7 @@ export function BreakAlarmOverlay() {
           >
             Acknowledge &amp; keep timer running
           </Button>
+          )}
         </div>
       </div>
     </div>

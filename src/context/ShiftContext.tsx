@@ -41,16 +41,48 @@ export interface ShiftEvent {
   tone: "success" | "info" | "brand" | "muted" | "warning" | "danger";
 }
 
+/** Operator-configurable alarm + auto-call policy (Break Alarm Control screen). */
+export interface AlarmConfig {
+  breakAllowanceSeconds: number;
+  lunchAllowanceSeconds: number;
+  autoCallAfterSeconds: number;
+  escalateAfterSeconds: number;
+  alarmEnabled: boolean;
+  soundEnabled: boolean;
+  autoCallEnabled: boolean;
+  allowAcknowledge: boolean;
+  supervisor: string;
+}
+
+export const DEFAULT_ALARM_CONFIG: AlarmConfig = {
+  breakAllowanceSeconds: BREAK_ALLOWANCE_SECONDS,
+  lunchAllowanceSeconds: LUNCH_ALLOWANCE_SECONDS,
+  autoCallAfterSeconds: AUTO_CALL_AFTER_OVERRUN_SECONDS,
+  escalateAfterSeconds: ESCALATION_AFTER_OVERRUN_SECONDS,
+  alarmEnabled: true,
+  soundEnabled: true,
+  autoCallEnabled: true,
+  allowAcknowledge: true,
+  supervisor: "Owen Klein · Team Lead",
+};
+
 interface ShiftContextValue {
   status: PresenceStatus;
   statusSeconds: number;
   signedIn: boolean;
   demoMode: boolean;
   setDemoMode: (v: boolean) => void;
+  config: AlarmConfig;
+  updateConfig: (patch: Partial<AlarmConfig>) => void;
+  resetConfig: () => void;
   allowanceSeconds: number | null;
   overrunSeconds: number;
   alarmActive: boolean;
   autoCallRinging: boolean;
+  escalated: boolean;
+  testing: boolean;
+  startAlarmTest: (kind?: "Break" | "Lunch") => void;
+  stopAlarmTest: () => void;
   events: ShiftEvent[];
   setStatus: (status: PresenceStatus, detail?: string) => void;
   acknowledgeAlarm: () => void;
@@ -58,6 +90,7 @@ interface ShiftContextValue {
   confirmations: Record<string, boolean>;
   toggleConfirmation: (key: string) => void;
 }
+
 
 const ShiftContext = createContext<ShiftContextValue | null>(null);
 
@@ -72,6 +105,8 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
   const [demoMode, setDemoMode] = useState(true);
   const [alarmAcknowledgedAt, setAlarmAcknowledgedAt] = useState<number | null>(null);
   const [autoCallAnswered, setAutoCallAnswered] = useState(false);
+  const [config, setConfig] = useState<AlarmConfig>(DEFAULT_ALARM_CONFIG);
+  const [testKind, setTestKind] = useState<"Break" | "Lunch" | null>(null);
   const [events, setEvents] = useState<ShiftEvent[]>([
     { time: "07:00", event: "Sign In", detail: "CRM · CallTools · Google Meet confirmed", tone: "success" },
     { time: "07:04", event: "Available", detail: "Ready for calls", tone: "info" },
@@ -93,22 +128,32 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const allowanceSeconds = useMemo(() => {
-    if (status === "Break") return demoMode ? DEMO_BREAK_ALLOWANCE_SECONDS : BREAK_ALLOWANCE_SECONDS;
-    if (status === "Lunch") return demoMode ? DEMO_LUNCH_ALLOWANCE_SECONDS : LUNCH_ALLOWANCE_SECONDS;
+    if (testKind) return 0;
+    if (status === "Break")
+      return demoMode ? DEMO_BREAK_ALLOWANCE_SECONDS : config.breakAllowanceSeconds;
+    if (status === "Lunch")
+      return demoMode ? DEMO_LUNCH_ALLOWANCE_SECONDS : config.lunchAllowanceSeconds;
     return null;
-  }, [status, demoMode]);
+  }, [status, demoMode, testKind, config.breakAllowanceSeconds, config.lunchAllowanceSeconds]);
 
   const overrunSeconds =
     allowanceSeconds === null ? 0 : Math.max(0, statusSeconds - allowanceSeconds);
 
-  const alarmActive = overrunSeconds > 0 && alarmAcknowledgedAt === null;
+  const alarmActive =
+    config.alarmEnabled &&
+    overrunSeconds > 0 &&
+    (alarmAcknowledgedAt === null || !config.allowAcknowledge);
 
-  const autoCallThreshold = demoMode ? DEMO_AUTO_CALL_SECONDS : AUTO_CALL_AFTER_OVERRUN_SECONDS;
-  const autoCallRinging = overrunSeconds >= autoCallThreshold && !autoCallAnswered;
+  const autoCallThreshold = demoMode ? DEMO_AUTO_CALL_SECONDS : config.autoCallAfterSeconds;
+  const autoCallRinging =
+    config.autoCallEnabled && overrunSeconds >= autoCallThreshold && !autoCallAnswered;
+  const escalated = overrunSeconds >= (demoMode ? autoCallThreshold * 2 : config.escalateAfterSeconds);
+
 
   const setStatus = useCallback((next: PresenceStatus, detail?: string) => {
     setStatusState(next);
     setStatusSeconds(0);
+    setTestKind(null);
     setAlarmAcknowledgedAt(null);
     setAutoCallAnswered(false);
     setEvents((prev) => [
@@ -137,16 +182,56 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
     ]);
   }, []);
 
+  const logEvent = useCallback((event: ShiftEvent) => setEvents((prev) => [...prev, event]), []);
+
+  const startAlarmTest = useCallback(
+    (kind: "Break" | "Lunch" = "Break") => {
+      setTestKind(kind);
+      setStatusState(kind);
+      setStatusSeconds(0);
+      setAlarmAcknowledgedAt(null);
+      setAutoCallAnswered(false);
+      logEvent({
+        time: clockLabel(),
+        event: "Alarm test started",
+        detail: `${kind} overrun simulation — no attendance exception recorded`,
+        tone: "warning",
+      });
+    },
+    [logEvent],
+  );
+
+  const stopAlarmTest = useCallback(() => {
+    setTestKind(null);
+    setStatusState("Available");
+    setStatusSeconds(0);
+    setAlarmAcknowledgedAt(null);
+    setAutoCallAnswered(false);
+    logEvent({
+      time: clockLabel(),
+      event: "Alarm test ended",
+      detail: "Presence returned to Available",
+      tone: "info",
+    });
+  }, [logEvent]);
+
   const value: ShiftContextValue = {
     status,
     statusSeconds,
     signedIn: status !== "Signed Out",
     demoMode,
     setDemoMode,
+    config,
+    updateConfig: (patch) => setConfig((c) => ({ ...c, ...patch })),
+    resetConfig: () => setConfig(DEFAULT_ALARM_CONFIG),
     allowanceSeconds,
     overrunSeconds,
     alarmActive,
     autoCallRinging,
+    escalated,
+    testing: testKind !== null,
+    startAlarmTest,
+    stopAlarmTest,
     events,
     setStatus,
     acknowledgeAlarm: () => setAlarmAcknowledgedAt(Date.now()),
@@ -155,6 +240,7 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
     toggleConfirmation: (key) =>
       setConfirmations((c) => ({ ...c, [key]: !c[key] })),
   };
+
 
   return <ShiftContext.Provider value={value}>{children}</ShiftContext.Provider>;
 }

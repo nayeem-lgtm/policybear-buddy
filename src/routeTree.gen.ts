@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ShellRouteImport } from './routes/_shell'
+import { Route as ShellBreakAlarmRouteImport } from './routes/_shell.break-alarm'
 import { Route as ShellDashboardRouteImport } from './routes/_shell.dashboard'
 
 const IndexRoute = IndexRouteImport.update({
@@ -22,6 +23,11 @@ const ShellRoute = ShellRouteImport.update({
   id: '/_shell',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ShellBreakAlarmRoute = ShellBreakAlarmRouteImport.update({
+  id: '/break-alarm',
+  path: '/break-alarm',
+  getParentRoute: () => ShellRoute,
+} as any)
 const ShellDashboardRoute = ShellDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -30,24 +36,27 @@ const ShellDashboardRoute = ShellDashboardRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/break-alarm': typeof ShellBreakAlarmRoute
   '/dashboard': typeof ShellDashboardRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/break-alarm': typeof ShellBreakAlarmRoute
   '/dashboard': typeof ShellDashboardRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_shell': typeof ShellRouteWithChildren
+  '/_shell/break-alarm': typeof ShellBreakAlarmRoute
   '/_shell/dashboard': typeof ShellDashboardRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard'
+  fullPaths: '/' | '/break-alarm' | '/dashboard'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard'
-  id: '__root__' | '/' | '/_shell' | '/_shell/dashboard'
+  to: '/' | '/break-alarm' | '/dashboard'
+  id: '__root__' | '/' | '/_shell' | '/_shell/break-alarm' | '/_shell/dashboard'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -71,6 +80,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_shell/break-alarm': {
+      id: '/_shell/break-alarm'
+      path: '/break-alarm'
+      fullPath: '/break-alarm'
+      preLoaderRoute: typeof ShellBreakAlarmRouteImport
+      parentRoute: typeof ShellRoute
+    }
     '/_shell/dashboard': {
       id: '/_shell/dashboard'
       path: '/dashboard'
@@ -82,10 +98,12 @@ declare module '@tanstack/react-router' {
 }
 
 interface ShellRouteChildren {
+  ShellBreakAlarmRoute: typeof ShellBreakAlarmRoute
   ShellDashboardRoute: typeof ShellDashboardRoute
 }
 
 const ShellRouteChildren: ShellRouteChildren = {
+  ShellBreakAlarmRoute: ShellBreakAlarmRoute,
   ShellDashboardRoute: ShellDashboardRoute,
 }
 
