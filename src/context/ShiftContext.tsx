@@ -105,6 +105,8 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
   const [demoMode, setDemoMode] = useState(true);
   const [alarmAcknowledgedAt, setAlarmAcknowledgedAt] = useState<number | null>(null);
   const [autoCallAnswered, setAutoCallAnswered] = useState(false);
+  const [config, setConfig] = useState<AlarmConfig>(DEFAULT_ALARM_CONFIG);
+  const [testKind, setTestKind] = useState<"Break" | "Lunch" | null>(null);
   const [events, setEvents] = useState<ShiftEvent[]>([
     { time: "07:00", event: "Sign In", detail: "CRM · CallTools · Google Meet confirmed", tone: "success" },
     { time: "07:04", event: "Available", detail: "Ready for calls", tone: "info" },
@@ -126,18 +128,27 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const allowanceSeconds = useMemo(() => {
-    if (status === "Break") return demoMode ? DEMO_BREAK_ALLOWANCE_SECONDS : BREAK_ALLOWANCE_SECONDS;
-    if (status === "Lunch") return demoMode ? DEMO_LUNCH_ALLOWANCE_SECONDS : LUNCH_ALLOWANCE_SECONDS;
+    if (testKind) return 0;
+    if (status === "Break")
+      return demoMode ? DEMO_BREAK_ALLOWANCE_SECONDS : config.breakAllowanceSeconds;
+    if (status === "Lunch")
+      return demoMode ? DEMO_LUNCH_ALLOWANCE_SECONDS : config.lunchAllowanceSeconds;
     return null;
-  }, [status, demoMode]);
+  }, [status, demoMode, testKind, config.breakAllowanceSeconds, config.lunchAllowanceSeconds]);
 
   const overrunSeconds =
     allowanceSeconds === null ? 0 : Math.max(0, statusSeconds - allowanceSeconds);
 
-  const alarmActive = overrunSeconds > 0 && alarmAcknowledgedAt === null;
+  const alarmActive =
+    config.alarmEnabled &&
+    overrunSeconds > 0 &&
+    (alarmAcknowledgedAt === null || !config.allowAcknowledge);
 
-  const autoCallThreshold = demoMode ? DEMO_AUTO_CALL_SECONDS : AUTO_CALL_AFTER_OVERRUN_SECONDS;
-  const autoCallRinging = overrunSeconds >= autoCallThreshold && !autoCallAnswered;
+  const autoCallThreshold = demoMode ? DEMO_AUTO_CALL_SECONDS : config.autoCallAfterSeconds;
+  const autoCallRinging =
+    config.autoCallEnabled && overrunSeconds >= autoCallThreshold && !autoCallAnswered;
+  const escalated = overrunSeconds >= (demoMode ? autoCallThreshold * 2 : config.escalateAfterSeconds);
+
 
   const setStatus = useCallback((next: PresenceStatus, detail?: string) => {
     setStatusState(next);
