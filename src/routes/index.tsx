@@ -20,7 +20,7 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "Sign in — Policy Bear Operations CRM" },
       {
         property: "og:description",
-        content: "One workspace for Policy Bear sales, service, QC, HR and finance teams.",
+        content: "Secure sign-in for the Policy Bear Operations CRM: shift control, sales pipeline, quoting, quality control and training in one workspace.",
       },
     ],
   }),
