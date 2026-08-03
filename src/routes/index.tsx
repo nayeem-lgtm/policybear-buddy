@@ -37,7 +37,7 @@ function LoginPage() {
       <div className="relative hidden flex-col justify-between overflow-hidden bg-brand-navy p-10 lg:flex">
         <div className="absolute -top-24 -right-24 size-80 rounded-full bg-brand/40 blur-3xl" />
         <div className="absolute -bottom-32 -left-16 size-96 rounded-full bg-brand-cyan/20 blur-3xl" />
-        <PolicyBearLogo variant="light" className="relative" />
+        <PolicyBearLogo tone="inverse" className="relative" />
         <div className="relative max-w-md">
           <h2 className="text-3xl leading-tight font-semibold text-white">
             One workspace for the whole floor.
