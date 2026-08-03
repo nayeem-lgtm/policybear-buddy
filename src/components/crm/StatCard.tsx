@@ -44,7 +44,7 @@ export function StatCard({
         </p>
         {icon && <span className="text-muted-foreground">{icon}</span>}
       </div>
-      <p className="tabular mt-2 text-2xl font-semibold text-foreground">{value}</p>
+      <div className="tabular mt-2 text-2xl font-semibold text-foreground">{value}</div>
       <div className="mt-1 flex items-center gap-2">
         {delta && (
           <span
