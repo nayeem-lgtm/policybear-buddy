@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import {
   Bell,
   Building2,
@@ -28,7 +28,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { PresenceControl } from "@/components/layout/PresenceControl";
-import { notifications, currentUser } from "@/lib/mock-data";
+import { notifications } from "@/lib/mock-data";
+import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 
 const quickCreate = [
@@ -46,6 +47,17 @@ const quickCreate = [
 export function TopHeader() {
   const unread = notifications.filter((n) => !n.read).length;
   const [q, setQ] = useState("");
+  const { user, signOut, can } = useAuth();
+  const navigate = useNavigate();
+
+  const allowedQuickCreate = quickCreate.filter((item) => can(item.to));
+
+  const handleSignOut = () => {
+    signOut();
+    void navigate({ to: "/", replace: true });
+  };
+
+  if (!user) return null;
 
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center gap-3 border-b border-border bg-card/85 px-3 backdrop-blur md:px-4">
@@ -75,7 +87,7 @@ export function TopHeader() {
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>Quick create</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {quickCreate.map((item) => (
+            {allowedQuickCreate.map((item) => (
               <DropdownMenuItem key={item.label} asChild>
                 <Link to={item.to}>{item.label}</Link>
               </DropdownMenuItem>
@@ -121,12 +133,12 @@ export function TopHeader() {
                   "flex size-7 items-center justify-center rounded-full bg-brand text-[0.7rem] font-semibold text-brand-foreground",
                 )}
               >
-                {currentUser.avatarInitials}
+                {user.avatarInitials}
               </span>
               <span className="hidden text-left leading-tight lg:block">
-                <span className="block text-xs font-medium">{currentUser.name}</span>
+                <span className="block text-xs font-medium">{user.name}</span>
                 <span className="block text-[0.65rem] text-muted-foreground">
-                  {currentUser.role} · {currentUser.team}
+                  {user.role} · {user.department}
                 </span>
               </span>
               <ChevronDown className="hidden size-3.5 text-muted-foreground lg:block" />
@@ -134,12 +146,12 @@ export function TopHeader() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel className="font-normal">
-              <span className="block text-sm font-medium">{currentUser.name}</span>
-              <span className="block text-xs text-muted-foreground">{currentUser.email}</span>
+              <span className="block text-sm font-medium">{user.name}</span>
+              <span className="block text-xs text-muted-foreground">{user.email}</span>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link to="/employees/$employeeId" params={{ employeeId: currentUser.id }}>
+              <Link to="/employees/$employeeId" params={{ employeeId: user.id }}>
                 <CircleUser className="size-4" /> My profile
               </Link>
             </DropdownMenuItem>
@@ -153,16 +165,16 @@ export function TopHeader() {
                 <ShieldCheck className="size-4" /> My training
               </Link>
             </DropdownMenuItem>
+            {can("/admin/rules") && (
             <DropdownMenuItem asChild>
               <Link to="/admin/rules">
                 <Settings className="size-4" /> Preferences
               </Link>
             </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link to="/">
-                <LogOut className="size-4" /> Sign out
-              </Link>
+            <DropdownMenuItem onSelect={handleSignOut}>
+              <LogOut className="size-4" /> Sign out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
