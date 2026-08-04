@@ -11,9 +11,54 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ShellRouteImport } from './routes/_shell'
+import { Route as ShellAnnouncementsRouteImport } from './routes/_shell.announcements'
+import { Route as ShellAttendanceRouteImport } from './routes/_shell.attendance'
+import { Route as ShellAttendanceExceptionsRouteImport } from './routes/_shell.attendance-exceptions'
+import { Route as ShellAutomationsRouteImport } from './routes/_shell.automations'
 import { Route as ShellBreakAlarmRouteImport } from './routes/_shell.break-alarm'
+import { Route as ShellCallCostsRouteImport } from './routes/_shell.call-costs'
+import { Route as ShellCallReconciliationRouteImport } from './routes/_shell.call-reconciliation'
+import { Route as ShellCallbacksRouteImport } from './routes/_shell.callbacks'
+import { Route as ShellCallsRouteImport } from './routes/_shell.calls'
+import { Route as ShellCampaignsRouteImport } from './routes/_shell.campaigns'
+import { Route as ShellChargebacksRouteImport } from './routes/_shell.chargebacks'
+import { Route as ShellCoachingRouteImport } from './routes/_shell.coaching'
+import { Route as ShellCommissionsRouteImport } from './routes/_shell.commissions'
+import { Route as ShellComplaintsRouteImport } from './routes/_shell.complaints'
+import { Route as ShellCustomersRouteImport } from './routes/_shell.customers'
 import { Route as ShellDashboardRouteImport } from './routes/_shell.dashboard'
+import { Route as ShellDocumentsRouteImport } from './routes/_shell.documents'
+import { Route as ShellEmployeesRouteImport } from './routes/_shell.employees'
+import { Route as ShellExpensesRouteImport } from './routes/_shell.expenses'
+import { Route as ShellIncidentsRouteImport } from './routes/_shell.incidents'
+import { Route as ShellLeaveRouteImport } from './routes/_shell.leave'
+import { Route as ShellLiveOperationsRouteImport } from './routes/_shell.live-operations'
+import { Route as ShellMessagesRouteImport } from './routes/_shell.messages'
+import { Route as ShellMyShiftRouteImport } from './routes/_shell.my-shift'
+import { Route as ShellMyWorkRouteImport } from './routes/_shell.my-work'
+import { Route as ShellNotificationsRouteImport } from './routes/_shell.notifications'
+import { Route as ShellOperationsRouteImport } from './routes/_shell.operations'
+import { Route as ShellPayrollRouteImport } from './routes/_shell.payroll'
+import { Route as ShellPublishersRouteImport } from './routes/_shell.publishers'
+import { Route as ShellQaRouteImport } from './routes/_shell.qa'
+import { Route as ShellQuotesRouteImport } from './routes/_shell.quotes'
+import { Route as ShellReportsRouteImport } from './routes/_shell.reports'
+import { Route as ShellRetentionRouteImport } from './routes/_shell.retention'
+import { Route as ShellRevenueRouteImport } from './routes/_shell.revenue'
+import { Route as ShellSalesRouteImport } from './routes/_shell.sales'
+import { Route as ShellSearchRouteImport } from './routes/_shell.search'
+import { Route as ShellTasksRouteImport } from './routes/_shell.tasks'
+import { Route as ShellTrainingRouteImport } from './routes/_shell.training'
+import { Route as ShellAdminAuditRouteImport } from './routes/_shell.admin.audit'
+import { Route as ShellAdminHealthRouteImport } from './routes/_shell.admin.health'
+import { Route as ShellAdminImportsRouteImport } from './routes/_shell.admin.imports'
+import { Route as ShellAdminIntegrationsRouteImport } from './routes/_shell.admin.integrations'
+import { Route as ShellAdminRulesRouteImport } from './routes/_shell.admin.rules'
 import { Route as ShellAdminUsersRouteImport } from './routes/_shell.admin.users'
+import { Route as ShellCallbacksCalendarRouteImport } from './routes/_shell.callbacks.calendar'
+import { Route as ShellQaDisputesRouteImport } from './routes/_shell.qa.disputes'
+import { Route as ShellQaImportRouteImport } from './routes/_shell.qa.import'
+import { Route as ShellSalesNewRouteImport } from './routes/_shell.sales.new'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -24,9 +69,80 @@ const ShellRoute = ShellRouteImport.update({
   id: '/_shell',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ShellAnnouncementsRoute = ShellAnnouncementsRouteImport.update({
+  id: '/announcements',
+  path: '/announcements',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellAttendanceRoute = ShellAttendanceRouteImport.update({
+  id: '/attendance',
+  path: '/attendance',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellAttendanceExceptionsRoute =
+  ShellAttendanceExceptionsRouteImport.update({
+    id: '/attendance-exceptions',
+    path: '/attendance-exceptions',
+    getParentRoute: () => ShellRoute,
+  } as any)
+const ShellAutomationsRoute = ShellAutomationsRouteImport.update({
+  id: '/automations',
+  path: '/automations',
+  getParentRoute: () => ShellRoute,
+} as any)
 const ShellBreakAlarmRoute = ShellBreakAlarmRouteImport.update({
   id: '/break-alarm',
   path: '/break-alarm',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellCallCostsRoute = ShellCallCostsRouteImport.update({
+  id: '/call-costs',
+  path: '/call-costs',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellCallReconciliationRoute = ShellCallReconciliationRouteImport.update({
+  id: '/call-reconciliation',
+  path: '/call-reconciliation',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellCallbacksRoute = ShellCallbacksRouteImport.update({
+  id: '/callbacks',
+  path: '/callbacks',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellCallsRoute = ShellCallsRouteImport.update({
+  id: '/calls',
+  path: '/calls',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellCampaignsRoute = ShellCampaignsRouteImport.update({
+  id: '/campaigns',
+  path: '/campaigns',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellChargebacksRoute = ShellChargebacksRouteImport.update({
+  id: '/chargebacks',
+  path: '/chargebacks',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellCoachingRoute = ShellCoachingRouteImport.update({
+  id: '/coaching',
+  path: '/coaching',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellCommissionsRoute = ShellCommissionsRouteImport.update({
+  id: '/commissions',
+  path: '/commissions',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellComplaintsRoute = ShellComplaintsRouteImport.update({
+  id: '/complaints',
+  path: '/complaints',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellCustomersRoute = ShellCustomersRouteImport.update({
+  id: '/customers',
+  path: '/customers',
   getParentRoute: () => ShellRoute,
 } as any)
 const ShellDashboardRoute = ShellDashboardRouteImport.update({
@@ -34,44 +150,477 @@ const ShellDashboardRoute = ShellDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => ShellRoute,
 } as any)
+const ShellDocumentsRoute = ShellDocumentsRouteImport.update({
+  id: '/documents',
+  path: '/documents',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellEmployeesRoute = ShellEmployeesRouteImport.update({
+  id: '/employees',
+  path: '/employees',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellExpensesRoute = ShellExpensesRouteImport.update({
+  id: '/expenses',
+  path: '/expenses',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellIncidentsRoute = ShellIncidentsRouteImport.update({
+  id: '/incidents',
+  path: '/incidents',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellLeaveRoute = ShellLeaveRouteImport.update({
+  id: '/leave',
+  path: '/leave',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellLiveOperationsRoute = ShellLiveOperationsRouteImport.update({
+  id: '/live-operations',
+  path: '/live-operations',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellMessagesRoute = ShellMessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellMyShiftRoute = ShellMyShiftRouteImport.update({
+  id: '/my-shift',
+  path: '/my-shift',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellMyWorkRoute = ShellMyWorkRouteImport.update({
+  id: '/my-work',
+  path: '/my-work',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellNotificationsRoute = ShellNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellOperationsRoute = ShellOperationsRouteImport.update({
+  id: '/operations',
+  path: '/operations',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellPayrollRoute = ShellPayrollRouteImport.update({
+  id: '/payroll',
+  path: '/payroll',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellPublishersRoute = ShellPublishersRouteImport.update({
+  id: '/publishers',
+  path: '/publishers',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellQaRoute = ShellQaRouteImport.update({
+  id: '/qa',
+  path: '/qa',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellQuotesRoute = ShellQuotesRouteImport.update({
+  id: '/quotes',
+  path: '/quotes',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellReportsRoute = ShellReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellRetentionRoute = ShellRetentionRouteImport.update({
+  id: '/retention',
+  path: '/retention',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellRevenueRoute = ShellRevenueRouteImport.update({
+  id: '/revenue',
+  path: '/revenue',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellSalesRoute = ShellSalesRouteImport.update({
+  id: '/sales',
+  path: '/sales',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellSearchRoute = ShellSearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellTasksRoute = ShellTasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellTrainingRoute = ShellTrainingRouteImport.update({
+  id: '/training',
+  path: '/training',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellAdminAuditRoute = ShellAdminAuditRouteImport.update({
+  id: '/admin/audit',
+  path: '/admin/audit',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellAdminHealthRoute = ShellAdminHealthRouteImport.update({
+  id: '/admin/health',
+  path: '/admin/health',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellAdminImportsRoute = ShellAdminImportsRouteImport.update({
+  id: '/admin/imports',
+  path: '/admin/imports',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellAdminIntegrationsRoute = ShellAdminIntegrationsRouteImport.update({
+  id: '/admin/integrations',
+  path: '/admin/integrations',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellAdminRulesRoute = ShellAdminRulesRouteImport.update({
+  id: '/admin/rules',
+  path: '/admin/rules',
+  getParentRoute: () => ShellRoute,
+} as any)
 const ShellAdminUsersRoute = ShellAdminUsersRouteImport.update({
   id: '/admin/users',
   path: '/admin/users',
   getParentRoute: () => ShellRoute,
 } as any)
+const ShellCallbacksCalendarRoute = ShellCallbacksCalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
+  getParentRoute: () => ShellCallbacksRoute,
+} as any)
+const ShellQaDisputesRoute = ShellQaDisputesRouteImport.update({
+  id: '/disputes',
+  path: '/disputes',
+  getParentRoute: () => ShellQaRoute,
+} as any)
+const ShellQaImportRoute = ShellQaImportRouteImport.update({
+  id: '/import',
+  path: '/import',
+  getParentRoute: () => ShellQaRoute,
+} as any)
+const ShellSalesNewRoute = ShellSalesNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => ShellSalesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/announcements': typeof ShellAnnouncementsRoute
+  '/attendance': typeof ShellAttendanceRoute
+  '/attendance-exceptions': typeof ShellAttendanceExceptionsRoute
+  '/automations': typeof ShellAutomationsRoute
   '/break-alarm': typeof ShellBreakAlarmRoute
+  '/call-costs': typeof ShellCallCostsRoute
+  '/call-reconciliation': typeof ShellCallReconciliationRoute
+  '/callbacks': typeof ShellCallbacksRouteWithChildren
+  '/calls': typeof ShellCallsRoute
+  '/campaigns': typeof ShellCampaignsRoute
+  '/chargebacks': typeof ShellChargebacksRoute
+  '/coaching': typeof ShellCoachingRoute
+  '/commissions': typeof ShellCommissionsRoute
+  '/complaints': typeof ShellComplaintsRoute
+  '/customers': typeof ShellCustomersRoute
   '/dashboard': typeof ShellDashboardRoute
+  '/documents': typeof ShellDocumentsRoute
+  '/employees': typeof ShellEmployeesRoute
+  '/expenses': typeof ShellExpensesRoute
+  '/incidents': typeof ShellIncidentsRoute
+  '/leave': typeof ShellLeaveRoute
+  '/live-operations': typeof ShellLiveOperationsRoute
+  '/messages': typeof ShellMessagesRoute
+  '/my-shift': typeof ShellMyShiftRoute
+  '/my-work': typeof ShellMyWorkRoute
+  '/notifications': typeof ShellNotificationsRoute
+  '/operations': typeof ShellOperationsRoute
+  '/payroll': typeof ShellPayrollRoute
+  '/publishers': typeof ShellPublishersRoute
+  '/qa': typeof ShellQaRouteWithChildren
+  '/quotes': typeof ShellQuotesRoute
+  '/reports': typeof ShellReportsRoute
+  '/retention': typeof ShellRetentionRoute
+  '/revenue': typeof ShellRevenueRoute
+  '/sales': typeof ShellSalesRouteWithChildren
+  '/search': typeof ShellSearchRoute
+  '/tasks': typeof ShellTasksRoute
+  '/training': typeof ShellTrainingRoute
+  '/admin/audit': typeof ShellAdminAuditRoute
+  '/admin/health': typeof ShellAdminHealthRoute
+  '/admin/imports': typeof ShellAdminImportsRoute
+  '/admin/integrations': typeof ShellAdminIntegrationsRoute
+  '/admin/rules': typeof ShellAdminRulesRoute
   '/admin/users': typeof ShellAdminUsersRoute
+  '/callbacks/calendar': typeof ShellCallbacksCalendarRoute
+  '/qa/disputes': typeof ShellQaDisputesRoute
+  '/qa/import': typeof ShellQaImportRoute
+  '/sales/new': typeof ShellSalesNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/announcements': typeof ShellAnnouncementsRoute
+  '/attendance': typeof ShellAttendanceRoute
+  '/attendance-exceptions': typeof ShellAttendanceExceptionsRoute
+  '/automations': typeof ShellAutomationsRoute
   '/break-alarm': typeof ShellBreakAlarmRoute
+  '/call-costs': typeof ShellCallCostsRoute
+  '/call-reconciliation': typeof ShellCallReconciliationRoute
+  '/callbacks': typeof ShellCallbacksRouteWithChildren
+  '/calls': typeof ShellCallsRoute
+  '/campaigns': typeof ShellCampaignsRoute
+  '/chargebacks': typeof ShellChargebacksRoute
+  '/coaching': typeof ShellCoachingRoute
+  '/commissions': typeof ShellCommissionsRoute
+  '/complaints': typeof ShellComplaintsRoute
+  '/customers': typeof ShellCustomersRoute
   '/dashboard': typeof ShellDashboardRoute
+  '/documents': typeof ShellDocumentsRoute
+  '/employees': typeof ShellEmployeesRoute
+  '/expenses': typeof ShellExpensesRoute
+  '/incidents': typeof ShellIncidentsRoute
+  '/leave': typeof ShellLeaveRoute
+  '/live-operations': typeof ShellLiveOperationsRoute
+  '/messages': typeof ShellMessagesRoute
+  '/my-shift': typeof ShellMyShiftRoute
+  '/my-work': typeof ShellMyWorkRoute
+  '/notifications': typeof ShellNotificationsRoute
+  '/operations': typeof ShellOperationsRoute
+  '/payroll': typeof ShellPayrollRoute
+  '/publishers': typeof ShellPublishersRoute
+  '/qa': typeof ShellQaRouteWithChildren
+  '/quotes': typeof ShellQuotesRoute
+  '/reports': typeof ShellReportsRoute
+  '/retention': typeof ShellRetentionRoute
+  '/revenue': typeof ShellRevenueRoute
+  '/sales': typeof ShellSalesRouteWithChildren
+  '/search': typeof ShellSearchRoute
+  '/tasks': typeof ShellTasksRoute
+  '/training': typeof ShellTrainingRoute
+  '/admin/audit': typeof ShellAdminAuditRoute
+  '/admin/health': typeof ShellAdminHealthRoute
+  '/admin/imports': typeof ShellAdminImportsRoute
+  '/admin/integrations': typeof ShellAdminIntegrationsRoute
+  '/admin/rules': typeof ShellAdminRulesRoute
   '/admin/users': typeof ShellAdminUsersRoute
+  '/callbacks/calendar': typeof ShellCallbacksCalendarRoute
+  '/qa/disputes': typeof ShellQaDisputesRoute
+  '/qa/import': typeof ShellQaImportRoute
+  '/sales/new': typeof ShellSalesNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_shell': typeof ShellRouteWithChildren
+  '/_shell/announcements': typeof ShellAnnouncementsRoute
+  '/_shell/attendance': typeof ShellAttendanceRoute
+  '/_shell/attendance-exceptions': typeof ShellAttendanceExceptionsRoute
+  '/_shell/automations': typeof ShellAutomationsRoute
   '/_shell/break-alarm': typeof ShellBreakAlarmRoute
+  '/_shell/call-costs': typeof ShellCallCostsRoute
+  '/_shell/call-reconciliation': typeof ShellCallReconciliationRoute
+  '/_shell/callbacks': typeof ShellCallbacksRouteWithChildren
+  '/_shell/calls': typeof ShellCallsRoute
+  '/_shell/campaigns': typeof ShellCampaignsRoute
+  '/_shell/chargebacks': typeof ShellChargebacksRoute
+  '/_shell/coaching': typeof ShellCoachingRoute
+  '/_shell/commissions': typeof ShellCommissionsRoute
+  '/_shell/complaints': typeof ShellComplaintsRoute
+  '/_shell/customers': typeof ShellCustomersRoute
   '/_shell/dashboard': typeof ShellDashboardRoute
+  '/_shell/documents': typeof ShellDocumentsRoute
+  '/_shell/employees': typeof ShellEmployeesRoute
+  '/_shell/expenses': typeof ShellExpensesRoute
+  '/_shell/incidents': typeof ShellIncidentsRoute
+  '/_shell/leave': typeof ShellLeaveRoute
+  '/_shell/live-operations': typeof ShellLiveOperationsRoute
+  '/_shell/messages': typeof ShellMessagesRoute
+  '/_shell/my-shift': typeof ShellMyShiftRoute
+  '/_shell/my-work': typeof ShellMyWorkRoute
+  '/_shell/notifications': typeof ShellNotificationsRoute
+  '/_shell/operations': typeof ShellOperationsRoute
+  '/_shell/payroll': typeof ShellPayrollRoute
+  '/_shell/publishers': typeof ShellPublishersRoute
+  '/_shell/qa': typeof ShellQaRouteWithChildren
+  '/_shell/quotes': typeof ShellQuotesRoute
+  '/_shell/reports': typeof ShellReportsRoute
+  '/_shell/retention': typeof ShellRetentionRoute
+  '/_shell/revenue': typeof ShellRevenueRoute
+  '/_shell/sales': typeof ShellSalesRouteWithChildren
+  '/_shell/search': typeof ShellSearchRoute
+  '/_shell/tasks': typeof ShellTasksRoute
+  '/_shell/training': typeof ShellTrainingRoute
+  '/_shell/admin/audit': typeof ShellAdminAuditRoute
+  '/_shell/admin/health': typeof ShellAdminHealthRoute
+  '/_shell/admin/imports': typeof ShellAdminImportsRoute
+  '/_shell/admin/integrations': typeof ShellAdminIntegrationsRoute
+  '/_shell/admin/rules': typeof ShellAdminRulesRoute
   '/_shell/admin/users': typeof ShellAdminUsersRoute
+  '/_shell/callbacks/calendar': typeof ShellCallbacksCalendarRoute
+  '/_shell/qa/disputes': typeof ShellQaDisputesRoute
+  '/_shell/qa/import': typeof ShellQaImportRoute
+  '/_shell/sales/new': typeof ShellSalesNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/break-alarm' | '/dashboard' | '/admin/users'
+  fullPaths:
+    | '/'
+    | '/announcements'
+    | '/attendance'
+    | '/attendance-exceptions'
+    | '/automations'
+    | '/break-alarm'
+    | '/call-costs'
+    | '/call-reconciliation'
+    | '/callbacks'
+    | '/calls'
+    | '/campaigns'
+    | '/chargebacks'
+    | '/coaching'
+    | '/commissions'
+    | '/complaints'
+    | '/customers'
+    | '/dashboard'
+    | '/documents'
+    | '/employees'
+    | '/expenses'
+    | '/incidents'
+    | '/leave'
+    | '/live-operations'
+    | '/messages'
+    | '/my-shift'
+    | '/my-work'
+    | '/notifications'
+    | '/operations'
+    | '/payroll'
+    | '/publishers'
+    | '/qa'
+    | '/quotes'
+    | '/reports'
+    | '/retention'
+    | '/revenue'
+    | '/sales'
+    | '/search'
+    | '/tasks'
+    | '/training'
+    | '/admin/audit'
+    | '/admin/health'
+    | '/admin/imports'
+    | '/admin/integrations'
+    | '/admin/rules'
+    | '/admin/users'
+    | '/callbacks/calendar'
+    | '/qa/disputes'
+    | '/qa/import'
+    | '/sales/new'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/break-alarm' | '/dashboard' | '/admin/users'
+  to:
+    | '/'
+    | '/announcements'
+    | '/attendance'
+    | '/attendance-exceptions'
+    | '/automations'
+    | '/break-alarm'
+    | '/call-costs'
+    | '/call-reconciliation'
+    | '/callbacks'
+    | '/calls'
+    | '/campaigns'
+    | '/chargebacks'
+    | '/coaching'
+    | '/commissions'
+    | '/complaints'
+    | '/customers'
+    | '/dashboard'
+    | '/documents'
+    | '/employees'
+    | '/expenses'
+    | '/incidents'
+    | '/leave'
+    | '/live-operations'
+    | '/messages'
+    | '/my-shift'
+    | '/my-work'
+    | '/notifications'
+    | '/operations'
+    | '/payroll'
+    | '/publishers'
+    | '/qa'
+    | '/quotes'
+    | '/reports'
+    | '/retention'
+    | '/revenue'
+    | '/sales'
+    | '/search'
+    | '/tasks'
+    | '/training'
+    | '/admin/audit'
+    | '/admin/health'
+    | '/admin/imports'
+    | '/admin/integrations'
+    | '/admin/rules'
+    | '/admin/users'
+    | '/callbacks/calendar'
+    | '/qa/disputes'
+    | '/qa/import'
+    | '/sales/new'
   id:
     | '__root__'
     | '/'
     | '/_shell'
+    | '/_shell/announcements'
+    | '/_shell/attendance'
+    | '/_shell/attendance-exceptions'
+    | '/_shell/automations'
     | '/_shell/break-alarm'
+    | '/_shell/call-costs'
+    | '/_shell/call-reconciliation'
+    | '/_shell/callbacks'
+    | '/_shell/calls'
+    | '/_shell/campaigns'
+    | '/_shell/chargebacks'
+    | '/_shell/coaching'
+    | '/_shell/commissions'
+    | '/_shell/complaints'
+    | '/_shell/customers'
     | '/_shell/dashboard'
+    | '/_shell/documents'
+    | '/_shell/employees'
+    | '/_shell/expenses'
+    | '/_shell/incidents'
+    | '/_shell/leave'
+    | '/_shell/live-operations'
+    | '/_shell/messages'
+    | '/_shell/my-shift'
+    | '/_shell/my-work'
+    | '/_shell/notifications'
+    | '/_shell/operations'
+    | '/_shell/payroll'
+    | '/_shell/publishers'
+    | '/_shell/qa'
+    | '/_shell/quotes'
+    | '/_shell/reports'
+    | '/_shell/retention'
+    | '/_shell/revenue'
+    | '/_shell/sales'
+    | '/_shell/search'
+    | '/_shell/tasks'
+    | '/_shell/training'
+    | '/_shell/admin/audit'
+    | '/_shell/admin/health'
+    | '/_shell/admin/imports'
+    | '/_shell/admin/integrations'
+    | '/_shell/admin/rules'
     | '/_shell/admin/users'
+    | '/_shell/callbacks/calendar'
+    | '/_shell/qa/disputes'
+    | '/_shell/qa/import'
+    | '/_shell/sales/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -95,11 +644,109 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_shell/announcements': {
+      id: '/_shell/announcements'
+      path: '/announcements'
+      fullPath: '/announcements'
+      preLoaderRoute: typeof ShellAnnouncementsRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/attendance': {
+      id: '/_shell/attendance'
+      path: '/attendance'
+      fullPath: '/attendance'
+      preLoaderRoute: typeof ShellAttendanceRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/attendance-exceptions': {
+      id: '/_shell/attendance-exceptions'
+      path: '/attendance-exceptions'
+      fullPath: '/attendance-exceptions'
+      preLoaderRoute: typeof ShellAttendanceExceptionsRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/automations': {
+      id: '/_shell/automations'
+      path: '/automations'
+      fullPath: '/automations'
+      preLoaderRoute: typeof ShellAutomationsRouteImport
+      parentRoute: typeof ShellRoute
+    }
     '/_shell/break-alarm': {
       id: '/_shell/break-alarm'
       path: '/break-alarm'
       fullPath: '/break-alarm'
       preLoaderRoute: typeof ShellBreakAlarmRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/call-costs': {
+      id: '/_shell/call-costs'
+      path: '/call-costs'
+      fullPath: '/call-costs'
+      preLoaderRoute: typeof ShellCallCostsRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/call-reconciliation': {
+      id: '/_shell/call-reconciliation'
+      path: '/call-reconciliation'
+      fullPath: '/call-reconciliation'
+      preLoaderRoute: typeof ShellCallReconciliationRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/callbacks': {
+      id: '/_shell/callbacks'
+      path: '/callbacks'
+      fullPath: '/callbacks'
+      preLoaderRoute: typeof ShellCallbacksRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/calls': {
+      id: '/_shell/calls'
+      path: '/calls'
+      fullPath: '/calls'
+      preLoaderRoute: typeof ShellCallsRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/campaigns': {
+      id: '/_shell/campaigns'
+      path: '/campaigns'
+      fullPath: '/campaigns'
+      preLoaderRoute: typeof ShellCampaignsRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/chargebacks': {
+      id: '/_shell/chargebacks'
+      path: '/chargebacks'
+      fullPath: '/chargebacks'
+      preLoaderRoute: typeof ShellChargebacksRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/coaching': {
+      id: '/_shell/coaching'
+      path: '/coaching'
+      fullPath: '/coaching'
+      preLoaderRoute: typeof ShellCoachingRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/commissions': {
+      id: '/_shell/commissions'
+      path: '/commissions'
+      fullPath: '/commissions'
+      preLoaderRoute: typeof ShellCommissionsRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/complaints': {
+      id: '/_shell/complaints'
+      path: '/complaints'
+      fullPath: '/complaints'
+      preLoaderRoute: typeof ShellComplaintsRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/customers': {
+      id: '/_shell/customers'
+      path: '/customers'
+      fullPath: '/customers'
+      preLoaderRoute: typeof ShellCustomersRouteImport
       parentRoute: typeof ShellRoute
     }
     '/_shell/dashboard': {
@@ -109,6 +756,195 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellDashboardRouteImport
       parentRoute: typeof ShellRoute
     }
+    '/_shell/documents': {
+      id: '/_shell/documents'
+      path: '/documents'
+      fullPath: '/documents'
+      preLoaderRoute: typeof ShellDocumentsRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/employees': {
+      id: '/_shell/employees'
+      path: '/employees'
+      fullPath: '/employees'
+      preLoaderRoute: typeof ShellEmployeesRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/expenses': {
+      id: '/_shell/expenses'
+      path: '/expenses'
+      fullPath: '/expenses'
+      preLoaderRoute: typeof ShellExpensesRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/incidents': {
+      id: '/_shell/incidents'
+      path: '/incidents'
+      fullPath: '/incidents'
+      preLoaderRoute: typeof ShellIncidentsRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/leave': {
+      id: '/_shell/leave'
+      path: '/leave'
+      fullPath: '/leave'
+      preLoaderRoute: typeof ShellLeaveRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/live-operations': {
+      id: '/_shell/live-operations'
+      path: '/live-operations'
+      fullPath: '/live-operations'
+      preLoaderRoute: typeof ShellLiveOperationsRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/messages': {
+      id: '/_shell/messages'
+      path: '/messages'
+      fullPath: '/messages'
+      preLoaderRoute: typeof ShellMessagesRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/my-shift': {
+      id: '/_shell/my-shift'
+      path: '/my-shift'
+      fullPath: '/my-shift'
+      preLoaderRoute: typeof ShellMyShiftRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/my-work': {
+      id: '/_shell/my-work'
+      path: '/my-work'
+      fullPath: '/my-work'
+      preLoaderRoute: typeof ShellMyWorkRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/notifications': {
+      id: '/_shell/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof ShellNotificationsRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/operations': {
+      id: '/_shell/operations'
+      path: '/operations'
+      fullPath: '/operations'
+      preLoaderRoute: typeof ShellOperationsRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/payroll': {
+      id: '/_shell/payroll'
+      path: '/payroll'
+      fullPath: '/payroll'
+      preLoaderRoute: typeof ShellPayrollRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/publishers': {
+      id: '/_shell/publishers'
+      path: '/publishers'
+      fullPath: '/publishers'
+      preLoaderRoute: typeof ShellPublishersRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/qa': {
+      id: '/_shell/qa'
+      path: '/qa'
+      fullPath: '/qa'
+      preLoaderRoute: typeof ShellQaRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/quotes': {
+      id: '/_shell/quotes'
+      path: '/quotes'
+      fullPath: '/quotes'
+      preLoaderRoute: typeof ShellQuotesRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/reports': {
+      id: '/_shell/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ShellReportsRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/retention': {
+      id: '/_shell/retention'
+      path: '/retention'
+      fullPath: '/retention'
+      preLoaderRoute: typeof ShellRetentionRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/revenue': {
+      id: '/_shell/revenue'
+      path: '/revenue'
+      fullPath: '/revenue'
+      preLoaderRoute: typeof ShellRevenueRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/sales': {
+      id: '/_shell/sales'
+      path: '/sales'
+      fullPath: '/sales'
+      preLoaderRoute: typeof ShellSalesRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/search': {
+      id: '/_shell/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof ShellSearchRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/tasks': {
+      id: '/_shell/tasks'
+      path: '/tasks'
+      fullPath: '/tasks'
+      preLoaderRoute: typeof ShellTasksRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/training': {
+      id: '/_shell/training'
+      path: '/training'
+      fullPath: '/training'
+      preLoaderRoute: typeof ShellTrainingRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/admin/audit': {
+      id: '/_shell/admin/audit'
+      path: '/admin/audit'
+      fullPath: '/admin/audit'
+      preLoaderRoute: typeof ShellAdminAuditRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/admin/health': {
+      id: '/_shell/admin/health'
+      path: '/admin/health'
+      fullPath: '/admin/health'
+      preLoaderRoute: typeof ShellAdminHealthRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/admin/imports': {
+      id: '/_shell/admin/imports'
+      path: '/admin/imports'
+      fullPath: '/admin/imports'
+      preLoaderRoute: typeof ShellAdminImportsRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/admin/integrations': {
+      id: '/_shell/admin/integrations'
+      path: '/admin/integrations'
+      fullPath: '/admin/integrations'
+      preLoaderRoute: typeof ShellAdminIntegrationsRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/admin/rules': {
+      id: '/_shell/admin/rules'
+      path: '/admin/rules'
+      fullPath: '/admin/rules'
+      preLoaderRoute: typeof ShellAdminRulesRouteImport
+      parentRoute: typeof ShellRoute
+    }
     '/_shell/admin/users': {
       id: '/_shell/admin/users'
       path: '/admin/users'
@@ -116,18 +952,165 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellAdminUsersRouteImport
       parentRoute: typeof ShellRoute
     }
+    '/_shell/callbacks/calendar': {
+      id: '/_shell/callbacks/calendar'
+      path: '/calendar'
+      fullPath: '/callbacks/calendar'
+      preLoaderRoute: typeof ShellCallbacksCalendarRouteImport
+      parentRoute: typeof ShellCallbacksRoute
+    }
+    '/_shell/qa/disputes': {
+      id: '/_shell/qa/disputes'
+      path: '/disputes'
+      fullPath: '/qa/disputes'
+      preLoaderRoute: typeof ShellQaDisputesRouteImport
+      parentRoute: typeof ShellQaRoute
+    }
+    '/_shell/qa/import': {
+      id: '/_shell/qa/import'
+      path: '/import'
+      fullPath: '/qa/import'
+      preLoaderRoute: typeof ShellQaImportRouteImport
+      parentRoute: typeof ShellQaRoute
+    }
+    '/_shell/sales/new': {
+      id: '/_shell/sales/new'
+      path: '/new'
+      fullPath: '/sales/new'
+      preLoaderRoute: typeof ShellSalesNewRouteImport
+      parentRoute: typeof ShellSalesRoute
+    }
   }
 }
 
+interface ShellCallbacksRouteChildren {
+  ShellCallbacksCalendarRoute: typeof ShellCallbacksCalendarRoute
+}
+
+const ShellCallbacksRouteChildren: ShellCallbacksRouteChildren = {
+  ShellCallbacksCalendarRoute: ShellCallbacksCalendarRoute,
+}
+
+const ShellCallbacksRouteWithChildren = ShellCallbacksRoute._addFileChildren(
+  ShellCallbacksRouteChildren,
+)
+
+interface ShellQaRouteChildren {
+  ShellQaDisputesRoute: typeof ShellQaDisputesRoute
+  ShellQaImportRoute: typeof ShellQaImportRoute
+}
+
+const ShellQaRouteChildren: ShellQaRouteChildren = {
+  ShellQaDisputesRoute: ShellQaDisputesRoute,
+  ShellQaImportRoute: ShellQaImportRoute,
+}
+
+const ShellQaRouteWithChildren =
+  ShellQaRoute._addFileChildren(ShellQaRouteChildren)
+
+interface ShellSalesRouteChildren {
+  ShellSalesNewRoute: typeof ShellSalesNewRoute
+}
+
+const ShellSalesRouteChildren: ShellSalesRouteChildren = {
+  ShellSalesNewRoute: ShellSalesNewRoute,
+}
+
+const ShellSalesRouteWithChildren = ShellSalesRoute._addFileChildren(
+  ShellSalesRouteChildren,
+)
+
 interface ShellRouteChildren {
+  ShellAnnouncementsRoute: typeof ShellAnnouncementsRoute
+  ShellAttendanceRoute: typeof ShellAttendanceRoute
+  ShellAttendanceExceptionsRoute: typeof ShellAttendanceExceptionsRoute
+  ShellAutomationsRoute: typeof ShellAutomationsRoute
   ShellBreakAlarmRoute: typeof ShellBreakAlarmRoute
+  ShellCallCostsRoute: typeof ShellCallCostsRoute
+  ShellCallReconciliationRoute: typeof ShellCallReconciliationRoute
+  ShellCallbacksRoute: typeof ShellCallbacksRouteWithChildren
+  ShellCallsRoute: typeof ShellCallsRoute
+  ShellCampaignsRoute: typeof ShellCampaignsRoute
+  ShellChargebacksRoute: typeof ShellChargebacksRoute
+  ShellCoachingRoute: typeof ShellCoachingRoute
+  ShellCommissionsRoute: typeof ShellCommissionsRoute
+  ShellComplaintsRoute: typeof ShellComplaintsRoute
+  ShellCustomersRoute: typeof ShellCustomersRoute
   ShellDashboardRoute: typeof ShellDashboardRoute
+  ShellDocumentsRoute: typeof ShellDocumentsRoute
+  ShellEmployeesRoute: typeof ShellEmployeesRoute
+  ShellExpensesRoute: typeof ShellExpensesRoute
+  ShellIncidentsRoute: typeof ShellIncidentsRoute
+  ShellLeaveRoute: typeof ShellLeaveRoute
+  ShellLiveOperationsRoute: typeof ShellLiveOperationsRoute
+  ShellMessagesRoute: typeof ShellMessagesRoute
+  ShellMyShiftRoute: typeof ShellMyShiftRoute
+  ShellMyWorkRoute: typeof ShellMyWorkRoute
+  ShellNotificationsRoute: typeof ShellNotificationsRoute
+  ShellOperationsRoute: typeof ShellOperationsRoute
+  ShellPayrollRoute: typeof ShellPayrollRoute
+  ShellPublishersRoute: typeof ShellPublishersRoute
+  ShellQaRoute: typeof ShellQaRouteWithChildren
+  ShellQuotesRoute: typeof ShellQuotesRoute
+  ShellReportsRoute: typeof ShellReportsRoute
+  ShellRetentionRoute: typeof ShellRetentionRoute
+  ShellRevenueRoute: typeof ShellRevenueRoute
+  ShellSalesRoute: typeof ShellSalesRouteWithChildren
+  ShellSearchRoute: typeof ShellSearchRoute
+  ShellTasksRoute: typeof ShellTasksRoute
+  ShellTrainingRoute: typeof ShellTrainingRoute
+  ShellAdminAuditRoute: typeof ShellAdminAuditRoute
+  ShellAdminHealthRoute: typeof ShellAdminHealthRoute
+  ShellAdminImportsRoute: typeof ShellAdminImportsRoute
+  ShellAdminIntegrationsRoute: typeof ShellAdminIntegrationsRoute
+  ShellAdminRulesRoute: typeof ShellAdminRulesRoute
   ShellAdminUsersRoute: typeof ShellAdminUsersRoute
 }
 
 const ShellRouteChildren: ShellRouteChildren = {
+  ShellAnnouncementsRoute: ShellAnnouncementsRoute,
+  ShellAttendanceRoute: ShellAttendanceRoute,
+  ShellAttendanceExceptionsRoute: ShellAttendanceExceptionsRoute,
+  ShellAutomationsRoute: ShellAutomationsRoute,
   ShellBreakAlarmRoute: ShellBreakAlarmRoute,
+  ShellCallCostsRoute: ShellCallCostsRoute,
+  ShellCallReconciliationRoute: ShellCallReconciliationRoute,
+  ShellCallbacksRoute: ShellCallbacksRouteWithChildren,
+  ShellCallsRoute: ShellCallsRoute,
+  ShellCampaignsRoute: ShellCampaignsRoute,
+  ShellChargebacksRoute: ShellChargebacksRoute,
+  ShellCoachingRoute: ShellCoachingRoute,
+  ShellCommissionsRoute: ShellCommissionsRoute,
+  ShellComplaintsRoute: ShellComplaintsRoute,
+  ShellCustomersRoute: ShellCustomersRoute,
   ShellDashboardRoute: ShellDashboardRoute,
+  ShellDocumentsRoute: ShellDocumentsRoute,
+  ShellEmployeesRoute: ShellEmployeesRoute,
+  ShellExpensesRoute: ShellExpensesRoute,
+  ShellIncidentsRoute: ShellIncidentsRoute,
+  ShellLeaveRoute: ShellLeaveRoute,
+  ShellLiveOperationsRoute: ShellLiveOperationsRoute,
+  ShellMessagesRoute: ShellMessagesRoute,
+  ShellMyShiftRoute: ShellMyShiftRoute,
+  ShellMyWorkRoute: ShellMyWorkRoute,
+  ShellNotificationsRoute: ShellNotificationsRoute,
+  ShellOperationsRoute: ShellOperationsRoute,
+  ShellPayrollRoute: ShellPayrollRoute,
+  ShellPublishersRoute: ShellPublishersRoute,
+  ShellQaRoute: ShellQaRouteWithChildren,
+  ShellQuotesRoute: ShellQuotesRoute,
+  ShellReportsRoute: ShellReportsRoute,
+  ShellRetentionRoute: ShellRetentionRoute,
+  ShellRevenueRoute: ShellRevenueRoute,
+  ShellSalesRoute: ShellSalesRouteWithChildren,
+  ShellSearchRoute: ShellSearchRoute,
+  ShellTasksRoute: ShellTasksRoute,
+  ShellTrainingRoute: ShellTrainingRoute,
+  ShellAdminAuditRoute: ShellAdminAuditRoute,
+  ShellAdminHealthRoute: ShellAdminHealthRoute,
+  ShellAdminImportsRoute: ShellAdminImportsRoute,
+  ShellAdminIntegrationsRoute: ShellAdminIntegrationsRoute,
+  ShellAdminRulesRoute: ShellAdminRulesRoute,
   ShellAdminUsersRoute: ShellAdminUsersRoute,
 }
 
