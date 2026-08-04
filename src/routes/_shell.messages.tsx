@@ -198,7 +198,7 @@ function MessagesPage() {
                       />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="flex items-center gap-1.5">
+                      <span className="flex min-w-0 items-center gap-1.5">
                         <span className="truncate text-sm font-medium text-foreground">
                           {t.name}
                         </span>
@@ -210,7 +210,7 @@ function MessagesPage() {
                           {t.lastAt}
                         </span>
                       </span>
-                      <span className="mt-0.5 flex items-center gap-2">
+                      <span className="mt-0.5 flex min-w-0 items-center gap-2">
                         <span className="truncate text-xs text-muted-foreground">
                           {t.subtitle}
                         </span>
