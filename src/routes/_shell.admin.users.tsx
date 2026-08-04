@@ -35,7 +35,7 @@ function UsersRolesPage() {
       <PageHeader
         title="Users & Roles"
         description="One account per department, with role-based access enforced across every module."
-        breadcrumbs={[{ label: "Administration" }, { label: "Users & Roles" }]}
+        eyebrow="Administration"
       />
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">

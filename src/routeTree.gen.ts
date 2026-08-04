@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ShellRouteImport } from './routes/_shell'
 import { Route as ShellBreakAlarmRouteImport } from './routes/_shell.break-alarm'
 import { Route as ShellDashboardRouteImport } from './routes/_shell.dashboard'
+import { Route as ShellAdminUsersRouteImport } from './routes/_shell.admin.users'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -33,16 +34,23 @@ const ShellDashboardRoute = ShellDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => ShellRoute,
 } as any)
+const ShellAdminUsersRoute = ShellAdminUsersRouteImport.update({
+  id: '/admin/users',
+  path: '/admin/users',
+  getParentRoute: () => ShellRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/break-alarm': typeof ShellBreakAlarmRoute
   '/dashboard': typeof ShellDashboardRoute
+  '/admin/users': typeof ShellAdminUsersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/break-alarm': typeof ShellBreakAlarmRoute
   '/dashboard': typeof ShellDashboardRoute
+  '/admin/users': typeof ShellAdminUsersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -50,13 +58,20 @@ export interface FileRoutesById {
   '/_shell': typeof ShellRouteWithChildren
   '/_shell/break-alarm': typeof ShellBreakAlarmRoute
   '/_shell/dashboard': typeof ShellDashboardRoute
+  '/_shell/admin/users': typeof ShellAdminUsersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/break-alarm' | '/dashboard'
+  fullPaths: '/' | '/break-alarm' | '/dashboard' | '/admin/users'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/break-alarm' | '/dashboard'
-  id: '__root__' | '/' | '/_shell' | '/_shell/break-alarm' | '/_shell/dashboard'
+  to: '/' | '/break-alarm' | '/dashboard' | '/admin/users'
+  id:
+    | '__root__'
+    | '/'
+    | '/_shell'
+    | '/_shell/break-alarm'
+    | '/_shell/dashboard'
+    | '/_shell/admin/users'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -94,17 +109,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellDashboardRouteImport
       parentRoute: typeof ShellRoute
     }
+    '/_shell/admin/users': {
+      id: '/_shell/admin/users'
+      path: '/admin/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof ShellAdminUsersRouteImport
+      parentRoute: typeof ShellRoute
+    }
   }
 }
 
 interface ShellRouteChildren {
   ShellBreakAlarmRoute: typeof ShellBreakAlarmRoute
   ShellDashboardRoute: typeof ShellDashboardRoute
+  ShellAdminUsersRoute: typeof ShellAdminUsersRoute
 }
 
 const ShellRouteChildren: ShellRouteChildren = {
   ShellBreakAlarmRoute: ShellBreakAlarmRoute,
   ShellDashboardRoute: ShellDashboardRoute,
+  ShellAdminUsersRoute: ShellAdminUsersRoute,
 }
 
 const ShellRouteWithChildren = ShellRoute._addFileChildren(ShellRouteChildren)
