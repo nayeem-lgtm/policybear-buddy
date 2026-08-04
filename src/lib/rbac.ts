@@ -79,7 +79,7 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
     title: "HR Business Partner",
     team: "People Ops",
     avatarInitials: "DR",
-    landing: "/attendance",
+    landing: "/dashboard",
   },
   {
     id: "usr-qc",
@@ -91,7 +91,7 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
     title: "Quality Control Lead",
     team: "QC Pod A",
     avatarInitials: "LW",
-    landing: "/qa",
+    landing: "/dashboard",
   },
   {
     id: "usr-accounting",
@@ -103,7 +103,7 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
     title: "Payroll & Commissions Analyst",
     team: "Finance",
     avatarInitials: "NB",
-    landing: "/payroll",
+    landing: "/dashboard",
   },
   {
     id: "usr-agent",
