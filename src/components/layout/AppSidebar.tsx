@@ -60,6 +60,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { PolicyBearLogo } from "@/components/brand/PolicyBearLogo";
+import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
@@ -173,6 +174,12 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { can } = useAuth();
+
+  // Role-based navigation: hide whole groups the current role cannot open.
+  const visibleGroups = navGroups
+    .map((group) => ({ ...group, items: group.items.filter((item) => can(item.url)) }))
+    .filter((group) => group.items.length > 0);
 
   return (
     <Sidebar collapsible="icon" className="border-sidebar-border">
@@ -182,7 +189,7 @@ export function AppSidebar() {
         </Link>
       </SidebarHeader>
       <SidebarContent className="gap-0">
-        {navGroups.map((group) => (
+        {visibleGroups.map((group) => (
           <SidebarGroup key={group.label} className="py-1">
             {!collapsed && (
               <SidebarGroupLabel className="text-[0.65rem] tracking-[0.14em] uppercase text-sidebar-foreground/45">

@@ -1,12 +1,15 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
-import { ArrowRight, Lock, ShieldCheck, User } from "lucide-react";
+import { useEffect, useState } from "react";
+import { AlertCircle, ArrowRight, Lock, ShieldCheck, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PolicyBearLogo } from "@/components/brand/PolicyBearLogo";
+import { DEMO_ACCOUNTS } from "@/lib/rbac";
+import { useAuth } from "@/context/AuthContext";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -20,7 +23,8 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "Sign in — Policy Bear Operations CRM" },
       {
         property: "og:description",
-        content: "Secure sign-in for the Policy Bear Operations CRM: shift control, sales pipeline, quoting, quality control and training in one workspace.",
+        content:
+          "Secure sign-in for the Policy Bear Operations CRM: shift control, sales pipeline, quoting, quality control and training in one workspace.",
       },
     ],
   }),
@@ -29,8 +33,25 @@ export const Route = createFileRoute("/")({
 
 function LoginPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("dana.reyes@policybear.com");
-  const [password, setPassword] = useState("demo-password");
+  const { user, ready, signIn } = useAuth();
+  const [email, setEmail] = useState("ceo@policybear.com");
+  const [password, setPassword] = useState("Bear#CEO2026");
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (ready && user) void navigate({ to: user.landing, replace: true });
+  }, [ready, user, navigate]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const result = signIn(email, password);
+    if (!result.ok) {
+      setError(result.error ?? "Sign in failed.");
+      return;
+    }
+    setError(null);
+    void navigate({ to: result.user?.landing ?? "/dashboard", replace: true });
+  };
 
   return (
     <div className="grid min-h-screen lg:grid-cols-[1.05fr_1fr]">
@@ -43,15 +64,15 @@ function LoginPage() {
             One workspace for the whole floor.
           </h2>
           <p className="mt-3 text-sm text-white/70">
-            Shift control, live pipeline, multi-carrier quoting, bot-assisted submissions,
-            quality control, training and payroll — connected through a single API layer.
+            Every department signs in with its own account and sees only the modules its
+            role owns — from the sales floor to the CEO.
           </p>
           <ul className="mt-8 space-y-3 text-sm text-white/80">
             {[
+              "Role-based access for Agents, QC, HR, Accounting, Operations",
+              "Executive and administrator accounts see every module",
               "Break and lunch compliance with live escalation",
-              "Multi-carrier quote comparison in one pull",
-              "Automated application submission with OTP retrieval",
-              "Training courses, exams and surveys tracked per agent",
+              "Multi-carrier quoting with bot-assisted submissions",
             ].map((item) => (
               <li key={item} className="flex items-start gap-2">
                 <ShieldCheck className="mt-0.5 size-4 shrink-0 text-brand-yellow" />
@@ -72,17 +93,11 @@ function LoginPage() {
           </div>
           <h1 className="text-2xl font-semibold text-foreground">Sign in</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Use your Policy Bear work account to continue.
+            Use your Policy Bear department account to continue.
           </p>
 
           <Card className="mt-6 gap-4 p-5 shadow-card">
-            <form
-              className="space-y-4"
-              onSubmit={(e) => {
-                e.preventDefault();
-                void navigate({ to: "/mfa" });
-              }}
-            >
+            <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="space-y-1.5">
                 <Label htmlFor="email">Work email</Label>
                 <div className="relative">
@@ -121,6 +136,12 @@ function LoginPage() {
                 </div>
               </div>
 
+              {error && (
+                <p className="flex items-center gap-1.5 text-xs font-medium text-destructive">
+                  <AlertCircle className="size-3.5" /> {error}
+                </p>
+              )}
+
               <label className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Checkbox defaultChecked /> Keep me signed in on this device
               </label>
@@ -130,6 +151,40 @@ function LoginPage() {
               </Button>
             </form>
           </Card>
+
+          <div className="mt-5 rounded-lg border border-border bg-muted/40 p-4">
+            <p className="text-xs font-semibold tracking-wide text-foreground uppercase">
+              Department demo accounts
+            </p>
+            <ul className="mt-2.5 space-y-1.5">
+              {DEMO_ACCOUNTS.map((account) => (
+                <li key={account.id}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail(account.email);
+                      setPassword(account.password);
+                      setError(null);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors hover:bg-accent"
+                  >
+                    <Badge variant="secondary" className="shrink-0">
+                      {account.role}
+                    </Badge>
+                    <span className="min-w-0 flex-1 truncate text-muted-foreground">
+                      {account.email}
+                    </span>
+                    <span className="shrink-0 font-mono text-[0.65rem] text-muted-foreground">
+                      {account.password}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2 text-[0.65rem] text-muted-foreground">
+              Demo credentials only — replace with the real identity API at launch.
+            </p>
+          </div>
 
           <p className="mt-5 text-center text-xs text-muted-foreground">
             Trouble signing in? Contact IT Support at ext. 210 or{" "}
