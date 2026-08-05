@@ -42,9 +42,13 @@ function LoginPage() {
     if (ready && user) void navigate({ to: user.landing, replace: true });
   }, [ready, user, navigate]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [busy, setBusy] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const result = signIn(email, password);
+    setBusy(true);
+    const result = await signIn(email, password);
+    setBusy(false);
     if (!result.ok) {
       setError(result.error ?? "Sign in failed.");
       return;
