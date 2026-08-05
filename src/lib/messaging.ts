@@ -209,15 +209,20 @@ export async function createGroupConversation(input: {
   if (error) throw error;
 
   const conversationId = data.id as string;
-  const unique = Array.from(new Set([input.userId, ...input.memberIds]));
-  const { error: memberErr } = await supabase.from("conversation_members").insert(
-    unique.map((id) => ({
-      conversation_id: conversationId,
-      user_id: id,
-      member_role: id === input.userId ? "owner" : "member",
-    })),
-  );
-  if (memberErr) throw memberErr;
+  const others = Array.from(new Set(input.memberIds)).filter((id) => id !== input.userId);
+
+  // Own membership first, then everyone else (row-level rules require membership).
+  const { error: ownerErr } = await supabase
+    .from("conversation_members")
+    .insert({ conversation_id: conversationId, user_id: input.userId, member_role: "owner" });
+  if (ownerErr) throw ownerErr;
+
+  if (others.length > 0) {
+    const { error: memberErr } = await supabase
+      .from("conversation_members")
+      .insert(others.map((id) => ({ conversation_id: conversationId, user_id: id })));
+    if (memberErr) throw memberErr;
+  }
   return conversationId;
 }
 
