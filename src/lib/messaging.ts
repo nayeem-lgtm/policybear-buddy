@@ -167,11 +167,16 @@ export async function ensureDirectConversation(userId: string, otherId: string):
   if (error) throw error;
 
   const conversationId = created.id as string;
-  const { error: memberErr } = await supabase.from("conversation_members").insert([
-    { conversation_id: conversationId, user_id: userId, member_role: "owner" },
-    { conversation_id: conversationId, user_id: otherId, member_role: "member" },
-  ]);
+  // Insert my own membership first — row-level rules only let existing members
+  // (or the creator) add other people.
+  const { error: memberErr } = await supabase
+    .from("conversation_members")
+    .insert({ conversation_id: conversationId, user_id: userId, member_role: "owner" });
   if (memberErr) throw memberErr;
+  const { error: otherErr } = await supabase
+    .from("conversation_members")
+    .insert({ conversation_id: conversationId, user_id: otherId, member_role: "member" });
+  if (otherErr) throw otherErr;
   return conversationId;
 }
 
