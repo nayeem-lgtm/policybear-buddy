@@ -8,13 +8,14 @@ import {
   type ReactNode,
 } from "react";
 
+import { supabase } from "@/integrations/supabase/client";
+import { provisionStaffAccounts } from "@/lib/auth.functions";
 import type { Role } from "@/lib/mock-data";
 import {
   DEMO_ACCOUNTS,
   canAccess,
   hasCapability,
   type Capability,
-  type DemoAccount,
   type Department,
 } from "@/lib/rbac";
 
@@ -28,65 +29,146 @@ export interface SessionUser {
   team: string;
   avatarInitials: string;
   landing: string;
+  presence: string;
+  avatarUrl: string | null;
 }
 
 interface AuthValue {
   user: SessionUser | null;
   ready: boolean;
-  signIn: (email: string, password: string) => { ok: boolean; error?: string; user?: SessionUser };
-  signOut: () => void;
+  signIn: (
+    email: string,
+    password: string,
+  ) => Promise<{ ok: boolean; error?: string | undefined; user?: SessionUser | undefined }>;
+  signOut: () => Promise<void>;
+  refresh: () => Promise<void>;
+  setPresence: (presence: string) => Promise<void>;
   can: (path: string) => boolean;
   hasCapability: (capability: Capability) => boolean;
 }
 
-const STORAGE_KEY = "policybear.session";
-
 const AuthContext = createContext<AuthValue | null>(null);
 
-function toSession(account: DemoAccount): SessionUser {
-  const { password: _password, ...rest } = account;
-  return rest;
+const ROLE_PRIORITY: Role[] = [
+  "CEO",
+  "Administrator",
+  "Operations",
+  "HR",
+  "Accounting",
+  "QC",
+  "Agent",
+];
+
+function pickRole(roles: string[]): Role {
+  for (const role of ROLE_PRIORITY) if (roles.includes(role)) return role;
+  return "Agent";
+}
+
+async function loadSessionUser(userId: string, email: string): Promise<SessionUser | null> {
+  const [{ data: profile }, { data: roles }] = await Promise.all([
+    supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
+    supabase.from("user_roles").select("role").eq("user_id", userId),
+  ]);
+
+  const fallback = DEMO_ACCOUNTS.find((a) => a.email.toLowerCase() === email.toLowerCase());
+  const role = pickRole((roles ?? []).map((r) => r.role as string));
+
+  return {
+    id: userId,
+    name: profile?.name || fallback?.name || email,
+    email: profile?.email || email,
+    role: roles && roles.length > 0 ? role : (fallback?.role ?? "Agent"),
+    department: (profile?.department as Department) ?? fallback?.department ?? "Sales Floor",
+    title: profile?.title || fallback?.title || "",
+    team: profile?.team || fallback?.team || "",
+    avatarInitials:
+      profile?.avatar_initials && profile.avatar_initials !== "??"
+        ? profile.avatar_initials
+        : (fallback?.avatarInitials ??
+          email.slice(0, 2).toUpperCase()),
+    landing: profile?.landing || fallback?.landing || "/dashboard",
+    presence: profile?.presence ?? "offline",
+    avatarUrl: profile?.avatar_url ?? null,
+  };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [ready, setReady] = useState(false);
 
+  const hydrate = useCallback(async () => {
+    const { data } = await supabase.auth.getSession();
+    const session = data.session;
+    if (!session?.user) {
+      setUser(null);
+      return;
+    }
+    setUser(await loadSessionUser(session.user.id, session.user.email ?? ""));
+  }, []);
+
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) setUser(JSON.parse(raw) as SessionUser);
-    } catch {
-      /* ignore malformed session */
+    let active = true;
+
+    void (async () => {
+      await hydrate();
+      if (active) setReady(true);
+    })();
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!active) return;
+      if (event === "SIGNED_OUT" || !session?.user) {
+        setUser(null);
+        return;
+      }
+      void loadSessionUser(session.user.id, session.user.email ?? "").then((next) => {
+        if (active) setUser(next);
+      });
+    });
+
+    return () => {
+      active = false;
+      sub.subscription.unsubscribe();
+    };
+  }, [hydrate]);
+
+  const signIn = useCallback(async (email: string, password: string) => {
+    const trimmed = email.trim().toLowerCase();
+    let result = await supabase.auth.signInWithPassword({ email: trimmed, password });
+
+    // First-run bootstrap: create the fixed department accounts on demand.
+    if (result.error && DEMO_ACCOUNTS.some((a) => a.email.toLowerCase() === trimmed)) {
+      try {
+        await provisionStaffAccounts();
+        result = await supabase.auth.signInWithPassword({ email: trimmed, password });
+      } catch {
+        /* fall through to the original error */
+      }
     }
-    setReady(true);
+
+    if (result.error || !result.data.user) {
+      return { ok: false, error: result.error?.message ?? "Sign in failed." };
+    }
+
+    const next = await loadSessionUser(result.data.user.id, result.data.user.email ?? trimmed);
+    setUser(next);
+    await supabase.from("profiles").update({ presence: "online" }).eq("id", result.data.user.id);
+    return { ok: true, user: next ?? undefined };
   }, []);
 
-  const signIn = useCallback((email: string, password: string) => {
-    const account = DEMO_ACCOUNTS.find(
-      (a) => a.email.toLowerCase() === email.trim().toLowerCase(),
-    );
-    if (!account || account.password !== password) {
-      return { ok: false, error: "Invalid work email or password." };
-    }
-    const session = toSession(account);
-    setUser(session);
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
-    } catch {
-      /* storage unavailable */
-    }
-    return { ok: true, user: session };
-  }, []);
-
-  const signOut = useCallback(() => {
+  const signOut = useCallback(async () => {
+    if (user) await supabase.from("profiles").update({ presence: "offline" }).eq("id", user.id);
+    await supabase.auth.signOut();
     setUser(null);
-    try {
-      window.localStorage.removeItem(STORAGE_KEY);
-    } catch {
-      /* storage unavailable */
-    }
-  }, []);
+  }, [user]);
+
+  const setPresence = useCallback(
+    async (presence: string) => {
+      if (!user) return;
+      setUser((prev) => (prev ? { ...prev, presence } : prev));
+      await supabase.from("profiles").update({ presence }).eq("id", user.id);
+    },
+    [user],
+  );
 
   const value = useMemo<AuthValue>(
     () => ({
@@ -94,10 +176,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ready,
       signIn,
       signOut,
+      refresh: hydrate,
+      setPresence,
       can: (path: string) => canAccess(user?.role, path),
       hasCapability: (capability: Capability) => hasCapability(user?.role, capability),
     }),
-    [user, ready, signIn, signOut],
+    [user, ready, signIn, signOut, hydrate, setPresence],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

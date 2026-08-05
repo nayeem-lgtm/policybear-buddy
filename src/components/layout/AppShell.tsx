@@ -7,6 +7,8 @@ import { TopHeader } from "@/components/layout/TopHeader";
 import { QuickActionButton } from "@/components/layout/QuickActionButton";
 import { BreakAlarmOverlay } from "@/components/shift/BreakAlarmOverlay";
 import { ShiftProvider } from "@/context/ShiftContext";
+import { CallProvider } from "@/context/CallContext";
+import { CallOverlay } from "@/components/messaging/CallOverlay";
 import { useAuth } from "@/context/AuthContext";
 import { Toaster } from "@/components/ui/sonner";
 import { AccessDenied } from "@/components/auth/AccessDenied";
@@ -26,20 +28,23 @@ export function AppShell({ children }: { children?: ReactNode }) {
 
   return (
     <ShiftProvider>
-      <SidebarProvider>
-        <div className="flex min-h-screen w-full bg-background">
-          <AppSidebar />
-          <div className="flex min-w-0 flex-1 flex-col">
-            <TopHeader />
-            <main className="min-w-0 flex-1 px-4 py-5 md:px-6 md:py-6">
-              {allowed ? children ?? <Outlet /> : <AccessDenied path={pathname} />}
-            </main>
+      <CallProvider>
+        <SidebarProvider>
+          <div className="flex min-h-screen w-full bg-background">
+            <AppSidebar />
+            <div className="flex min-w-0 flex-1 flex-col">
+              <TopHeader />
+              <main className="min-w-0 flex-1 px-4 py-5 md:px-6 md:py-6">
+                {allowed ? children ?? <Outlet /> : <AccessDenied path={pathname} />}
+              </main>
+            </div>
           </div>
-        </div>
-        <QuickActionButton />
-        <BreakAlarmOverlay />
-        <Toaster />
-      </SidebarProvider>
+          <QuickActionButton />
+          <BreakAlarmOverlay />
+          <CallOverlay />
+          <Toaster />
+        </SidebarProvider>
+      </CallProvider>
     </ShiftProvider>
   );
 }

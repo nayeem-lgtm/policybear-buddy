@@ -42,9 +42,13 @@ function LoginPage() {
     if (ready && user) void navigate({ to: user.landing, replace: true });
   }, [ready, user, navigate]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [busy, setBusy] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const result = signIn(email, password);
+    setBusy(true);
+    const result = await signIn(email, password);
+    setBusy(false);
     if (!result.ok) {
       setError(result.error ?? "Sign in failed.");
       return;
@@ -97,7 +101,7 @@ function LoginPage() {
           </p>
 
           <Card className="mt-6 gap-4 p-5 shadow-card">
-            <form className="space-y-4" onSubmit={handleSubmit}>
+            <form className="space-y-4" onSubmit={(e) => void handleSubmit(e)}>
               <div className="space-y-1.5">
                 <Label htmlFor="email">Work email</Label>
                 <div className="relative">
@@ -146,8 +150,8 @@ function LoginPage() {
                 <Checkbox defaultChecked /> Keep me signed in on this device
               </label>
 
-              <Button type="submit" className="w-full">
-                Continue <ArrowRight className="size-4" />
+              <Button type="submit" className="w-full" disabled={busy}>
+                {busy ? "Signing in…" : "Continue"} <ArrowRight className="size-4" />
               </Button>
             </form>
           </Card>

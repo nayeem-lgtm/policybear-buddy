@@ -30,6 +30,7 @@ import { Route as ShellDashboardRouteImport } from './routes/_shell.dashboard'
 import { Route as ShellDocumentsRouteImport } from './routes/_shell.documents'
 import { Route as ShellEmployeesRouteImport } from './routes/_shell.employees'
 import { Route as ShellExpensesRouteImport } from './routes/_shell.expenses'
+import { Route as ShellFeedRouteImport } from './routes/_shell.feed'
 import { Route as ShellHrAutomationsRouteImport } from './routes/_shell.hr-automations'
 import { Route as ShellIncidentsRouteImport } from './routes/_shell.incidents'
 import { Route as ShellLeaveRouteImport } from './routes/_shell.leave'
@@ -49,6 +50,7 @@ import { Route as ShellRevenueRouteImport } from './routes/_shell.revenue'
 import { Route as ShellSalesRouteImport } from './routes/_shell.sales'
 import { Route as ShellSearchRouteImport } from './routes/_shell.search'
 import { Route as ShellTasksRouteImport } from './routes/_shell.tasks'
+import { Route as ShellTextingRouteImport } from './routes/_shell.texting'
 import { Route as ShellTrainingRouteImport } from './routes/_shell.training'
 import { Route as ShellAdminAuditRouteImport } from './routes/_shell.admin.audit'
 import { Route as ShellAdminHealthRouteImport } from './routes/_shell.admin.health'
@@ -166,6 +168,11 @@ const ShellExpensesRoute = ShellExpensesRouteImport.update({
   path: '/expenses',
   getParentRoute: () => ShellRoute,
 } as any)
+const ShellFeedRoute = ShellFeedRouteImport.update({
+  id: '/feed',
+  path: '/feed',
+  getParentRoute: () => ShellRoute,
+} as any)
 const ShellHrAutomationsRoute = ShellHrAutomationsRouteImport.update({
   id: '/hr-automations',
   path: '/hr-automations',
@@ -261,6 +268,11 @@ const ShellTasksRoute = ShellTasksRouteImport.update({
   path: '/tasks',
   getParentRoute: () => ShellRoute,
 } as any)
+const ShellTextingRoute = ShellTextingRouteImport.update({
+  id: '/texting',
+  path: '/texting',
+  getParentRoute: () => ShellRoute,
+} as any)
 const ShellTrainingRoute = ShellTrainingRouteImport.update({
   id: '/training',
   path: '/training',
@@ -338,6 +350,7 @@ export interface FileRoutesByFullPath {
   '/documents': typeof ShellDocumentsRoute
   '/employees': typeof ShellEmployeesRoute
   '/expenses': typeof ShellExpensesRoute
+  '/feed': typeof ShellFeedRoute
   '/hr-automations': typeof ShellHrAutomationsRoute
   '/incidents': typeof ShellIncidentsRoute
   '/leave': typeof ShellLeaveRoute
@@ -357,6 +370,7 @@ export interface FileRoutesByFullPath {
   '/sales': typeof ShellSalesRouteWithChildren
   '/search': typeof ShellSearchRoute
   '/tasks': typeof ShellTasksRoute
+  '/texting': typeof ShellTextingRoute
   '/training': typeof ShellTrainingRoute
   '/admin/audit': typeof ShellAdminAuditRoute
   '/admin/health': typeof ShellAdminHealthRoute
@@ -390,6 +404,7 @@ export interface FileRoutesByTo {
   '/documents': typeof ShellDocumentsRoute
   '/employees': typeof ShellEmployeesRoute
   '/expenses': typeof ShellExpensesRoute
+  '/feed': typeof ShellFeedRoute
   '/hr-automations': typeof ShellHrAutomationsRoute
   '/incidents': typeof ShellIncidentsRoute
   '/leave': typeof ShellLeaveRoute
@@ -409,6 +424,7 @@ export interface FileRoutesByTo {
   '/sales': typeof ShellSalesRouteWithChildren
   '/search': typeof ShellSearchRoute
   '/tasks': typeof ShellTasksRoute
+  '/texting': typeof ShellTextingRoute
   '/training': typeof ShellTrainingRoute
   '/admin/audit': typeof ShellAdminAuditRoute
   '/admin/health': typeof ShellAdminHealthRoute
@@ -444,6 +460,7 @@ export interface FileRoutesById {
   '/_shell/documents': typeof ShellDocumentsRoute
   '/_shell/employees': typeof ShellEmployeesRoute
   '/_shell/expenses': typeof ShellExpensesRoute
+  '/_shell/feed': typeof ShellFeedRoute
   '/_shell/hr-automations': typeof ShellHrAutomationsRoute
   '/_shell/incidents': typeof ShellIncidentsRoute
   '/_shell/leave': typeof ShellLeaveRoute
@@ -463,6 +480,7 @@ export interface FileRoutesById {
   '/_shell/sales': typeof ShellSalesRouteWithChildren
   '/_shell/search': typeof ShellSearchRoute
   '/_shell/tasks': typeof ShellTasksRoute
+  '/_shell/texting': typeof ShellTextingRoute
   '/_shell/training': typeof ShellTrainingRoute
   '/_shell/admin/audit': typeof ShellAdminAuditRoute
   '/_shell/admin/health': typeof ShellAdminHealthRoute
@@ -498,6 +516,7 @@ export interface FileRouteTypes {
     | '/documents'
     | '/employees'
     | '/expenses'
+    | '/feed'
     | '/hr-automations'
     | '/incidents'
     | '/leave'
@@ -517,6 +536,7 @@ export interface FileRouteTypes {
     | '/sales'
     | '/search'
     | '/tasks'
+    | '/texting'
     | '/training'
     | '/admin/audit'
     | '/admin/health'
@@ -550,6 +570,7 @@ export interface FileRouteTypes {
     | '/documents'
     | '/employees'
     | '/expenses'
+    | '/feed'
     | '/hr-automations'
     | '/incidents'
     | '/leave'
@@ -569,6 +590,7 @@ export interface FileRouteTypes {
     | '/sales'
     | '/search'
     | '/tasks'
+    | '/texting'
     | '/training'
     | '/admin/audit'
     | '/admin/health'
@@ -603,6 +625,7 @@ export interface FileRouteTypes {
     | '/_shell/documents'
     | '/_shell/employees'
     | '/_shell/expenses'
+    | '/_shell/feed'
     | '/_shell/hr-automations'
     | '/_shell/incidents'
     | '/_shell/leave'
@@ -622,6 +645,7 @@ export interface FileRouteTypes {
     | '/_shell/sales'
     | '/_shell/search'
     | '/_shell/tasks'
+    | '/_shell/texting'
     | '/_shell/training'
     | '/_shell/admin/audit'
     | '/_shell/admin/health'
@@ -789,6 +813,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellExpensesRouteImport
       parentRoute: typeof ShellRoute
     }
+    '/_shell/feed': {
+      id: '/_shell/feed'
+      path: '/feed'
+      fullPath: '/feed'
+      preLoaderRoute: typeof ShellFeedRouteImport
+      parentRoute: typeof ShellRoute
+    }
     '/_shell/hr-automations': {
       id: '/_shell/hr-automations'
       path: '/hr-automations'
@@ -920,6 +951,13 @@ declare module '@tanstack/react-router' {
       path: '/tasks'
       fullPath: '/tasks'
       preLoaderRoute: typeof ShellTasksRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/texting': {
+      id: '/_shell/texting'
+      path: '/texting'
+      fullPath: '/texting'
+      preLoaderRoute: typeof ShellTextingRouteImport
       parentRoute: typeof ShellRoute
     }
     '/_shell/training': {
@@ -1059,6 +1097,7 @@ interface ShellRouteChildren {
   ShellDocumentsRoute: typeof ShellDocumentsRoute
   ShellEmployeesRoute: typeof ShellEmployeesRoute
   ShellExpensesRoute: typeof ShellExpensesRoute
+  ShellFeedRoute: typeof ShellFeedRoute
   ShellHrAutomationsRoute: typeof ShellHrAutomationsRoute
   ShellIncidentsRoute: typeof ShellIncidentsRoute
   ShellLeaveRoute: typeof ShellLeaveRoute
@@ -1078,6 +1117,7 @@ interface ShellRouteChildren {
   ShellSalesRoute: typeof ShellSalesRouteWithChildren
   ShellSearchRoute: typeof ShellSearchRoute
   ShellTasksRoute: typeof ShellTasksRoute
+  ShellTextingRoute: typeof ShellTextingRoute
   ShellTrainingRoute: typeof ShellTrainingRoute
   ShellAdminAuditRoute: typeof ShellAdminAuditRoute
   ShellAdminHealthRoute: typeof ShellAdminHealthRoute
@@ -1107,6 +1147,7 @@ const ShellRouteChildren: ShellRouteChildren = {
   ShellDocumentsRoute: ShellDocumentsRoute,
   ShellEmployeesRoute: ShellEmployeesRoute,
   ShellExpensesRoute: ShellExpensesRoute,
+  ShellFeedRoute: ShellFeedRoute,
   ShellHrAutomationsRoute: ShellHrAutomationsRoute,
   ShellIncidentsRoute: ShellIncidentsRoute,
   ShellLeaveRoute: ShellLeaveRoute,
@@ -1126,6 +1167,7 @@ const ShellRouteChildren: ShellRouteChildren = {
   ShellSalesRoute: ShellSalesRouteWithChildren,
   ShellSearchRoute: ShellSearchRoute,
   ShellTasksRoute: ShellTasksRoute,
+  ShellTextingRoute: ShellTextingRoute,
   ShellTrainingRoute: ShellTrainingRoute,
   ShellAdminAuditRoute: ShellAdminAuditRoute,
   ShellAdminHealthRoute: ShellAdminHealthRoute,

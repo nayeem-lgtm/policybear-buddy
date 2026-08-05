@@ -1,30 +1,29 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Bell,
   BellOff,
   FileText,
-  Mic,
+  Hash,
+  Loader2,
   Paperclip,
   Phone,
-  PhoneIncoming,
   PhoneMissed,
-  PhoneOutgoing,
   Pin,
   Plus,
   Search,
   Send,
-  Smile,
   Users,
   Video,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { PageHeader } from "@/components/crm/PageHeader";
-import { StatusBadge } from "@/components/crm/StatusBadge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -32,451 +31,763 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/context/AuthContext";
+import { useCall } from "@/context/CallContext";
+import { supabase } from "@/integrations/supabase/client";
 import {
-  conversations as seedConversations,
-  internalCalls,
-  type ChatMessage,
-  type Conversation,
-} from "@/lib/mock-messaging";
+  addMembers,
+  createGroupConversation,
+  ensureDirectConversation,
+  fetchConversations,
+  fetchMessages,
+  fetchStaff,
+  formatRelative,
+  formatTime,
+  markConversationRead,
+  sendMessage,
+  setMemberFlags,
+  signedAttachmentUrl,
+  uploadAttachment,
+  type ConversationView,
+  type MessageRecord,
+  type StaffProfile,
+} from "@/lib/messaging";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_shell/messages")({
   head: () => ({
     meta: [
-      { title: "Messages & Calls — Policy Bear CRM" },
+      { title: "Messages — Policy Bear CRM" },
       {
         name: "description",
         content:
-          "Internal chat, team channels and voice or video calling for every Policy Bear department in one place.",
+          "Live internal chat, group channels, file sharing and voice or video calling for every Policy Bear department.",
       },
-      { property: "og:title", content: "Messages & Calls — Policy Bear CRM" },
+      { property: "og:title", content: "Messages — Policy Bear CRM" },
       {
         property: "og:description",
         content:
-          "Internal chat, team channels and voice or video calling for every Policy Bear department.",
+          "Live internal chat, group channels, file sharing and voice or video calling for every Policy Bear department.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: MessagesPage,
 });
 
-const presenceDot: Record<Conversation["presence"], string> = {
+const presenceTone: Record<string, string> = {
   online: "bg-success",
   away: "bg-warning",
-  break: "bg-brand-cyan",
-  offline: "bg-muted-foreground/40",
-};
-
-const presenceLabel: Record<Conversation["presence"], string> = {
-  online: "Available",
-  away: "Away",
-  break: "On break",
-  offline: "Offline",
+  break: "bg-warning",
+  offline: "bg-muted-foreground",
 };
 
 function MessagesPage() {
-  const [threads, setThreads] = useState<Conversation[]>(seedConversations);
-  const [activeId, setActiveId] = useState(seedConversations[0]!.id);
-  const [query, setQuery] = useState("");
-  const [tab, setTab] = useState("all");
+  const { user } = useAuth();
+  const { startCall } = useCall();
+  const queryClient = useQueryClient();
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [tab, setTab] = useState<"all" | "dm" | "group" | "channel">("all");
   const [draft, setDraft] = useState("");
-  const [call, setCall] = useState<{ name: string; kind: "voice" | "video" } | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
 
-  const active = threads.find((t) => t.id === activeId) ?? threads[0]!;
+  const userId = user?.id ?? "";
 
-  const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return threads
-      .filter((t) => (tab === "all" ? true : tab === "dm" ? t.kind === "dm" : t.kind !== "dm"))
-      .filter((t) => !q || t.name.toLowerCase().includes(q) || t.subtitle.toLowerCase().includes(q))
-      .sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned));
-  }, [threads, query, tab]);
+  const conversationsQuery = useQuery({
+    queryKey: ["conversations", userId],
+    queryFn: () => fetchConversations(userId),
+    enabled: !!userId,
+  });
 
-  const totalUnread = threads.reduce((sum, t) => sum + t.unread, 0);
+  const staffQuery = useQuery({ queryKey: ["staff"], queryFn: fetchStaff, enabled: !!userId });
 
-  function send() {
-    const body = draft.trim();
-    if (!body) return;
-    const message: ChatMessage = {
-      id: `local-${Date.now()}`,
-      author: "Amelia Carter",
-      initials: "AC",
-      body,
-      time: new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
-      mine: true,
+  const conversations = conversationsQuery.data ?? [];
+  const active = conversations.find((c) => c.id === activeId) ?? null;
+
+  const messagesQuery = useQuery({
+    queryKey: ["messages", activeId],
+    queryFn: () => fetchMessages(activeId!),
+    enabled: !!activeId,
+  });
+
+  useEffect(() => {
+    if (!activeId && conversations.length > 0) setActiveId(conversations[0]!.id);
+  }, [activeId, conversations]);
+
+  // Live updates for conversations and the open thread.
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabase
+      .channel("messaging-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => {
+        void queryClient.invalidateQueries({ queryKey: ["messages"] });
+        void queryClient.invalidateQueries({ queryKey: ["conversations", userId] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "conversations" }, () => {
+        void queryClient.invalidateQueries({ queryKey: ["conversations", userId] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "conversation_members" }, () => {
+        void queryClient.invalidateQueries({ queryKey: ["conversations", userId] });
+      })
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
     };
-    setThreads((prev) =>
-      prev.map((t) =>
-        t.id === active.id
-          ? { ...t, messages: [...t.messages, message], subtitle: `You: ${body}`, unread: 0 }
-          : t,
-      ),
-    );
-    setDraft("");
-  }
+  }, [queryClient, userId]);
 
-  function openThread(id: string) {
-    setActiveId(id);
-    setThreads((prev) => prev.map((t) => (t.id === id ? { ...t, unread: 0 } : t)));
-  }
+  useEffect(() => {
+    if (!activeId || !userId) return;
+    void markConversationRead(activeId, userId).then(() =>
+      queryClient.invalidateQueries({ queryKey: ["conversations", userId] }),
+    );
+  }, [activeId, queryClient, userId, messagesQuery.data?.length]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ block: "end" });
+  }, [messagesQuery.data]);
+
+  const sendMutation = useMutation({
+    mutationFn: async (payload: { body: string; file?: File }) => {
+      if (!activeId || !userId) return;
+      if (payload.file) {
+        const attachment = await uploadAttachment(payload.file, userId);
+        await sendMessage({ conversationId: activeId, senderId: userId, body: payload.body, attachment });
+        return;
+      }
+      await sendMessage({ conversationId: activeId, senderId: userId, body: payload.body });
+    },
+    onSuccess: () => {
+      setDraft("");
+      void queryClient.invalidateQueries({ queryKey: ["messages", activeId] });
+      void queryClient.invalidateQueries({ queryKey: ["conversations", userId] });
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const filtered = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return conversations
+      .filter((c) => (tab === "all" ? true : c.kind === tab))
+      .filter((c) => (term ? c.name.toLowerCase().includes(term) : true))
+      .sort((a, b) => {
+        if (a.membership.pinned !== b.membership.pinned) return a.membership.pinned ? -1 : 1;
+        return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();
+      });
+  }, [conversations, search, tab]);
+
+  const staffById = useMemo(
+    () => new Map((staffQuery.data ?? []).map((s) => [s.id, s] as const)),
+    [staffQuery.data],
+  );
+
+  const dmPeer =
+    active?.kind === "dm" ? active.members.find((m) => m.id !== userId) ?? null : null;
+
+  const handleFile = (file: File | undefined) => {
+    if (!file) return;
+    setUploading(true);
+    sendMutation.mutate(
+      { body: draft, file },
+      { onSettled: () => setUploading(false) },
+    );
+  };
+
+  if (!user) return null;
 
   return (
     <div className="space-y-4">
       <PageHeader
         eyebrow="Workspace"
-        title="Messages & Calls"
-        description="Chat one-to-one, in team groups or company channels — and start an internal voice or video call without leaving the CRM."
+        title="Messages"
+        description="Direct messages, team groups and company channels with file sharing and in-app calling."
         actions={
-          <>
-            <Badge variant="secondary" className="gap-1">
-              <Bell className="size-3.5" /> {totalUnread} unread
-            </Badge>
-            <Button size="sm" variant="outline">
-              <Users className="size-4" /> New group
-            </Button>
-            <Button size="sm">
-              <Plus className="size-4" /> New chat
-            </Button>
-          </>
+          <NewConversationDialog
+            staff={(staffQuery.data ?? []).filter((s) => s.id !== userId)}
+            userId={userId}
+            onCreated={async (id) => {
+              await queryClient.invalidateQueries({ queryKey: ["conversations", userId] });
+              setActiveId(id);
+            }}
+          />
         }
       />
 
-      <div className="grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)] xl:grid-cols-[20rem_minmax(0,1fr)_18rem]">
-        {/* Conversation list */}
-        <Card className="gap-0 overflow-hidden p-0 shadow-card">
+      <div className="grid gap-3 lg:grid-cols-[320px_minmax(0,1fr)]">
+        <Card className="flex h-[calc(100vh-15rem)] min-h-[28rem] flex-col gap-0 overflow-hidden p-0 shadow-card">
           <div className="space-y-2 border-b border-border p-3">
             <div className="relative">
-              <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search people, groups, channels…"
-                className="h-9 pl-9"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search conversations…"
+                className="h-9 pl-8"
               />
             </div>
-            <Tabs value={tab} onValueChange={setTab}>
-              <TabsList className="w-full">
-                <TabsTrigger value="all" className="flex-1">
-                  All
-                </TabsTrigger>
-                <TabsTrigger value="dm" className="flex-1">
-                  Direct
-                </TabsTrigger>
-                <TabsTrigger value="groups" className="flex-1">
-                  Groups
-                </TabsTrigger>
+            <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="all">All</TabsTrigger>
+                <TabsTrigger value="dm">DMs</TabsTrigger>
+                <TabsTrigger value="group">Groups</TabsTrigger>
+                <TabsTrigger value="channel">Channels</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
-          <ScrollArea className="h-[26rem] lg:h-[34rem]">
-            <ul className="divide-y divide-border">
-              {visible.map((t) => (
-                <li key={t.id}>
-                  <button
-                    type="button"
-                    onClick={() => openThread(t.id)}
-                    className={cn(
-                      "flex w-full items-start gap-3 px-3 py-3 text-left transition-colors hover:bg-surface/70",
-                      t.id === active.id && "bg-surface",
-                    )}
-                  >
-                    <span className="relative shrink-0">
-                      <Avatar className="size-9">
-                        <AvatarFallback className="text-xs">{t.initials}</AvatarFallback>
-                      </Avatar>
-                      <span
-                        className={cn(
-                          "absolute -right-0.5 -bottom-0.5 size-2.5 rounded-full ring-2 ring-card",
-                          presenceDot[t.presence],
-                        )}
-                      />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex min-w-0 items-center gap-1.5">
-                        <span className="truncate text-sm font-medium text-foreground">
-                          {t.name}
-                        </span>
-                        {t.pinned && <Pin className="size-3 shrink-0 text-brand" />}
-                        {t.muted && (
-                          <BellOff className="size-3 shrink-0 text-muted-foreground" />
-                        )}
-                        <span className="tabular ml-auto shrink-0 text-[0.68rem] text-muted-foreground">
-                          {t.lastAt}
-                        </span>
-                      </span>
-                      <span className="mt-0.5 flex min-w-0 items-center gap-2">
-                        <span className="truncate text-xs text-muted-foreground">
-                          {t.subtitle}
-                        </span>
-                        {t.unread > 0 && (
-                          <span className="tabular ml-auto shrink-0 rounded-full bg-brand px-1.5 py-0.5 text-[0.65rem] font-semibold text-brand-foreground">
-                            {t.unread}
-                          </span>
-                        )}
-                      </span>
-                    </span>
-                  </button>
-                </li>
-              ))}
-              {visible.length === 0 && (
-                <li className="px-3 py-10 text-center text-sm text-muted-foreground">
-                  No conversations match that search.
-                </li>
-              )}
-            </ul>
-          </ScrollArea>
-        </Card>
-
-        {/* Thread */}
-        <Card className="flex min-h-[34rem] flex-col gap-0 overflow-hidden p-0 shadow-card">
-          <div className="flex items-center gap-3 border-b border-border px-4 py-3">
-            <span className="relative">
-              <Avatar className="size-9">
-                <AvatarFallback className="text-xs">{active.initials}</AvatarFallback>
-              </Avatar>
-              <span
-                className={cn(
-                  "absolute -right-0.5 -bottom-0.5 size-2.5 rounded-full ring-2 ring-card",
-                  presenceDot[active.presence],
-                )}
-              />
-            </span>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-foreground">{active.name}</p>
-              <p className="truncate text-xs text-muted-foreground">
-                {presenceLabel[active.presence]}
-                {active.kind !== "dm" && ` · ${active.members} members`}
-              </p>
-            </div>
-            <div className="ml-auto flex items-center gap-1.5">
-              <Button
-                size="icon"
-                variant="outline"
-                aria-label="Start voice call"
-                onClick={() => setCall({ name: active.name, kind: "voice" })}
-              >
-                <Phone className="size-4" />
-              </Button>
-              <Button
-                size="icon"
-                variant="outline"
-                aria-label="Start video call"
-                onClick={() => setCall({ name: active.name, kind: "video" })}
-              >
-                <Video className="size-4" />
-              </Button>
-            </div>
-          </div>
 
           <ScrollArea className="flex-1">
-            <div className="space-y-4 px-4 py-4">
-              {active.messages.map((m) => (
-                <MessageRow key={m.id} message={m} />
-              ))}
-            </div>
+            {conversationsQuery.isLoading ? (
+              <div className="space-y-2 p-3">
+                {[0, 1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-14 w-full" />
+                ))}
+              </div>
+            ) : filtered.length === 0 ? (
+              <p className="p-4 text-sm text-muted-foreground">
+                No conversations yet. Start one with the “New” button.
+              </p>
+            ) : (
+              <ul className="divide-y divide-border">
+                {filtered.map((conversation) => (
+                  <li key={conversation.id}>
+                    <button
+                      type="button"
+                      onClick={() => setActiveId(conversation.id)}
+                      className={cn(
+                        "flex w-full items-start gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-accent",
+                        conversation.id === activeId && "bg-accent",
+                      )}
+                    >
+                      <div className="relative">
+                        <Avatar className="size-9">
+                          <AvatarFallback className="bg-brand/10 text-xs font-semibold text-brand">
+                            {conversation.kind === "channel" ? "#" : conversation.avatar_initials}
+                          </AvatarFallback>
+                        </Avatar>
+                        {conversation.kind === "dm" && (
+                          <span
+                            className={cn(
+                              "absolute -right-0.5 -bottom-0.5 size-2.5 rounded-full ring-2 ring-card",
+                              presenceTone[
+                                conversation.members.find((m) => m.id !== userId)?.presence ?? "offline"
+                              ] ?? "bg-muted-foreground",
+                            )}
+                          />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <p className="truncate text-sm font-medium text-foreground">
+                            {conversation.name}
+                          </p>
+                          {conversation.membership.pinned && (
+                            <Pin className="size-3 shrink-0 text-brand" />
+                          )}
+                          {conversation.membership.muted && (
+                            <BellOff className="size-3 shrink-0 text-muted-foreground" />
+                          )}
+                        </div>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {conversation.last_message_preview || "No messages yet"}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 flex-col items-end gap-1">
+                        <span className="text-[0.65rem] text-muted-foreground">
+                          {formatRelative(conversation.last_message_at)}
+                        </span>
+                        {conversation.unread > 0 && (
+                          <Badge className="h-4 min-w-4 justify-center px-1 text-[0.65rem]">
+                            {conversation.unread}
+                          </Badge>
+                        )}
+                      </div>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </ScrollArea>
-
-          <div className="border-t border-border p-3">
-            <div className="flex items-end gap-2">
-              <Button size="icon" variant="ghost" aria-label="Attach file">
-                <Paperclip className="size-4" />
-              </Button>
-              <Button size="icon" variant="ghost" aria-label="Add emoji">
-                <Smile className="size-4" />
-              </Button>
-              <Textarea
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    send();
-                  }
-                }}
-                placeholder={`Message ${active.name}…`}
-                className="max-h-28 min-h-10 resize-none py-2"
-              />
-              <Button size="icon" variant="ghost" aria-label="Record voice note">
-                <Mic className="size-4" />
-              </Button>
-              <Button size="icon" onClick={send} aria-label="Send message">
-                <Send className="size-4" />
-              </Button>
-            </div>
-            <p className="mt-1.5 pl-1 text-[0.68rem] text-muted-foreground">
-              Enter to send · Shift + Enter for a new line
-            </p>
-          </div>
         </Card>
 
-        {/* Right rail */}
-        <div className="space-y-4 xl:block">
-          <Card className="gap-3 p-4 shadow-card">
-            <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-              Conversation details
-            </p>
-            <div className="space-y-1.5 text-sm">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-muted-foreground">Type</span>
-                <span className="font-medium text-foreground capitalize">{active.kind}</span>
-              </div>
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-muted-foreground">Members</span>
-                <span className="tabular font-medium text-foreground">{active.members}</span>
-              </div>
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-muted-foreground">Notifications</span>
-                <StatusBadge status={active.muted ? "Paused" : "Active"} />
-              </div>
+        <Card className="flex h-[calc(100vh-15rem)] min-h-[28rem] flex-col gap-0 overflow-hidden p-0 shadow-card">
+          {!active ? (
+            <div className="flex flex-1 items-center justify-center p-6 text-sm text-muted-foreground">
+              Select a conversation to start messaging.
             </div>
-            <Separator />
-            <div className="space-y-2">
-              <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                Shared files
-              </p>
-              {active.messages.filter((m) => m.attachment).length === 0 && (
-                <p className="text-xs text-muted-foreground">No files shared yet.</p>
-              )}
-              {active.messages
-                .filter((m) => m.attachment)
-                .map((m) => (
-                  <div key={m.id} className="flex items-center gap-2 text-xs">
-                    <FileText className="size-4 shrink-0 text-muted-foreground" />
-                    <span className="min-w-0 flex-1 truncate text-foreground">
-                      {m.attachment!.name}
-                    </span>
-                    <span className="shrink-0 text-muted-foreground">{m.attachment!.meta}</span>
-                  </div>
-                ))}
-            </div>
-          </Card>
-
-          <Card className="gap-3 p-4 shadow-card">
-            <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-              Recent internal calls
-            </p>
-            <ul className="space-y-2.5">
-              {internalCalls.map((c) => (
-                <li key={c.id} className="flex items-center gap-2.5">
-                  {c.status === "Missed" ? (
-                    <PhoneMissed className="size-4 shrink-0 text-destructive" />
-                  ) : c.direction === "incoming" ? (
-                    <PhoneIncoming className="size-4 shrink-0 text-success" />
-                  ) : (
-                    <PhoneOutgoing className="size-4 shrink-0 text-brand" />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-foreground">{c.party}</p>
-                    <p className="truncate text-[0.68rem] text-muted-foreground">
-                      {c.kind === "video" ? "Video" : "Voice"} · {c.when}
+          ) : (
+            <>
+              <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <Avatar className="size-9">
+                    <AvatarFallback className="bg-brand/10 text-xs font-semibold text-brand">
+                      {active.kind === "channel" ? "#" : active.avatar_initials}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-foreground">{active.name}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {active.kind === "dm"
+                        ? `${dmPeer?.title ?? ""}${dmPeer?.presence ? ` · ${dmPeer.presence}` : ""}`
+                        : `${active.members.length} members${active.topic ? ` · ${active.topic}` : ""}`}
                     </p>
                   </div>
-                  <span className="tabular shrink-0 text-xs text-muted-foreground">
-                    {c.duration}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </Card>
-        </div>
-      </div>
+                </div>
+                <div className="flex shrink-0 items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Voice call"
+                    disabled={!dmPeer}
+                    onClick={() =>
+                      dmPeer &&
+                      void startCall(
+                        { id: dmPeer.id, name: dmPeer.name, initials: dmPeer.avatar_initials },
+                        "voice",
+                        active.id,
+                      )
+                    }
+                  >
+                    <Phone className="size-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Video call"
+                    disabled={!dmPeer}
+                    onClick={() =>
+                      dmPeer &&
+                      void startCall(
+                        { id: dmPeer.id, name: dmPeer.name, initials: dmPeer.avatar_initials },
+                        "video",
+                        active.id,
+                      )
+                    }
+                  >
+                    <Video className="size-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Pin conversation"
+                    onClick={async () => {
+                      await setMemberFlags(active.id, userId, {
+                        pinned: !active.membership.pinned,
+                      });
+                      void queryClient.invalidateQueries({ queryKey: ["conversations", userId] });
+                    }}
+                  >
+                    <Pin
+                      className={cn("size-4", active.membership.pinned && "text-brand")}
+                    />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Mute conversation"
+                    onClick={async () => {
+                      await setMemberFlags(active.id, userId, { muted: !active.membership.muted });
+                      void queryClient.invalidateQueries({ queryKey: ["conversations", userId] });
+                    }}
+                  >
+                    <BellOff
+                      className={cn("size-4", active.membership.muted && "text-brand")}
+                    />
+                  </Button>
+                  {active.kind !== "dm" && (
+                    <AddMembersDialog
+                      conversation={active}
+                      staff={staffQuery.data ?? []}
+                      onDone={() =>
+                        void queryClient.invalidateQueries({ queryKey: ["conversations", userId] })
+                      }
+                    />
+                  )}
+                </div>
+              </div>
 
-      <Dialog open={!!call} onOpenChange={(open) => !open && setCall(null)}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>
-              {call?.kind === "video" ? "Video call" : "Voice call"} · {call?.name}
-            </DialogTitle>
-            <DialogDescription>
-              Connecting over the Policy Bear internal calling service…
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col items-center gap-3 py-4">
-            <Avatar className="size-20">
-              <AvatarFallback className="text-lg">
-                {call?.name.slice(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <p className="text-sm text-muted-foreground">Ringing…</p>
-            <div className="flex items-center gap-2">
-              <Button size="icon" variant="outline" aria-label="Mute">
-                <Mic className="size-4" />
-              </Button>
-              <Button size="icon" variant="outline" aria-label="Toggle video">
-                <Video className="size-4" />
-              </Button>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="destructive" className="w-full" onClick={() => setCall(null)}>
-              <Phone className="size-4" /> End call
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              <ScrollArea className="flex-1 px-4 py-3">
+                {messagesQuery.isLoading ? (
+                  <div className="space-y-3">
+                    {[0, 1, 2].map((i) => (
+                      <Skeleton key={i} className="h-16 w-2/3" />
+                    ))}
+                  </div>
+                ) : (messagesQuery.data ?? []).length === 0 ? (
+                  <p className="py-8 text-center text-sm text-muted-foreground">
+                    No messages yet — say hello.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {(messagesQuery.data ?? []).map((message) => (
+                      <MessageBubble
+                        key={message.id}
+                        message={message}
+                        mine={message.sender_id === userId}
+                        author={message.sender_id ? staffById.get(message.sender_id) : undefined}
+                      />
+                    ))}
+                    <div ref={bottomRef} />
+                  </div>
+                )}
+              </ScrollArea>
+
+              <Separator />
+              <form
+                className="flex items-end gap-2 p-3"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!draft.trim()) return;
+                  sendMutation.mutate({ body: draft.trim() });
+                }}
+              >
+                <input
+                  ref={fileRef}
+                  type="file"
+                  className="hidden"
+                  onChange={(e) => handleFile(e.target.files?.[0])}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Attach file"
+                  disabled={uploading}
+                  onClick={() => fileRef.current?.click()}
+                >
+                  {uploading ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Paperclip className="size-4" />
+                  )}
+                </Button>
+                <Input
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  placeholder={`Message ${active.name}`}
+                  className="h-10"
+                />
+                <Button type="submit" disabled={sendMutation.isPending || !draft.trim()}>
+                  <Send className="size-4" />
+                </Button>
+              </form>
+            </>
+          )}
+        </Card>
+      </div>
     </div>
   );
 }
 
-function MessageRow({ message }: { message: ChatMessage }) {
-  if (message.callSummary) {
-    const { direction, duration, missed } = message.callSummary;
+function MessageBubble({
+  message,
+  mine,
+  author,
+}: {
+  message: MessageRecord;
+  mine: boolean;
+  author?: StaffProfile | undefined;
+}) {
+  const [url, setUrl] = useState<string | null>(null);
+
+  if (message.kind === "call") {
     return (
       <div className="flex justify-center">
-        <div className="flex items-center gap-2 rounded-full border border-border bg-surface/70 px-3 py-1.5 text-xs text-muted-foreground">
-          {missed ? (
+        <div className="flex items-center gap-2 rounded-full border border-border bg-surface/60 px-3 py-1.5 text-xs text-muted-foreground">
+          {message.call_missed ? (
             <PhoneMissed className="size-3.5 text-destructive" />
-          ) : direction === "incoming" ? (
-            <PhoneIncoming className="size-3.5 text-success" />
           ) : (
-            <PhoneOutgoing className="size-3.5 text-brand" />
+            <Phone className="size-3.5 text-brand" />
           )}
-          {missed ? "Missed voice call" : `Voice call · ${duration}`}
-          <span className="tabular">{message.time}</span>
+          {message.call_missed ? "Missed call" : `Call · ${message.call_duration ?? "—"}`}
+          <span>· {formatTime(message.created_at)}</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={cn("flex gap-2.5", message.mine && "flex-row-reverse")}>
-      <Avatar className="size-7 shrink-0">
-        <AvatarFallback className="text-[0.65rem]">{message.initials}</AvatarFallback>
+    <div className={cn("flex gap-2.5", mine && "flex-row-reverse")}>
+      <Avatar className="size-8 shrink-0">
+        <AvatarFallback className="bg-muted text-[0.65rem] font-semibold text-foreground">
+          {author?.avatar_initials ?? "??"}
+        </AvatarFallback>
       </Avatar>
-      <div className={cn("max-w-[80%] min-w-0", message.mine && "text-right")}>
-        <p className="mb-1 text-[0.68rem] text-muted-foreground">
-          {message.mine ? "You" : message.author} · {message.time}
+      <div className={cn("max-w-[75%] space-y-1", mine && "items-end text-right")}>
+        <p className="text-[0.7rem] text-muted-foreground">
+          {mine ? "You" : (author?.name ?? "Teammate")} · {formatTime(message.created_at)}
         </p>
-        {message.body && (
-          <div
-            className={cn(
-              "inline-block rounded-lg px-3 py-2 text-left text-sm",
-              message.mine
-                ? "bg-primary text-primary-foreground"
-                : "border border-border bg-surface text-foreground",
-            )}
-          >
-            {message.body}
-          </div>
-        )}
-        {message.attachment && (
-          <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-left">
-            <FileText className="size-4 shrink-0 text-brand" />
-            <div className="min-w-0">
-              <p className="truncate text-xs font-medium text-foreground">
-                {message.attachment.name}
-              </p>
-              <p className="text-[0.68rem] text-muted-foreground">{message.attachment.meta}</p>
-            </div>
-          </div>
-        )}
+        <div
+          className={cn(
+            "rounded-lg px-3 py-2 text-sm",
+            mine
+              ? "bg-brand text-brand-foreground"
+              : "border border-border bg-surface/60 text-foreground",
+          )}
+        >
+          {message.body && <p className="whitespace-pre-wrap break-words">{message.body}</p>}
+          {message.attachment_path && (
+            <button
+              type="button"
+              className="mt-1.5 flex items-center gap-2 rounded-md border border-border/60 bg-card/70 px-2 py-1.5 text-left text-xs text-foreground"
+              onClick={async () => {
+                try {
+                  const signed = url ?? (await signedAttachmentUrl(message.attachment_path!));
+                  setUrl(signed);
+                  window.open(signed, "_blank", "noopener");
+                } catch {
+                  toast.error("Could not open that file.");
+                }
+              }}
+            >
+              <FileText className="size-3.5 text-brand" />
+              <span className="truncate">{message.attachment_name}</span>
+              <span className="text-muted-foreground">
+                {Math.max(1, Math.round((message.attachment_size ?? 0) / 1024))} KB
+              </span>
+            </button>
+          )}
+        </div>
       </div>
     </div>
+  );
+}
+
+function NewConversationDialog({
+  staff,
+  userId,
+  onCreated,
+}: {
+  staff: StaffProfile[];
+  userId: string;
+  onCreated: (id: string) => void | Promise<void>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<"dm" | "group" | "channel">("dm");
+  const [name, setName] = useState("");
+  const [selected, setSelected] = useState<string[]>([]);
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    setBusy(true);
+    try {
+      if (mode === "dm") {
+        const target = selected[0];
+        if (!target) return;
+        const id = await ensureDirectConversation(userId, target);
+        await onCreated(id);
+      } else {
+        if (!name.trim()) {
+          toast.error("Give the group a name.");
+          return;
+        }
+        const id = await createGroupConversation({
+          userId,
+          name: mode === "channel" ? `#${name.trim().replace(/^#/, "")}` : name.trim(),
+          kind: mode,
+          memberIds: selected,
+        });
+        await onCreated(id);
+      }
+      setOpen(false);
+      setName("");
+      setSelected([]);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not create the conversation.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" className="gap-1.5">
+          <Plus className="size-4" /> New
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Start a conversation</DialogTitle>
+          <DialogDescription>
+            Message a teammate directly, or create a team group or company channel.
+          </DialogDescription>
+        </DialogHeader>
+
+        <Tabs value={mode} onValueChange={(v) => setMode(v as typeof mode)}>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="dm">Direct</TabsTrigger>
+            <TabsTrigger value="group">Group</TabsTrigger>
+            <TabsTrigger value="channel">Channel</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        {mode !== "dm" && (
+          <div className="space-y-1.5">
+            <Label htmlFor="conv-name">{mode === "channel" ? "Channel name" : "Group name"}</Label>
+            <Input
+              id="conv-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={mode === "channel" ? "company-announcements" : "QC Pod A"}
+            />
+          </div>
+        )}
+
+        <div className="space-y-1.5">
+          <Label>{mode === "dm" ? "Teammate" : "Members"}</Label>
+          <ScrollArea className="h-56 rounded-md border border-border">
+            <ul className="divide-y divide-border">
+              {staff.map((person) => {
+                const checked = selected.includes(person.id);
+                return (
+                  <li key={person.id}>
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-accent"
+                      onClick={() =>
+                        setSelected((prev) =>
+                          mode === "dm"
+                            ? [person.id]
+                            : checked
+                              ? prev.filter((id) => id !== person.id)
+                              : [...prev, person.id],
+                        )
+                      }
+                    >
+                      {mode === "dm" ? (
+                        <span
+                          className={cn(
+                            "size-3 rounded-full border border-border",
+                            checked && "border-brand bg-brand",
+                          )}
+                        />
+                      ) : (
+                        <Checkbox checked={checked} />
+                      )}
+                      <Avatar className="size-7">
+                        <AvatarFallback className="bg-muted text-[0.65rem]">
+                          {person.avatar_initials}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm text-foreground">{person.name}</span>
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {person.department}
+                        </span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </ScrollArea>
+          {mode === "channel" && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setSelected(staff.map((s) => s.id))}
+              className="gap-1.5"
+            >
+              <Users className="size-3.5" /> Add everyone
+            </Button>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button
+            onClick={() => void submit()}
+            disabled={busy || (mode === "dm" ? selected.length === 0 : !name.trim())}
+          >
+            {mode === "dm" ? "Open chat" : mode === "channel" ? "Create channel" : "Create group"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function AddMembersDialog({
+  conversation,
+  staff,
+  onDone,
+}: {
+  conversation: ConversationView;
+  staff: StaffProfile[];
+  onDone: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState<string[]>([]);
+  const memberIds = new Set(conversation.members.map((m) => m.id));
+  const candidates = staff.filter((s) => !memberIds.has(s.id));
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="icon" aria-label="Add members">
+          <Hash className="size-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Add members</DialogTitle>
+          <DialogDescription>{conversation.name}</DialogDescription>
+        </DialogHeader>
+        <ScrollArea className="h-56 rounded-md border border-border">
+          <ul className="divide-y divide-border">
+            {candidates.length === 0 && (
+              <li className="p-3 text-sm text-muted-foreground">Everyone is already in here.</li>
+            )}
+            {candidates.map((person) => (
+              <li key={person.id}>
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-accent"
+                  onClick={() =>
+                    setSelected((prev) =>
+                      prev.includes(person.id)
+                        ? prev.filter((id) => id !== person.id)
+                        : [...prev, person.id],
+                    )
+                  }
+                >
+                  <Checkbox checked={selected.includes(person.id)} />
+                  <span className="text-sm text-foreground">{person.name}</span>
+                  <span className="ml-auto text-xs text-muted-foreground">{person.department}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </ScrollArea>
+        <DialogFooter>
+          <Button
+            disabled={selected.length === 0}
+            onClick={async () => {
+              try {
+                await addMembers(conversation.id, selected);
+                setSelected([]);
+                setOpen(false);
+                onDone();
+              } catch (error) {
+                toast.error(error instanceof Error ? error.message : "Could not add members.");
+              }
+            }}
+          >
+            Add {selected.length > 0 ? `(${selected.length})` : ""}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
