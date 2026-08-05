@@ -106,12 +106,30 @@ export interface NormalizedCall {
   raw: Json;
 }
 
+/** CallTools identifies agents by `app_user` UUID only, so names come from /users/. */
+async function fetchCallToolsUsers(headers: Record<string, string>) {
+  const map = new Map<string, string>();
+  for (let page = 1; page <= 5; page += 1) {
+    const res = await getJson(`${callToolsBase()}/users/?page_size=100&page=${page}`, headers);
+    if (!res.ok) break;
+    const body = res.body as { results?: Array<Record<string, unknown>>; next?: string | null } | null;
+    for (const u of body?.results ?? []) {
+      const id = str(u["app_user"]);
+      const name = str(u["full_name"]) ?? str(u["username"]) ?? str(u["email"]);
+      if (id && name) map.set(id, name);
+    }
+    if (!body?.next) break;
+  }
+  return map;
+}
+
 /** CallTools calls are agent-dialed outbound (plus inbound to the dialer). */
 export async function fetchCallToolsCalls(pageSize = 100, pages = 3): Promise<NormalizedCall[]> {
   const key = process.env["CALLTOOLS_API_KEY"];
   if (!key) throw new Error("CALLTOOLS_API_KEY is not configured");
   const headers = { Authorization: `Token ${key}`, Accept: "application/json" };
   const out: NormalizedCall[] = [];
+  const users = await fetchCallToolsUsers(headers);
 
   for (let page = 1; page <= pages; page += 1) {
     const res = await getJson(`${callToolsBase()}/calls/?page_size=${pageSize}&page=${page}`, headers);
@@ -128,17 +146,18 @@ export async function fetchCallToolsCalls(pageSize = 100, pages = 3): Promise<No
       const to = str(c["destination"]);
       const direction = str(c["call_type"]) ?? (c["inbound"] ? "inbound" : "outbound");
       const lead = direction === "inbound" ? from : to;
+      const agentId = str(c["app_user"]) ?? str(c["clicker_agent_id"]);
       out.push({
         provider: "calltools",
         provider_call_id: id,
-        agent_name: str(c["user_name"]) ?? str(c["agent"]) ?? str(c["user"]),
-        provider_agent_id: str(c["user_id"]) ?? str(c["user"]),
+        agent_name: (agentId ? users.get(agentId) : null) ?? null,
+        provider_agent_id: agentId,
         direction,
         from_number: from,
         to_number: to,
         lead_phone_e164: normalizeE164(lead),
         status: str(c["system_disposition"]),
-        disposition: str(c["agent_disposition"]) ?? str(c["disposition"]) ?? str(c["system_disposition"]),
+        disposition: str(c["system_disposition"]),
         campaign: str(c["campaign_name"]) ?? str(c["campaign"]),
         buyer: null,
         publisher: null,
@@ -146,7 +165,8 @@ export async function fetchCallToolsCalls(pageSize = 100, pages = 3): Promise<No
         talk_seconds: num(c["billsec"]) ?? num(c["duration"]) ?? 0,
         revenue: null,
         payout: null,
-        recording_url: str(c["recording_url"]) ?? str(c["recording"]),
+        // No recording-download endpoint is exposed on this account; the file id is kept in `raw`.
+        recording_url: str(c["recording_url"]),
         started_at: str(c["start"]) ?? str(c["created_on"]),
         ended_at: str(c["end"]),
         raw: c as Json,
