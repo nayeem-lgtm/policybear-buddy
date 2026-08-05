@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { integrations } from "@/lib/mock-data";
-import { getCallToolsStatus, testCallTools } from "@/lib/calltools.functions";
+import { getCallToolsOverview, getCallToolsStatus, testCallTools } from "@/lib/calltools.functions";
 
 
 export const Route = createFileRoute("/_shell/admin/integrations")({
@@ -45,7 +45,11 @@ function CallToolsPanel() {
   const fetchStatus = useServerFn(getCallToolsStatus);
   const runTest = useServerFn(testCallTools);
 
+  const fetchOverview = useServerFn(getCallToolsOverview);
+
   const status = useQuery({ queryKey: ["calltools-status"], queryFn: () => fetchStatus() });
+  const overview = useQuery({ queryKey: ["calltools-overview"], queryFn: () => fetchOverview() });
+
   const test = useMutation({
     mutationFn: () => runTest(),
     onSuccess: (res) => {
@@ -95,15 +99,59 @@ function CallToolsPanel() {
 
       {row?.last_error ? <p className="text-xs text-destructive">{row.last_error}</p> : null}
 
-      <div className="flex gap-2 pt-1">
+      <div className="flex flex-wrap gap-2 pt-1">
         <Button size="sm" onClick={() => test.mutate()} disabled={test.isPending}>
           <RefreshCw className={`size-3.5 ${test.isPending ? "animate-spin" : ""}`} />
           {test.isPending ? "Testing…" : "Test connection"}
         </Button>
+        <Button size="sm" variant="outline" onClick={() => overview.refetch()} disabled={overview.isFetching}>
+          Sync live data
+        </Button>
       </div>
+
+      {overview.data ? (
+        <>
+          <div className="grid grid-cols-2 gap-2 pt-1 sm:grid-cols-5">
+            {(
+              [
+                ["Calls", overview.data.counts.calls.count],
+                ["Contacts", overview.data.counts.contacts.count],
+                ["Campaigns", overview.data.counts.campaigns.count],
+                ["Users", overview.data.counts.users.count],
+                ["SMS", overview.data.counts.sms.count],
+              ] as const
+            ).map(([label, value]) => (
+              <div key={label} className="rounded-md border border-border p-2">
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
+                <p className="text-base font-semibold text-foreground">{value ?? "—"}</p>
+              </div>
+            ))}
+          </div>
+
+          {overview.data.recentCalls.length > 0 ? (
+            <div className="divide-y divide-border pt-1">
+              <p className="pb-1 text-xs font-semibold text-foreground">Recent CallTools calls</p>
+              {overview.data.recentCalls.map((c) => (
+                <div key={c.id} className="flex items-center justify-between gap-3 py-1.5 text-xs">
+                  <span className="font-mono text-foreground">
+                    {c.from ?? "—"} → {c.to ?? "—"}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {c.direction ?? "—"} · {c.status ?? "—"} · {c.duration ?? 0}s ·{" "}
+                    {c.startedAt ? new Date(c.startedAt).toLocaleString() : "—"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </>
+      ) : overview.isError ? (
+        <p className="text-xs text-destructive">{(overview.error as Error).message}</p>
+      ) : null}
     </Card>
   );
 }
+
 
 function IntegrationsAdminPage() {
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
