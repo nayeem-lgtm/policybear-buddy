@@ -7,6 +7,8 @@ import { TopHeader } from "@/components/layout/TopHeader";
 import { QuickActionButton } from "@/components/layout/QuickActionButton";
 import { BreakAlarmOverlay } from "@/components/shift/BreakAlarmOverlay";
 import { ShiftProvider } from "@/context/ShiftContext";
+import { CallProvider } from "@/context/CallContext";
+import { CallOverlay } from "@/components/messaging/CallOverlay";
 import { useAuth } from "@/context/AuthContext";
 import { Toaster } from "@/components/ui/sonner";
 import { AccessDenied } from "@/components/auth/AccessDenied";
