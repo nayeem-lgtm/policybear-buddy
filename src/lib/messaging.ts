@@ -224,23 +224,19 @@ export async function sendMessage(input: {
   attachment?: { path: string; name: string; mime: string; size: number };
   call?: { direction: string; duration: string; missed?: boolean };
 }) {
-  const payload: Record<string, unknown> = {
+  const payload = {
     conversation_id: input.conversationId,
     sender_id: input.senderId,
     body: input.body,
     kind: input.kind ?? (input.attachment ? "file" : input.call ? "call" : "text"),
+    attachment_path: input.attachment?.path ?? null,
+    attachment_name: input.attachment?.name ?? null,
+    attachment_mime: input.attachment?.mime ?? null,
+    attachment_size: input.attachment?.size ?? null,
+    call_direction: input.call?.direction ?? null,
+    call_duration: input.call?.duration ?? null,
+    call_missed: input.call ? (input.call.missed ?? false) : null,
   };
-  if (input.attachment) {
-    payload["attachment_path"] = input.attachment.path;
-    payload["attachment_name"] = input.attachment.name;
-    payload["attachment_mime"] = input.attachment.mime;
-    payload["attachment_size"] = input.attachment.size;
-  }
-  if (input.call) {
-    payload["call_direction"] = input.call.direction;
-    payload["call_duration"] = input.call.duration;
-    payload["call_missed"] = input.call.missed ?? false;
-  }
 
   const { data, error } = await supabase.from("messages").insert(payload).select("*").single();
   if (error) throw error;
