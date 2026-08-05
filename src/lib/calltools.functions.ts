@@ -18,7 +18,7 @@ function authHeaders(key: string): Record<string, string> {
 }
 
 async function callTools(path: string, key: string, init?: RequestInit) {
-  const res = await fetch(`${CALLTOOLS_BASE_URL}${path}`, {
+  const res = await fetch(`${baseUrl()}${path}`, {
     ...init,
     headers: { ...authHeaders(key), ...(init?.headers as Record<string, string> | undefined) },
     signal: AbortSignal.timeout(12000),
@@ -52,7 +52,7 @@ export const getCallToolsStatus = createServerFn({ method: "GET" })
 
     return {
       keyConfigured: Boolean(process.env["CALLTOOLS_API_KEY"]),
-      baseUrl: CALLTOOLS_BASE_URL,
+      baseUrl: baseUrl(),
       integration: data ?? null,
     };
   });
@@ -103,7 +103,7 @@ export const testCallTools = createServerFn({ method: "POST" })
           name: "CallTools",
           category: "Dialer / Telephony",
           direction: "bidirectional",
-          base_url: CALLTOOLS_BASE_URL,
+          base_url: baseUrl(),
           auth_type: "token",
           secret_name: "CALLTOOLS_API_KEY",
           enabled: true,
