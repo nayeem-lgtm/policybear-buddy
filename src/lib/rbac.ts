@@ -143,6 +143,8 @@ export const ROUTE_ACCESS: { prefix: string; roles: Role[] }[] = [
   { prefix: "/notifications", roles: ALL },
   { prefix: "/search", roles: ALL },
   { prefix: "/messages", roles: ALL },
+  { prefix: "/texting", roles: ALL },
+  { prefix: "/feed", roles: ALL },
   { prefix: "/announcements", roles: ALL },
   { prefix: "/my-shift", roles: ALL },
   { prefix: "/training", roles: ALL },
