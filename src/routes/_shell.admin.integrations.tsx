@@ -257,7 +257,10 @@ function IntegrationsAdminPage() {
         <StatCard label="Errors (24h)" value={errors} tone={errors > 0 ? "danger" : "default"} />
       </div>
 
-      <CallToolsPanel />
+      <div className="grid gap-3 lg:grid-cols-2">
+        <CallToolsPanel />
+        <CallGridPanel />
+      </div>
 
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
