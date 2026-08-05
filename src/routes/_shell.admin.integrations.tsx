@@ -41,6 +41,70 @@ const webhooks = [
   { id: "WH-3", url: "https://hooks.policybear.com/payline/txn", event: "payment.failed", status: "Paused" },
 ];
 
+function CallToolsPanel() {
+  const fetchStatus = useServerFn(getCallToolsStatus);
+  const runTest = useServerFn(testCallTools);
+
+  const status = useQuery({ queryKey: ["calltools-status"], queryFn: () => fetchStatus() });
+  const test = useMutation({
+    mutationFn: () => runTest(),
+    onSuccess: (res) => {
+      if (res.status === "Connected") toast.success("CallTools connected");
+      else toast.error(res.lastError ?? "CallTools connection failed");
+      status.refetch();
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const row = status.data?.integration;
+
+  return (
+    <Card className="gap-3 p-4 shadow-card">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <PhoneCall className="size-4 text-brand" />
+          <div>
+            <p className="text-sm font-semibold text-foreground">CallTools</p>
+            <p className="text-xs text-muted-foreground">Dialer / Telephony · live connection</p>
+          </div>
+        </div>
+        <StatusBadge status={(row?.status as string) ?? "Not Configured"} />
+      </div>
+
+      <div className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+        <div>
+          <span className="text-foreground">Base URL:</span>{" "}
+          <span className="font-mono">{status.data?.baseUrl ?? "—"}</span>
+        </div>
+        <div>
+          <span className="text-foreground">API key:</span>{" "}
+          {status.data?.keyConfigured ? (
+            <Badge variant="default">Stored securely</Badge>
+          ) : (
+            <Badge variant="secondary">Missing</Badge>
+          )}
+        </div>
+        <div>
+          <span className="text-foreground">Last check:</span>{" "}
+          {row?.last_sync_at ? new Date(row.last_sync_at).toLocaleString() : "Never"}
+        </div>
+        <div>
+          <span className="text-foreground">Auth:</span> Token header
+        </div>
+      </div>
+
+      {row?.last_error ? <p className="text-xs text-destructive">{row.last_error}</p> : null}
+
+      <div className="flex gap-2 pt-1">
+        <Button size="sm" onClick={() => test.mutate()} disabled={test.isPending}>
+          <RefreshCw className={`size-3.5 ${test.isPending ? "animate-spin" : ""}`} />
+          {test.isPending ? "Testing…" : "Test connection"}
+        </Button>
+      </div>
+    </Card>
+  );
+}
+
 function IntegrationsAdminPage() {
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
   const connected = integrations.filter((i) => i.status === "Connected").length;
@@ -61,6 +125,9 @@ function IntegrationsAdminPage() {
         <StatCard label="Degraded" value={degraded} tone="warning" />
         <StatCard label="Errors (24h)" value={errors} tone={errors > 0 ? "danger" : "default"} />
       </div>
+
+      <CallToolsPanel />
+
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {integrations.map((i) => {
