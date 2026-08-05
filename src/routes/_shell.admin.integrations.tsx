@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { integrations } from "@/lib/mock-data";
 import { getCallToolsOverview, getCallToolsStatus, testCallTools } from "@/lib/calltools.functions";
-import { getCallGridStatus, testCallGrid } from "@/lib/callgrid.functions";
+import { getCallGridOverview, getCallGridStatus, testCallGrid } from "@/lib/callgrid.functions";
 
 
 export const Route = createFileRoute("/_shell/admin/integrations")({
