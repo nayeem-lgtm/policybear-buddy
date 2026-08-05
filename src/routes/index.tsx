@@ -101,7 +101,7 @@ function LoginPage() {
           </p>
 
           <Card className="mt-6 gap-4 p-5 shadow-card">
-            <form className="space-y-4" onSubmit={handleSubmit}>
+            <form className="space-y-4" onSubmit={(e) => void handleSubmit(e)}>
               <div className="space-y-1.5">
                 <Label htmlFor="email">Work email</Label>
                 <div className="relative">
