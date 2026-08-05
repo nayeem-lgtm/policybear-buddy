@@ -101,7 +101,7 @@ export function TopHeader() {
 
         <div className="hidden items-center gap-1.5 text-xs text-muted-foreground xl:flex">
           <Building2 className="size-3.5" />
-          Policy Bear LLC
+          Policy Bear
           <Separator orientation="vertical" className="mx-1 h-4" />
           <Clock className="size-3.5" />
           America/Los_Angeles
@@ -151,7 +151,7 @@ export function TopHeader() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link to="/employees/$employeeId" params={{ employeeId: user.id }}>
+              <Link to="/employees">
                 <CircleUser className="size-4" /> My profile
               </Link>
             </DropdownMenuItem>

@@ -1,124 +1,124 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Check, FileText, Receipt, Wallet2, X } from "lucide-react";
+import { AlertCircle, CalendarClock, CircleDollarSign, Wallet } from "lucide-react";
 
 import { PageHeader } from "@/components/crm/PageHeader";
 import { StatCard } from "@/components/crm/StatCard";
 import { StatusBadge } from "@/components/crm/StatusBadge";
 import { DataTable, type Column } from "@/components/crm/DataTable";
 import { FilterBar } from "@/components/crm/FilterBar";
-import { useFilters, unique, currency } from "@/lib/use-filters";
-import { Button } from "@/components/ui/button";
+import { useFilters, unique } from "@/lib/use-filters";
 import { Card } from "@/components/ui/card";
-import { expenses } from "@/lib/mock-data";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
+import { payables, months, COST_CATEGORIES, money, type PayableRow } from "@/lib/company-data";
 
 export const Route = createFileRoute("/_shell/expenses")({
   head: () => ({
     meta: [
-      { title: "Expenses — Policy Bear CRM" },
-      { name: "description", content: "Expense claims, approvals, and company spend by category and month." },
-      { property: "og:title", content: "Expenses — Policy Bear CRM" },
-      { property: "og:description", content: "Expense claims, approvals, and company spend by category and month." },
+      { title: "Expenses & Payables — Policy Bear CRM" },
+      { name: "description", content: "Company payables ledger — Ringba/CallGrid, CallTools, Gusto payroll & taxes, and commissions." },
+      { property: "og:title", content: "Expenses & Payables — Policy Bear CRM" },
+      { property: "og:description", content: "Company payables ledger — Ringba/CallGrid, CallTools, Gusto payroll & taxes, and commissions." },
     ],
   }),
   component: ExpensesPage,
 });
 
-type Expense = (typeof expenses)[number];
-
-const monthlySpend = [
-  { month: "Mar", amount: 38200 },
-  { month: "Apr", amount: 41500 },
-  { month: "May", amount: 39800 },
-  { month: "Jun", amount: 45200 },
-  { month: "Jul", amount: 48900 },
-  { month: "Aug", amount: 52100 },
-];
+const MEMO_CATEGORIES = new Set(["Employee Tax Withheld (Memo)", "Employer Taxes"]);
+const currentMonth = months[months.length - 1] ?? months[0]!;
 
 function ExpensesPage() {
-  const [rows, setRows] = useState<Expense[]>(() => expenses.map((e) => ({ ...e })));
-  const [selected, setSelected] = useState<Expense | null>(null);
+  const [rows, setRows] = useState<PayableRow[]>(payables);
+  const [selected, setSelected] = useState<PayableRow | null>(null);
 
   const { search, setSearch, values, setValue, reset, filtered } = useFilters(rows, {
-    searchFields: (r) => [r.vendor, r.id, r.submittedBy],
+    searchFields: (r) => [r.vendor, r.id, r.notes ?? ""],
     filters: {
+      month: (r) => r.month,
       category: (r) => r.category,
       status: (r) => r.status,
-      department: (r) => r.department,
+      vendor: (r) => r.vendor,
     },
   });
 
-  const total = rows.reduce((s, r) => s + r.amount, 0);
-  const pending = rows.filter((r) => r.status === "Pending Approval");
-  const overdue = rows.filter((r) => r.status === "Overdue");
-  const approved = rows.filter((r) => r.status === "Approved" || r.status === "Paid");
+  const cashRows = useMemo(() => rows.filter((r) => !MEMO_CATEGORIES.has(r.category)), [rows]);
+  const totalPayable = cashRows.reduce((s, r) => s + r.amount, 0);
+  const paidToDate = cashRows.filter((r) => r.status === "Paid").reduce((s, r) => s + r.amount, 0);
+  const dueThisMonth = cashRows.filter((r) => r.month === currentMonth && r.status !== "Paid").reduce((s, r) => s + r.amount, 0);
+  const memoTotal = rows.filter((r) => MEMO_CATEGORIES.has(r.category)).reduce((s, r) => s + r.amount, 0);
 
-  function updateStatus(id: string, status: Expense["status"]) {
-    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
-    setSelected((s) => (s && s.id === id ? { ...s, status } : s));
+  const categoryBreakdown = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const r of cashRows) map.set(r.category, (map.get(r.category) ?? 0) + r.amount);
+    return COST_CATEGORIES.filter((c) => !MEMO_CATEGORIES.has(c)).map((c) => ({ category: c, amount: map.get(c) ?? 0 }));
+  }, [cashRows]);
+  const maxCategory = Math.max(...categoryBreakdown.map((c) => c.amount), 1);
+
+  function markPaid(row: PayableRow) {
+    setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, status: "Paid", paidDate: r.paidDate ?? new Date().toISOString().slice(0, 10) } : r)));
+    setSelected((s) => (s && s.id === row.id ? { ...s, status: "Paid", paidDate: s.paidDate ?? new Date().toISOString().slice(0, 10) } : s));
   }
 
-  const maxSpend = Math.max(...monthlySpend.map((m) => m.amount));
+  function markHold(row: PayableRow) {
+    setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, status: "Hold" } : r)));
+    setSelected((s) => (s && s.id === row.id ? { ...s, status: "Hold" } : s));
+  }
 
-  const columns: Column<Expense>[] = [
+  const columns: Column<PayableRow>[] = [
+    { key: "id", header: "ID", cell: (r) => <span className="font-medium text-foreground">{r.id}</span> },
+    { key: "month", header: "Month", cell: (r) => r.month },
     {
-      key: "vendor",
-      header: "Vendor",
+      key: "category",
+      header: "Category",
       cell: (r) => (
-        <div>
-          <p className="font-medium text-foreground">{r.vendor}</p>
-          <p className="text-xs text-muted-foreground">{r.id} · {r.submittedBy}</p>
-        </div>
+        <span className={MEMO_CATEGORIES.has(r.category) ? "text-xs text-muted-foreground italic" : "text-sm"}>
+          {r.category}{MEMO_CATEGORIES.has(r.category) ? " (memo)" : ""}
+        </span>
       ),
     },
-    { key: "category", header: "Category", cell: (r) => r.category },
-    { key: "department", header: "Department", cell: (r) => r.department },
-    { key: "amount", header: "Amount", cell: (r) => <span className="tabular font-medium">{currency(r.amount)}</span>, align: "right" },
-    { key: "dueDate", header: "Due", cell: (r) => <span className="tabular">{r.dueDate}</span> },
+    { key: "vendor", header: "Vendor", cell: (r) => r.vendor },
+    { key: "amount", header: "Amount", cell: (r) => <span className="tabular font-medium">{money(r.amount)}</span>, align: "right" },
+    { key: "dueDate", header: "Due Date", cell: (r) => r.dueDate ?? "—" },
     { key: "status", header: "Status", cell: (r) => <StatusBadge status={r.status} /> },
-    {
-      key: "actions",
-      header: "Actions",
-      cell: (r) => (
-        <div className="flex justify-end gap-1.5">
-          <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); updateStatus(r.id, "Approved"); }} disabled={r.status === "Approved" || r.status === "Paid"}>
-            <Check className="size-3.5" />
-          </Button>
-          <Button size="sm" variant="ghost" className="text-destructive" onClick={(e) => { e.stopPropagation(); updateStatus(r.id, "Draft"); }}>
-            <X className="size-3.5" />
-          </Button>
-        </div>
-      ),
-      align: "right",
-    },
+    { key: "paidDate", header: "Paid Date", cell: (r) => r.paidDate ?? "—" },
   ];
 
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Finance"
-        title="Expenses"
-        description="Company expense claims across vendors and departments, with monthly spend trend."
+        eyebrow="Accounting"
+        title="Expenses & Payables"
+        description="Company payables ledger: Ringba/CallGrid, CallTools, Gusto payroll & taxes, commissions and other costs."
       />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Total spend" value={currency(total)} hint={`${rows.length} claims`} icon={<Wallet2 className="size-4" />} tone="brand" />
-        <StatCard label="Pending approval" value={pending.length} icon={<Receipt className="size-4" />} tone="warning" />
-        <StatCard label="Overdue" value={overdue.length} tone="danger" />
-        <StatCard label="Approved / paid" value={approved.length} tone="success" />
+        <StatCard label="Total payable" value={money(totalPayable)} hint="cash items only" icon={<Wallet className="size-4" />} tone="brand" />
+        <StatCard label="Paid to date" value={money(paidToDate)} icon={<CircleDollarSign className="size-4" />} tone="success" />
+        <StatCard label="Due this month" value={money(dueThisMonth)} hint={currentMonth} icon={<CalendarClock className="size-4" />} tone="warning" />
+        <StatCard label="Memo-only (taxes)" value={money(memoTotal)} hint="excluded from cash totals" icon={<AlertCircle className="size-4" />} />
       </div>
 
-      <Card className="p-4 shadow-card">
-        <p className="mb-3 text-xs font-medium tracking-wide text-muted-foreground uppercase">Monthly spend</p>
-        <div className="flex items-end gap-3">
-          {monthlySpend.map((m) => (
-            <div key={m.month} className="flex flex-1 flex-col items-center gap-1.5">
-              <span className="text-xs tabular text-muted-foreground">{currency(m.amount)}</span>
-              <div
-                className="w-full rounded-t bg-brand/80"
-                style={{ height: `${(m.amount / maxSpend) * 96 + 8}px` }}
-              />
-              <span className="text-xs text-muted-foreground">{m.month}</span>
+      <Card className="space-y-3 p-4 shadow-card">
+        <h3 className="text-sm font-semibold text-foreground">Category breakdown (cash payables)</h3>
+        <div className="space-y-2.5">
+          {categoryBreakdown.map((c) => (
+            <div key={c.category} className="space-y-1">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">{c.category}</span>
+                <span className="tabular font-medium text-foreground">{money(c.amount)}</span>
+              </div>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-surface">
+                <div className="h-full rounded-full bg-brand" style={{ width: `${(c.amount / maxCategory) * 100}%` }} />
+              </div>
             </div>
           ))}
         </div>
@@ -127,11 +127,12 @@ function ExpensesPage() {
       <FilterBar
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Search vendor, submitter…"
+        searchPlaceholder="Search vendor or notes…"
         filters={[
+          { key: "month", label: "Month", options: months.slice() },
           { key: "category", label: "Category", options: unique(rows, (r) => r.category) },
           { key: "status", label: "Status", options: unique(rows, (r) => r.status) },
-          { key: "department", label: "Department", options: unique(rows, (r) => r.department) },
+          { key: "vendor", label: "Vendor", options: unique(rows, (r) => r.vendor) },
         ]}
         values={values}
         onChange={setValue}
@@ -140,29 +141,34 @@ function ExpensesPage() {
 
       <DataTable columns={columns} rows={filtered} onRowClick={(r) => setSelected(r)} />
 
-      {selected && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 p-4" onClick={() => setSelected(null)}>
-          <Card className="w-full max-w-md p-5 shadow-card" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-semibold text-foreground">{selected.vendor}</h3>
-              <StatusBadge status={selected.status} />
-            </div>
-            <div className="mb-4 flex h-32 items-center justify-center rounded-md border border-dashed border-border bg-surface text-sm text-muted-foreground">
-              <FileText className="mr-2 size-4" /> Receipt not attached (placeholder)
-            </div>
-            <div className="space-y-1.5 text-sm">
-              <div className="flex justify-between"><span className="text-muted-foreground">Category</span><span>{selected.category}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Department</span><span>{selected.department}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Submitted by</span><span>{selected.submittedBy}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Amount</span><span className="tabular font-medium">{currency(selected.amount)}</span></div>
-            </div>
-            <div className="mt-4 flex justify-end gap-2">
-              <Button variant="outline" onClick={() => updateStatus(selected.id, "Draft")}>Reject</Button>
-              <Button onClick={() => updateStatus(selected.id, "Approved")}>Approve</Button>
-            </div>
-          </Card>
-        </div>
-      )}
+      <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
+        <DialogContent className="max-w-md">
+          {selected && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{selected.vendor} — {selected.id}</DialogTitle>
+                <DialogDescription>
+                  {selected.category}{MEMO_CATEGORIES.has(selected.category) ? " (memo — excluded from cash totals)" : ""}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between"><span className="text-muted-foreground">Amount</span><span className="tabular font-medium">{money(selected.amount)}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Month</span><span>{selected.month}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Due date</span><span>{selected.dueDate ?? "—"}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Paid date</span><span>{selected.paidDate ?? "—"}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Related week</span><span>{selected.relatedWeek ?? "—"}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Status</span><StatusBadge status={selected.status} /></div>
+                <Separator />
+                <p className="text-xs text-muted-foreground">{selected.notes ?? "No notes."}</p>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => markHold(selected)} disabled={selected.status === "Hold"}>Hold</Button>
+                <Button onClick={() => markPaid(selected)} disabled={selected.status === "Paid"}>Mark Paid</Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

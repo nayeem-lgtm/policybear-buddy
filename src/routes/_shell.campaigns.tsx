@@ -1,172 +1,152 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Megaphone, DollarSign, Users, TrendingUp } from "lucide-react";
+import { Megaphone, DollarSign, Target, TrendingUp } from "lucide-react";
 
 import { PageHeader } from "@/components/crm/PageHeader";
 import { StatCard } from "@/components/crm/StatCard";
 import { FilterBar } from "@/components/crm/FilterBar";
 import { DataTable, type Column } from "@/components/crm/DataTable";
 import { StatusBadge } from "@/components/crm/StatusBadge";
-import { useFilters, unique, currency } from "@/lib/use-filters";
-import { publishers } from "@/lib/mock-data";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { useFilters } from "@/lib/use-filters";
+import { campaignCps, trafficByDay, money, type CpsRow, type TrafficDay } from "@/lib/company-data";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_shell/campaigns")({
   head: () => ({
     meta: [
       { title: "Campaigns — Policy Bear CRM" },
-      {
-        name: "description",
-        content: "Campaign performance by source with spend, leads, conversion, ROI and trend.",
-      },
+      { name: "description", content: "Ringba/CallGrid campaign performance against the 1-sale-per-2-paid-calls goal, with daily call volume." },
       { property: "og:title", content: "Campaigns — Policy Bear CRM" },
-      {
-        property: "og:description",
-        content: "Campaign performance by source with spend, leads, conversion, ROI and trend.",
-      },
+      { property: "og:description", content: "Ringba/CallGrid campaign performance against the 1-sale-per-2-paid-calls goal, with daily call volume." },
     ],
   }),
   component: CampaignsPage,
 });
 
-function pick<T>(arr: T[], i: number): T {
-  return arr[i % arr.length] as T;
-}
-
-interface Campaign {
-  id: string;
-  name: string;
-  source: string;
-  spend: number;
-  leads: number;
-  conversion: string;
-  roi: number;
-  status: "Active" | "Paused";
-  trend: number[];
-}
-
-const campaignNames = [
-  "ACA Q3 Inbound",
-  "U65 Retarget",
-  "Medicare Spanish",
-  "Open Enrollment",
-  "Facebook Lead Gen",
-  "Google Search — ACA",
-  "SMS Reactivation",
-  "Affiliate Network A",
-];
-
-let campaignsState: Campaign[] = Array.from({ length: 10 }, (_, i) => ({
-  id: `CMPG-${300 + i}`,
-  name: pick(campaignNames, i),
-  source: pick(publishers, i).name,
-  spend: 1200 + ((i * 733) % 9000),
-  leads: 80 + ((i * 23) % 500),
-  conversion: `${(4 + (i % 14)).toFixed(1)}%`,
-  roi: Math.round((80 + ((i * 47) % 220)) - 100),
-  status: i % 4 === 0 ? "Paused" : "Active",
-  trend: Array.from({ length: 8 }, (_, j) => 20 + ((i * 13 + j * 29) % 80)),
-}));
+const GOAL_RATIO = 0.5; // 1 sale per 2 paid calls
 
 function CampaignsPage() {
-  const [rows, setRows] = useState<Campaign[]>(campaignsState);
+  const [selected, setSelected] = useState<CpsRow | null>(campaignCps[0] ?? null);
 
-  const sourceOptions = useMemo(() => unique(rows, (c) => c.source), [rows]);
-  const statusOptions = useMemo(() => unique(rows, (c) => c.status), [rows]);
-
-  const { search, setSearch, values, setValue, reset, filtered } = useFilters(rows, {
-    searchFields: (c) => [c.name, c.source],
-    filters: {
-      source: (c) => c.source,
-      status: (c) => c.status,
-    },
+  const { search, setSearch, values, setValue, reset, filtered } = useFilters(campaignCps, {
+    searchFields: (c) => [c.name],
+    filters: {},
   });
 
-  const activeCount = rows.filter((c) => c.status === "Active").length;
-  const totalSpend = rows.reduce((s, c) => s + c.spend, 0);
-  const totalLeads = rows.reduce((s, c) => s + c.leads, 0);
-  const avgRoi = Math.round(rows.reduce((s, c) => s + c.roi, 0) / rows.length);
+  const stats = useMemo(() => {
+    const totalPayout = campaignCps.reduce((s, c) => s + c.payout, 0);
+    const totalValidSales = campaignCps.reduce((s, c) => s + c.validSales, 0);
+    const totalConverted = campaignCps.reduce((s, c) => s + c.converted, 0);
+    const blendedCps = totalValidSales ? totalPayout / totalValidSales : 0;
+    const goalRatioActual = totalConverted ? totalValidSales / totalConverted : 0;
+    return { totalPayout, totalValidSales, blendedCps, totalConverted, goalRatioActual };
+  }, []);
 
-  function toggle(id: string) {
-    setRows((r) =>
-      r.map((c) => (c.id === id ? { ...c, status: c.status === "Active" ? "Paused" : "Active" } : c)),
-    );
-  }
-
-  const columns: Column<Campaign>[] = [
+  const columns: Column<CpsRow>[] = [
     { key: "name", header: "Campaign", cell: (c) => <span className="font-medium text-foreground">{c.name}</span> },
-    { key: "source", header: "Source", cell: (c) => <Badge variant="secondary">{c.source}</Badge> },
-    { key: "spend", header: "Spend", cell: (c) => currency(c.spend), align: "right" },
-    { key: "leads", header: "Leads", cell: (c) => c.leads, align: "right" },
-    { key: "conversion", header: "Conversion", cell: (c) => c.conversion, align: "right" },
+    { key: "converted", header: "Converted Calls", align: "right", cell: (c) => c.converted },
+    { key: "validSales", header: "Valid Sales", align: "right", cell: (c) => c.validSales },
+    { key: "cps", header: "CPS", align: "right", cell: (c) => money(c.cps) },
+    { key: "revenue", header: "Revenue", align: "right", cell: (c) => money(c.revenue) },
+    { key: "payout", header: "Payout", align: "right", cell: (c) => money(c.payout) },
     {
-      key: "roi",
-      header: "ROI",
-      cell: (c) => (
-        <span className={c.roi >= 0 ? "text-success" : "text-destructive"}>
-          {c.roi >= 0 ? "+" : ""}
-          {c.roi}%
-        </span>
-      ),
+      key: "goal",
+      header: "Vs. Goal",
       align: "right",
-    },
-    {
-      key: "trend",
-      header: "Trend",
-      cell: (c) => (
-        <div className="flex h-6 items-end gap-0.5">
-          {c.trend.map((v, i) => (
-            <span
-              key={i}
-              className="w-1.5 rounded-sm bg-brand/60"
-              style={{ height: `${Math.max(10, v)}%` }}
-            />
-          ))}
-        </div>
-      ),
-    },
-    {
-      key: "status",
-      header: "Status",
-      cell: (c) => (
-        <div className="flex items-center gap-2">
-          <Switch checked={c.status === "Active"} onCheckedChange={() => toggle(c.id)} onClick={(e) => e.stopPropagation()} />
-          <StatusBadge status={c.status} />
-        </div>
-      ),
+      cell: (c) => {
+        const ratio = c.converted ? c.validSales / c.converted : 0;
+        const meets = ratio >= GOAL_RATIO;
+        return (
+          <StatusBadge
+            status={`${(ratio * 100).toFixed(1)}% (${meets ? "meets" : "below"})`}
+            tone={meets ? "success" : "danger"}
+          />
+        );
+      },
     },
   ];
+
+  const dayRows = useMemo(() => {
+    const relevant = selected
+      ? trafficByDay.filter((d) => d.campaigns.includes(selected.name))
+      : trafficByDay;
+    return relevant;
+  }, [selected]);
+
+  const maxCalls = Math.max(1, ...dayRows.map((d) => d.calls));
 
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Traffic"
         title="Campaigns"
-        description="Campaign performance by source with spend, leads, conversion, ROI and quick status toggles."
+        description="Final Expense Transfer Ringba/CallGrid campaigns, CPS economics and daily call volume against the sales goal."
       />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Active Campaigns" value={activeCount} icon={<Megaphone className="size-4" />} />
-        <StatCard label="Total Spend" value={currency(totalSpend)} icon={<DollarSign className="size-4" />} />
-        <StatCard label="Total Leads" value={totalLeads} icon={<Users className="size-4" />} />
-        <StatCard label="Avg. ROI" value={`${avgRoi}%`} tone={avgRoi >= 0 ? "success" : "danger"} icon={<TrendingUp className="size-4" />} />
+        <StatCard label="Total Payout" value={money(stats.totalPayout)} hint="All campaigns" icon={<DollarSign className="size-4" />} tone="success" />
+        <StatCard label="Total Valid Sales" value={stats.totalValidSales} hint={`${stats.totalConverted} converted calls`} icon={<Megaphone className="size-4" />} tone="brand" />
+        <StatCard label="Blended CPS" value={money(stats.blendedCps)} hint="Payout / valid sales" icon={<TrendingUp className="size-4" />} tone="info" />
+        <StatCard
+          label="Goal: 1 Sale / 2 Paid Calls"
+          value={`${(stats.goalRatioActual * 100).toFixed(1)}%`}
+          hint={stats.goalRatioActual >= GOAL_RATIO ? "Meeting goal" : "Below 50% target"}
+          icon={<Target className="size-4" />}
+          tone={stats.goalRatioActual >= GOAL_RATIO ? "success" : "warning"}
+        />
       </div>
 
       <FilterBar
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Search by campaign or source…"
-        filters={[
-          { key: "source", label: "Source", options: sourceOptions },
-          { key: "status", label: "Status", options: statusOptions },
-        ]}
+        searchPlaceholder="Search campaign…"
+        filters={[]}
         values={values}
         onChange={setValue}
         onReset={reset}
       />
 
-      <DataTable columns={columns} rows={filtered} footer={<span>{filtered.length} of {rows.length} campaigns</span>} />
+      <DataTable
+        columns={columns}
+        rows={filtered}
+        onRowClick={(row) => setSelected(row)}
+        footer={<span>{filtered.length} of {campaignCps.length} campaigns shown · click a row to filter daily volume</span>}
+      />
+
+      <div className="rounded-lg border border-border bg-card p-4 shadow-card">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-foreground">
+            Daily Call Volume{selected ? ` — ${selected.name}` : ""}
+          </h3>
+          {selected && (
+            <Badge variant="outline" className="cursor-pointer" onClick={() => setSelected(null)}>
+              Clear campaign filter
+            </Badge>
+          )}
+        </div>
+        <div className="space-y-1.5">
+          {dayRows.map((d) => {
+            const ratio = d.calls ? d.sales / d.calls : 0;
+            const meetsGoal = ratio >= GOAL_RATIO;
+            return (
+              <div key={d.date} className="flex items-center gap-3 text-xs">
+                <span className="w-20 shrink-0 text-muted-foreground">{d.date}</span>
+                <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-surface">
+                  <div
+                    className={cn("h-full rounded-full", meetsGoal ? "bg-success" : "bg-warning")}
+                    style={{ width: `${Math.max(4, (d.calls / maxCalls) * 100)}%` }}
+                  />
+                </div>
+                <span className="w-16 shrink-0 text-right text-muted-foreground">{d.calls} calls</span>
+                <span className="w-16 shrink-0 text-right text-muted-foreground">{d.sales} sales</span>
+                <StatusBadge status={meetsGoal ? "On goal" : "Below goal"} tone={meetsGoal ? "success" : "danger"} className="w-20 justify-center" />
+              </div>
+            );
+          })}
+          {dayRows.length === 0 && <p className="text-sm text-muted-foreground">No traffic days recorded for this campaign.</p>}
+        </div>
+      </div>
     </div>
   );
 }
