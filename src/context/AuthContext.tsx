@@ -36,7 +36,10 @@ export interface SessionUser {
 interface AuthValue {
   user: SessionUser | null;
   ready: boolean;
-  signIn: (email: string, password: string) => Promise<{ ok: boolean; error?: string; user?: SessionUser }>;
+  signIn: (
+    email: string,
+    password: string,
+  ) => Promise<{ ok: boolean; error?: string | undefined; user?: SessionUser | undefined }>;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
   setPresence: (presence: string) => Promise<void>;
