@@ -1,177 +1,147 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { DollarSign, TrendingDown, TrendingUp, Undo2 } from "lucide-react";
+import { AlertTriangle, PhoneCall, Radio, Timer } from "lucide-react";
 
 import { PageHeader } from "@/components/crm/PageHeader";
 import { StatCard } from "@/components/crm/StatCard";
-import { DataTable, type Column } from "@/components/crm/DataTable";
 import { StatusBadge } from "@/components/crm/StatusBadge";
+import { DataTable, type Column } from "@/components/crm/DataTable";
 import { Card } from "@/components/ui/card";
-import { calls, publishers, chargebacks } from "@/lib/mock-data";
-import { currency, unique } from "@/lib/use-filters";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  publisherCps,
+  campaignCps,
+  payrollWeeks,
+  payables,
+  money,
+  type CpsRow,
+} from "@/lib/company-data";
 
 export const Route = createFileRoute("/_shell/call-costs")({
   head: () => ({
     meta: [
-      { title: "Cost & Returns — Policy Bear CRM" },
-      {
-        name: "description",
-        content: "Cost per call and lead by publisher, refund requests, and CPA vs revenue comparisons.",
-      },
-      { property: "og:title", content: "Cost & Returns — Policy Bear CRM" },
-      {
-        property: "og:description",
-        content: "Cost per call and lead by publisher, refund requests, and CPA vs revenue comparisons.",
-      },
+      { title: "Call Costs — Policy Bear CRM" },
+      { name: "description", content: "Ringba/CallGrid traffic cost control: cost per sale by publisher and campaign, payout vs. valid sales, and per-agent cost assignment." },
+      { property: "og:title", content: "Call Costs — Policy Bear CRM" },
+      { property: "og:description", content: "Ringba/CallGrid traffic cost control: cost per sale by publisher and campaign, payout vs. valid sales, and per-agent cost assignment." },
     ],
   }),
   component: CallCostsPage,
 });
 
-interface PublisherCost {
-  publisher: string;
-  campaigns: string[];
-  calls: number;
-  totalCost: number;
-  costPerCall: number;
-  revenue: number;
-  cpa: number;
+const CPS_TARGET = 150;
+
+function fmtWeek(d: string) {
+  return new Date(d + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function CpsTable({ rows }: { rows: CpsRow[] }) {
+  const columns: Column<CpsRow>[] = [
+    {
+      key: "name",
+      header: "Name",
+      cell: (r) => (
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-foreground">{r.name}</span>
+          {r.cps > CPS_TARGET && <StatusBadge status="Over Target" tone="danger" />}
+        </div>
+      ),
+    },
+    { key: "converted", header: "Converted Calls", cell: (r) => <span className="tabular">{r.converted}</span>, align: "right" },
+    { key: "validSales", header: "Valid Sales", cell: (r) => <span className="tabular">{r.validSales}</span>, align: "right" },
+    {
+      key: "cps",
+      header: "Cost / Sale (CPS)",
+      cell: (r) => <span className={`tabular font-medium ${r.cps > CPS_TARGET ? "text-destructive" : "text-foreground"}`}>{money(r.cps)}</span>,
+      align: "right",
+    },
+    { key: "payout", header: "Payout", cell: (r) => <span className="tabular">{money(r.payout)}</span>, align: "right" },
+    { key: "revenue", header: "Revenue Billed", cell: (r) => <span className="tabular">{money(r.revenue)}</span>, align: "right" },
+  ];
+  return <DataTable columns={columns} rows={[...rows].sort((a, b) => b.cps - a.cps)} />;
 }
 
 function CallCostsPage() {
-  const publisherCosts: PublisherCost[] = useMemo(() => {
-    return unique(calls, (c) => c.publisher).map((pub) => {
-      const pubCalls = calls.filter((c) => c.publisher === pub);
-      const totalCost = pubCalls.reduce((a, c) => a + Number(c.cost.replace("$", "")), 0);
-      const sales = pubCalls.filter((c) => c.disposition === "Sale").length;
-      const info = publishers.find((p) => p.name.startsWith(pub));
-      const revenue = info?.revenue ?? sales * 480;
-      return {
-        publisher: pub,
-        campaigns: unique(pubCalls, (c) => c.campaign),
-        calls: pubCalls.length,
-        totalCost,
-        costPerCall: totalCost / pubCalls.length,
-        revenue,
-        cpa: sales > 0 ? totalCost / sales : totalCost,
-      };
-    });
-  }, []);
+  const [tab, setTab] = useState("publisher");
 
-  const refunds = useMemo(
+  const overTarget = publisherCps.filter((p) => p.cps > CPS_TARGET);
+  const totalPayout = publisherCps.reduce((s, p) => s + p.payout, 0);
+  const totalValidSales = publisherCps.reduce((s, p) => s + p.validSales, 0);
+  const blendedCps = totalValidSales > 0 ? totalPayout / totalValidSales : 0;
+  const trafficPayables = payables.filter((p) => p.category === "Ringba/CallGrid").reduce((s, p) => s + p.amount, 0);
+
+  const agentWeekCost = useMemo(
     () =>
-      chargebacks.slice(0, 8).map((c) => ({
-        id: c.id,
-        customer: c.customer,
-        carrier: c.carrier,
-        amount: c.amount,
-        reason: c.reason,
-        status: c.status,
-        month: c.month,
+      payrollWeeks.map((r) => ({
+        id: r.id,
+        agent: r.agent,
+        weekStart: r.weekStart,
+        trafficCost: r.trafficCost,
+        validSales: r.validSales,
+        costPerSale: r.validSales > 0 ? r.trafficCost / r.validSales : 0,
       })),
     [],
   );
 
-  const stats = useMemo(() => {
-    const totalCost = publisherCosts.reduce((a, p) => a + p.totalCost, 0);
-    const totalRevenue = publisherCosts.reduce((a, p) => a + p.revenue, 0);
-    const avgCpc = totalCost / calls.length;
-    const pendingRefunds = chargebacks.filter((c) => c.status === "Pending").length;
-    return { totalCost, totalRevenue, avgCpc, pendingRefunds };
-  }, [publisherCosts]);
-
-  const maxScale = Math.max(...publisherCosts.map((p) => Math.max(p.cpa, p.revenue / Math.max(1, p.calls))), 1);
-
-  const columns: Column<PublisherCost>[] = [
-    {
-      key: "publisher",
-      header: "Publisher",
-      cell: (r) => (
-        <div>
-          <p className="font-medium text-foreground">{r.publisher}</p>
-          <p className="text-xs text-muted-foreground">{r.campaigns.join(", ")}</p>
-        </div>
-      ),
-    },
-    { key: "calls", header: "Calls", cell: (r) => r.calls, align: "right" },
-    { key: "totalCost", header: "Total Cost", cell: (r) => currency(r.totalCost), align: "right" },
-    { key: "costPerCall", header: "Cost / Call", cell: (r) => currency(r.costPerCall, 2), align: "right" },
-    { key: "cpa", header: "CPA", cell: (r) => currency(r.cpa), align: "right" },
-    { key: "revenue", header: "Revenue", cell: (r) => currency(r.revenue), align: "right" },
-  ];
-
-  const refundColumns: Column<(typeof refunds)[number]>[] = [
-    { key: "id", header: "ID", cell: (r) => r.id },
-    { key: "customer", header: "Customer", cell: (r) => r.customer },
-    { key: "carrier", header: "Carrier", cell: (r) => r.carrier },
-    { key: "reason", header: "Reason", cell: (r) => r.reason },
-    { key: "amount", header: "Amount", cell: (r) => currency(r.amount), align: "right" },
-    { key: "month", header: "Month", cell: (r) => r.month },
-    { key: "status", header: "Status", cell: (r) => <StatusBadge status={r.status} /> },
-  ];
-
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Pipeline"
-        title="Cost & Returns"
-        description="Cost per call and lead by publisher and campaign, refund activity, and CPA vs revenue."
+        eyebrow="Accounting"
+        title="Call Costs"
+        description="Ringba/CallGrid traffic cost control. Billing rule: paid after 120 seconds. Cost per sale (CPS) by publisher, campaign, and agent-week."
       />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Total Lead Cost" value={currency(stats.totalCost)} icon={<DollarSign className="size-4" />} tone="brand" />
-        <StatCard label="Total Revenue" value={currency(stats.totalRevenue)} icon={<TrendingUp className="size-4" />} tone="success" />
-        <StatCard label="Avg Cost / Call" value={currency(stats.avgCpc, 2)} icon={<TrendingDown className="size-4" />} tone="info" />
-        <StatCard label="Pending Refunds" value={stats.pendingRefunds} icon={<Undo2 className="size-4" />} tone="warning" />
+        <StatCard label="Blended CPS" value={money(blendedCps)} hint={`across ${totalValidSales} valid sales`} icon={<PhoneCall className="size-4" />} tone="brand" />
+        <StatCard label="Total traffic payout" value={money(totalPayout)} hint="publisher payouts" icon={<Radio className="size-4" />} />
+        <StatCard label="Ringba/CallGrid payables" value={money(trafficPayables)} hint="from payables ledger" icon={<Timer className="size-4" />} tone="warning" />
+        <StatCard label="Publishers over target" value={overTarget.length} hint={`CPS > ${money(CPS_TARGET)}`} icon={<AlertTriangle className="size-4" />} tone="danger" />
       </div>
 
-      <div>
-        <p className="mb-2 text-sm font-semibold text-foreground">Cost per call/lead by publisher &amp; campaign</p>
-        <DataTable columns={columns} rows={publisherCosts} />
-      </div>
+      {overTarget.length > 0 && (
+        <Card className="flex items-start gap-3 p-4 shadow-card">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
+          <p className="text-sm text-muted-foreground">
+            <span className="font-medium text-foreground">{overTarget.map((p) => p.name).join(", ")}</span> {overTarget.length > 1 ? "are" : "is"} above
+            the {money(CPS_TARGET)} cost-per-sale target — review traffic quality or renegotiate payout before continuing spend.
+          </p>
+        </Card>
+      )}
 
-      <Card className="gap-3 p-4 shadow-card">
-        <p className="text-sm font-semibold text-foreground">CPA vs revenue per call</p>
-        <p className="text-xs text-muted-foreground">Comparing acquisition cost against average revenue generated, per publisher.</p>
-        <div className="space-y-3 pt-2">
-          {publisherCosts.map((p) => {
-            const revenuePerCall = p.revenue / Math.max(1, p.calls);
-            return (
-              <div key={p.publisher} className="space-y-1">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-medium text-foreground">{p.publisher}</span>
-                  <span className="text-muted-foreground">
-                    CPA {currency(p.cpa)} · Rev/call {currency(revenuePerCall, 2)}
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList>
+          <TabsTrigger value="publisher">By Publisher</TabsTrigger>
+          <TabsTrigger value="campaign">By Campaign</TabsTrigger>
+          <TabsTrigger value="agent">By Agent-Week</TabsTrigger>
+        </TabsList>
+        <TabsContent value="publisher" className="mt-4">
+          <CpsTable rows={publisherCps} />
+        </TabsContent>
+        <TabsContent value="campaign" className="mt-4">
+          <CpsTable rows={campaignCps} />
+        </TabsContent>
+        <TabsContent value="agent" className="mt-4">
+          <DataTable
+            columns={[
+              { key: "agent", header: "Agent", cell: (r) => <span className="font-medium text-foreground">{r.agent}</span> },
+              { key: "week", header: "Week", cell: (r) => `Week of ${fmtWeek(r.weekStart)}` },
+              { key: "validSales", header: "Valid Sales", cell: (r) => <span className="tabular">{r.validSales}</span>, align: "right" },
+              { key: "trafficCost", header: "Traffic Cost Assigned", cell: (r) => <span className="tabular font-medium">{money(r.trafficCost)}</span>, align: "right" },
+              {
+                key: "costPerSale",
+                header: "Cost / Sale",
+                cell: (r) => (
+                  <span className={`tabular ${r.costPerSale > CPS_TARGET ? "text-destructive font-medium" : ""}`}>
+                    {r.validSales > 0 ? money(r.costPerSale) : "—"}
                   </span>
-                </div>
-                <div className="flex h-2.5 gap-1">
-                  <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
-                    <div
-                      className="h-full rounded-full bg-destructive/70"
-                      style={{ width: `${Math.min(100, (p.cpa / maxScale) * 100)}%` }}
-                    />
-                  </div>
-                  <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
-                    <div
-                      className="h-full rounded-full bg-success"
-                      style={{ width: `${Math.min(100, (revenuePerCall / maxScale) * 100)}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        <div className="mt-1 flex items-center gap-4 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1"><span className="size-2 rounded-full bg-destructive/70" /> CPA</span>
-          <span className="flex items-center gap-1"><span className="size-2 rounded-full bg-success" /> Revenue / call</span>
-        </div>
-      </Card>
-
-      <div>
-        <p className="mb-2 text-sm font-semibold text-foreground">Returns &amp; refund requests</p>
-        <DataTable columns={refundColumns} rows={refunds} />
-      </div>
+                ),
+                align: "right",
+              },
+            ]}
+            rows={agentWeekCost}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

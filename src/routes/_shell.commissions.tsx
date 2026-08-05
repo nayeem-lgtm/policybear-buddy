@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { BadgeDollarSign, Gavel, TrendingUp, Users } from "lucide-react";
+import { BadgeDollarSign, Layers, TrendingUp, Wallet } from "lucide-react";
 
 import { PageHeader } from "@/components/crm/PageHeader";
 import { StatCard } from "@/components/crm/StatCard";
@@ -8,112 +8,138 @@ import { StatusBadge } from "@/components/crm/StatusBadge";
 import { DataTable, type Column } from "@/components/crm/DataTable";
 import { FilterBar } from "@/components/crm/FilterBar";
 import { useFilters, unique, currency } from "@/lib/use-filters";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
+import { Card } from "@/components/ui/card";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
-import { Textarea } from "@/components/ui/textarea";
-import { employees, policies, chargebacks } from "@/lib/mock-data";
+  sales,
+  payrollWeeks,
+  payables,
+  commissionTiers,
+  commissionPerSale,
+  AGENT_NAMES,
+} from "@/lib/company-data";
 
 export const Route = createFileRoute("/_shell/commissions")({
   head: () => ({
     meta: [
       { title: "Commissions — Policy Bear CRM" },
-      { name: "description", content: "Agent commission statements with rate tiers, clawbacks, and payout status." },
+      {
+        name: "description",
+        content: "Monthly commission engine with tier ladder, personal lead incentives, and payable status.",
+      },
       { property: "og:title", content: "Commissions — Policy Bear CRM" },
-      { property: "og:description", content: "Agent commission statements with rate tiers, clawbacks, and payout status." },
+      {
+        property: "og:description",
+        content: "Monthly commission engine with tier ladder, personal lead incentives, and payable status.",
+      },
     ],
   }),
   component: CommissionsPage,
 });
 
-interface Statement {
-  id: string;
+function monthOf(dateStr: string | null) {
+  return dateStr ? dateStr.slice(0, 7) : "unknown";
+}
+
+interface AgentMonthRow {
+  key: string;
   agent: string;
-  period: string;
-  policiesCount: number;
-  tier: string;
-  rate: string;
-  grossCommission: number;
-  clawbacks: number;
-  netPayout: number;
-  status: "Pending" | "Approved" | "Paid" | "Disputed";
+  month: string;
+  validSales: number;
+  tierLabel: string;
+  perSale: number;
+  commissionDue: number;
+  personalLeadIncentive: number;
+  endMonthPayable: number;
+  payableStatus: string;
+  weeks: string[];
 }
 
-function tierFor(count: number) {
-  if (count >= 8) return { tier: "Tier 3 — Elite", rate: "18%" };
-  if (count >= 5) return { tier: "Tier 2 — Growth", rate: "14%" };
-  return { tier: "Tier 1 — Standard", rate: "10%" };
+function tierLabelFor(count: number) {
+  const t = commissionTiers.find((t) => count >= t.min && count <= t.max);
+  if (!t) return "—";
+  const max = t.max >= 9999 ? "40+" : `${t.min}-${t.max}`;
+  return `${max} → $${t.perSale}`;
 }
 
-const agentNames = Array.from(new Set(policies.map((p) => p.agent))).slice(0, 14);
+const months = Array.from(new Set(payrollWeeks.map((w) => w.weekStart.slice(0, 7)))).sort();
+const weekStarts = Array.from(new Set(payrollWeeks.map((w) => w.weekStart))).sort();
 
-const statements: Statement[] = agentNames.map((agent, i) => {
-  const agentPolicies = policies.filter((p) => p.agent === agent);
-  const count = agentPolicies.length;
-  const { tier, rate } = tierFor(count);
-  const gross = agentPolicies.reduce((s, p) => s + p.commission, 0);
-  const clawbacks = chargebacks
-    .filter((c) => c.agent === agent)
-    .reduce((s, c) => s + c.amount, 0);
-  return {
-    id: `STM-${6100 + i}`,
-    agent,
-    period: "Aug 1 – Aug 15, 2026",
-    policiesCount: count,
-    tier,
-    rate,
-    grossCommission: gross,
-    clawbacks,
-    netPayout: Math.max(gross - clawbacks, 0),
-    status: (["Pending", "Approved", "Paid", "Disputed"] as const)[i % 4]!,
-  };
-});
+function buildAgentMonthRows(): AgentMonthRow[] {
+  const rows: AgentMonthRow[] = [];
+  for (const agent of AGENT_NAMES) {
+    for (const month of months) {
+      const weeks = payrollWeeks.filter((w) => w.agent === agent && w.weekStart.startsWith(month));
+      if (weeks.length === 0) continue;
+      const validSales = weeks.reduce((s, w) => s + w.validSales, 0);
+      const commissionDue = weeks.reduce((s, w) => s + w.commissionDue, 0);
+      const incentiveDue = weeks.reduce((s, w) => s + w.incentiveDue, 0);
+      const endMonthPayable = weeks.reduce((s, w) => s + w.endMonthPayable, 0);
+      const perSale = commissionPerSale(validSales);
+      const payable = payables.find(
+        (p) => p.category === "Commissions & Incentives" && p.month === month && p.notes?.includes(agent),
+      );
+      const anyPayable = payables.find((p) => p.category === "Commissions & Incentives" && p.month === month);
+      rows.push({
+        key: `${agent}-${month}`,
+        agent,
+        month,
+        validSales,
+        tierLabel: tierLabelFor(validSales),
+        perSale,
+        commissionDue,
+        personalLeadIncentive: incentiveDue,
+        endMonthPayable,
+        payableStatus: (payable ?? anyPayable)?.status ?? "Pending review",
+        weeks: weeks.map((w) => w.weekStart),
+      });
+    }
+  }
+  return rows;
+}
+
+const agentMonthRows = buildAgentMonthRows();
 
 function CommissionsPage() {
-  const [rows, setRows] = useState(statements);
-  const [selected, setSelected] = useState<Statement | null>(null);
-  const [disputeNote, setDisputeNote] = useState("");
+  const [weekFilter, setWeekFilter] = useState("all");
 
-  const { search, setSearch, values, setValue, reset, filtered } = useFilters(rows, {
-    searchFields: (r) => [r.agent, r.id],
-    filters: { status: (r) => r.status, tier: (r) => r.tier },
+  const { search, setSearch, values, setValue, reset, filtered } = useFilters(agentMonthRows, {
+    searchFields: (r) => [r.agent, r.month],
+    filters: {
+      agent: (r) => r.agent,
+      month: (r) => r.month,
+    },
   });
 
-  const totalPayout = rows.reduce((s, r) => s + r.netPayout, 0);
-  const totalClawbacks = rows.reduce((s, r) => s + r.clawbacks, 0);
-  const paid = rows.filter((r) => r.status === "Paid").length;
-  const disputed = rows.filter((r) => r.status === "Disputed").length;
+  const rowsAfterWeek = useMemo(() => {
+    if (weekFilter === "all") return filtered;
+    return filtered.filter((r) => r.weeks.includes(weekFilter));
+  }, [filtered, weekFilter]);
 
-  function dispute(id: string) {
-    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, status: "Disputed" } : r)));
-    setSelected((s) => (s && s.id === id ? { ...s, status: "Disputed" } : s));
-    setDisputeNote("");
-  }
+  const commissionPayables = payables.filter((p) => p.category === "Commissions & Incentives");
+  const paidCount = commissionPayables.filter((p) => p.status === "Paid").length;
 
-  const columns: Column<Statement>[] = [
+  const totalValidSales = rowsAfterWeek.reduce((s, r) => s + r.validSales, 0);
+  const totalCommissionDue = rowsAfterWeek.reduce((s, r) => s + r.commissionDue, 0);
+  const totalIncentive = rowsAfterWeek.reduce((s, r) => s + r.personalLeadIncentive, 0);
+
+  const columns: Column<AgentMonthRow>[] = [
     {
       key: "agent",
       header: "Agent",
       cell: (r) => (
         <div>
           <p className="font-medium text-foreground">{r.agent}</p>
-          <p className="text-xs text-muted-foreground">{r.id} · {r.period}</p>
+          <p className="text-xs text-muted-foreground">{r.month}</p>
         </div>
       ),
     },
-    { key: "policies", header: "Policies", cell: (r) => <span className="tabular">{r.policiesCount}</span>, align: "center" },
-    { key: "tier", header: "Rate tier", cell: (r) => <span>{r.tier} ({r.rate})</span> },
-    { key: "gross", header: "Gross", cell: (r) => <span className="tabular">{currency(r.grossCommission)}</span>, align: "right" },
-    { key: "clawbacks", header: "Clawbacks", cell: (r) => <span className="tabular text-destructive">-{currency(r.clawbacks)}</span>, align: "right" },
-    { key: "net", header: "Net payout", cell: (r) => <span className="tabular font-semibold text-foreground">{currency(r.netPayout)}</span>, align: "right" },
-    { key: "status", header: "Payout status", cell: (r) => <StatusBadge status={r.status} /> },
+    { key: "validSales", header: "Valid sales", cell: (r) => <span className="tabular">{r.validSales}</span>, align: "center" },
+    { key: "tier", header: "Tier reached", cell: (r) => <span>{r.tierLabel}</span> },
+    { key: "perSale", header: "Rate/sale", cell: (r) => <span className="tabular">{currency(r.perSale)}</span>, align: "right" },
+    { key: "commissionDue", header: "Commission due", cell: (r) => <span className="tabular font-semibold text-foreground">{currency(r.commissionDue, 2)}</span>, align: "right" },
+    { key: "incentive", header: "Personal lead incentive", cell: (r) => <span className="tabular">{currency(r.personalLeadIncentive, 2)}</span>, align: "right" },
+    { key: "payable", header: "End-of-month payable", cell: (r) => <span className="tabular">{currency(r.endMonthPayable, 2)}</span>, align: "right" },
+    { key: "status", header: "Payable status", cell: (r) => <StatusBadge status={r.payableStatus} /> },
   ];
 
   return (
@@ -121,74 +147,59 @@ function CommissionsPage() {
       <PageHeader
         eyebrow="Finance"
         title="Commissions"
-        description="Per-agent commission statements with rate tiers, clawback deductions, and payout status."
+        description="Commissions are paid monthly after management review; base pay runs weekly through Gusto."
       />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Net payouts" value={currency(totalPayout)} hint="current period" icon={<BadgeDollarSign className="size-4" />} tone="brand" />
-        <StatCard label="Clawbacks" value={currency(totalClawbacks)} icon={<TrendingUp className="size-4" />} tone="warning" />
-        <StatCard label="Statements paid" value={`${paid} / ${rows.length}`} icon={<Users className="size-4" />} tone="success" />
-        <StatCard label="Disputed" value={disputed} icon={<Gavel className="size-4" />} tone="danger" />
+        <StatCard label="Valid sales (filtered)" value={totalValidSales} icon={<Layers className="size-4" />} tone="brand" />
+        <StatCard label="Commission due" value={currency(totalCommissionDue, 2)} icon={<BadgeDollarSign className="size-4" />} tone="success" />
+        <StatCard label="Personal lead incentives" value={currency(totalIncentive, 2)} icon={<TrendingUp className="size-4" />} tone="info" />
+        <StatCard label="Commission payables paid" value={`${paidCount} / ${commissionPayables.length}`} icon={<Wallet className="size-4" />} tone="warning" />
       </div>
+
+      <Card className="gap-3 p-4 shadow-card">
+        <h2 className="text-sm font-semibold text-foreground">Commission tier ladder</h2>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+          {commissionTiers.map((t) => (
+            <div key={t.min} className="rounded-md border border-border bg-surface px-3 py-2 text-center">
+              <p className="text-xs text-muted-foreground">{t.max >= 9999 ? `${t.min}+` : `${t.min}-${t.max}`} sales</p>
+              <p className="text-sm font-semibold text-foreground">${t.perSale} / sale</p>
+            </div>
+          ))}
+        </div>
+      </Card>
 
       <FilterBar
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Search agent…"
+        searchPlaceholder="Search agent or month…"
         filters={[
-          { key: "status", label: "Status", options: unique(rows, (r) => r.status) },
-          { key: "tier", label: "Tier", options: unique(rows, (r) => r.tier) },
+          { key: "agent", label: "Agent", options: AGENT_NAMES as unknown as string[] },
+          { key: "month", label: "Month", options: months },
         ]}
         values={values}
-        onChange={setValue}
-        onReset={reset}
+        onChange={(key, value) => setValue(key, value)}
+        onReset={() => {
+          reset();
+          setWeekFilter("all");
+        }}
+        trailing={
+          <select
+            className="h-9 rounded-md border border-border bg-background px-3 text-sm"
+            value={weekFilter}
+            onChange={(e) => setWeekFilter(e.target.value)}
+          >
+            <option value="all">All weeks</option>
+            {weekStarts.map((w) => (
+              <option key={w} value={w}>
+                Week of {w}
+              </option>
+            ))}
+          </select>
+        }
       />
 
-      <DataTable columns={columns} rows={filtered} onRowClick={(r) => setSelected(r)} />
-
-      <Sheet open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-        <SheetContent className="sm:max-w-md">
-          {selected && (
-            <div className="flex h-full flex-col">
-              <SheetHeader>
-                <SheetTitle>{selected.agent}</SheetTitle>
-                <SheetDescription>{selected.id} · {selected.period}</SheetDescription>
-              </SheetHeader>
-              <div className="flex-1 space-y-4 overflow-y-auto px-4 pb-4">
-                <div className="space-y-1.5 text-sm">
-                  <div className="flex justify-between"><span className="text-muted-foreground">Policies counted</span><span className="tabular">{selected.policiesCount}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Rate tier</span><span>{selected.tier} ({selected.rate})</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Gross commission</span><span className="tabular">{currency(selected.grossCommission)}</span></div>
-                  <div className="flex justify-between text-destructive"><span>Clawbacks</span><span className="tabular">-{currency(selected.clawbacks)}</span></div>
-                  <Separator />
-                  <div className="flex justify-between text-base font-semibold"><span>Net payout</span><span className="tabular">{currency(selected.netPayout)}</span></div>
-                </div>
-                <div>
-                  <p className="mb-1.5 text-xs font-medium tracking-wide text-muted-foreground uppercase">Tier progress</p>
-                  <Progress value={Math.min((selected.policiesCount / 8) * 100, 100)} />
-                  <p className="mt-1 text-xs text-muted-foreground">{selected.policiesCount} of 8 policies to next tier</p>
-                </div>
-                <div>
-                  <p className="mb-1.5 text-xs font-medium tracking-wide text-muted-foreground uppercase">Dispute this statement</p>
-                  <Textarea
-                    placeholder="Describe the discrepancy…"
-                    value={disputeNote}
-                    onChange={(e) => setDisputeNote(e.target.value)}
-                  />
-                  <Button
-                    className="mt-2 w-full"
-                    variant="outline"
-                    disabled={selected.status === "Disputed"}
-                    onClick={() => dispute(selected.id)}
-                  >
-                    <Gavel className="size-4" /> Submit dispute
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
+      <DataTable columns={columns} rows={rowsAfterWeek} empty="No commission activity for this selection." />
     </div>
   );
 }

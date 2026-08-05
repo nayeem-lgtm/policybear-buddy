@@ -7,106 +7,98 @@ import { StatCard } from "@/components/crm/StatCard";
 import { FilterBar } from "@/components/crm/FilterBar";
 import { DataTable, type Column } from "@/components/crm/DataTable";
 import { StatusBadge } from "@/components/crm/StatusBadge";
-import { useFilters, unique, currency } from "@/lib/use-filters";
-import { publishers, type Publisher } from "@/lib/mock-data";
 import { Badge } from "@/components/ui/badge";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
+import { useFilters, unique } from "@/lib/use-filters";
+import { publisherCps, sales, qaCalls, money, type CpsRow } from "@/lib/company-data";
 
 export const Route = createFileRoute("/_shell/publishers")({
   head: () => ({
     meta: [
       { title: "Publishers — Policy Bear CRM" },
-      {
-        name: "description",
-        content: "Publisher and vendor performance with calls, valid rate, CPA, quality score and terms.",
-      },
+      { name: "description", content: "Publisher performance: converted calls, valid sales, CPS, revenue and payout across all lead sources." },
       { property: "og:title", content: "Publishers — Policy Bear CRM" },
-      {
-        property: "og:description",
-        content: "Publisher and vendor performance with calls, valid rate, CPA, quality score and terms.",
-      },
+      { property: "og:description", content: "Publisher performance: converted calls, valid sales, CPS, revenue and payout across all lead sources." },
     ],
   }),
   component: PublishersPage,
 });
 
-function qualityScore(p: Publisher) {
-  const invalid = parseFloat(p.invalidRate);
-  return Math.max(0, Math.round(100 - invalid * 4));
-}
-
-function cpa(p: Publisher) {
-  return p.sales > 0 ? p.cost / p.sales : p.cost;
+function cpsTone(cps: number) {
+  if (cps > 150) return "danger" as const;
+  if (cps > 100) return "warning" as const;
+  return "success" as const;
 }
 
 function PublishersPage() {
-  const [selected, setSelected] = useState<Publisher | null>(null);
+  const [selected, setSelected] = useState<CpsRow | null>(null);
 
-  const statusOptions = useMemo(() => unique(publishers, (p) => p.status), []);
-  const termsOptions = useMemo(() => unique(publishers, (p) => p.payoutTerms), []);
-
-  const { search, setSearch, values, setValue, reset, filtered } = useFilters(publishers, {
-    searchFields: (p) => [p.name, p.contact],
-    filters: {
-      status: (p) => p.status,
-      payoutTerms: (p) => p.payoutTerms,
-    },
+  const { search, setSearch, values, setValue, reset, filtered } = useFilters(publisherCps, {
+    searchFields: (p) => [p.name],
+    filters: {},
   });
 
-  const activeCount = publishers.filter((p) => p.status === "Active").length;
-  const totalCalls = publishers.reduce((s, p) => s + p.callsToday, 0);
-  const avgQuality = Math.round(publishers.reduce((s, p) => s + qualityScore(p), 0) / publishers.length);
-  const totalRevenue = publishers.reduce((s, p) => s + p.revenue, 0);
+  const sorted = useMemo(() => [...filtered].sort((a, b) => b.payout - a.payout), [filtered]);
 
-  const columns: Column<Publisher>[] = [
+  const stats = useMemo(() => {
+    const totalPayout = publisherCps.reduce((s, p) => s + p.payout, 0);
+    const totalValidSales = publisherCps.reduce((s, p) => s + p.validSales, 0);
+    const totalConverted = publisherCps.reduce((s, p) => s + p.converted, 0);
+    const blendedCps = totalValidSales ? totalPayout / totalValidSales : 0;
+    const over150 = publisherCps.filter((p) => p.cps > 150).length;
+    return { totalPayout, totalValidSales, blendedCps, over150, totalConverted };
+  }, []);
+
+  const columns: Column<CpsRow>[] = [
     { key: "name", header: "Publisher", cell: (p) => <span className="font-medium text-foreground">{p.name}</span> },
-    { key: "status", header: "Status", cell: (p) => <StatusBadge status={p.status} /> },
-    { key: "calls", header: "Calls Today", cell: (p) => p.callsToday, align: "right" },
-    { key: "conversion", header: "Valid Rate", cell: (p) => p.conversion, align: "right" },
-    { key: "cpa", header: "CPA", cell: (p) => currency(cpa(p), 2), align: "right" },
+    { key: "converted", header: "Converted Calls", align: "right", cell: (p) => p.converted },
+    { key: "validSales", header: "Valid Sales", align: "right", cell: (p) => p.validSales },
     {
-      key: "quality",
-      header: "Quality Score",
-      cell: (p) => (
-        <Badge variant={qualityScore(p) >= 80 ? "default" : qualityScore(p) >= 60 ? "secondary" : "destructive"}>
-          {qualityScore(p)}
-        </Badge>
-      ),
-      align: "center",
+      key: "cps",
+      header: "CPS",
+      align: "right",
+      cell: (p) => <StatusBadge status={money(p.cps)} tone={cpsTone(p.cps)} />,
     },
-    { key: "terms", header: "Payment Terms", cell: (p) => p.payoutTerms },
-    { key: "revenue", header: "Revenue", cell: (p) => currency(p.revenue), align: "right" },
+    { key: "revenue", header: "Revenue", align: "right", cell: (p) => money(p.revenue) },
+    { key: "payout", header: "Payout", align: "right", cell: (p) => money(p.payout) },
+    {
+      key: "conv",
+      header: "Conversion Rate",
+      align: "right",
+      cell: (p) => (p.converted ? `${((p.validSales / p.converted) * 100).toFixed(1)}%` : "—"),
+    },
   ];
+
+  const selectedSales = useMemo(
+    () => (selected ? sales.filter((s) => s.publisher === selected.name) : []),
+    [selected],
+  );
+  const selectedQa = useMemo(
+    () => (selected ? qaCalls.filter((c) => c.publisher === selected.name) : []),
+    [selected],
+  );
 
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Traffic"
         title="Publishers"
-        description="Publisher and vendor performance across calls, valid rate, CPA, quality score and payment terms."
+        description="Lead publisher performance sourced from the July CPS workbook — CPS, payout and attributed sales."
       />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Active Publishers" value={activeCount} icon={<Radio className="size-4" />} />
-        <StatCard label="Calls Today" value={totalCalls} icon={<PhoneCall className="size-4" />} />
-        <StatCard label="Avg. Quality Score" value={avgQuality} icon={<Gauge className="size-4" />} />
-        <StatCard label="Revenue (MTD)" value={currency(totalRevenue)} tone="success" icon={<DollarSign className="size-4" />} />
+        <StatCard label="Total Payout" value={money(stats.totalPayout)} hint="All publishers" icon={<DollarSign className="size-4" />} tone="success" />
+        <StatCard label="Total Valid Sales" value={stats.totalValidSales} hint={`${stats.totalConverted} converted calls`} icon={<PhoneCall className="size-4" />} tone="brand" />
+        <StatCard label="Blended CPS" value={money(stats.blendedCps)} hint="Payout / valid sales" icon={<Gauge className="size-4" />} tone="info" />
+        <StatCard label="Publishers over $150 CPS" value={stats.over150} hint="Above target cost" icon={<Radio className="size-4" />} tone="warning" />
       </div>
 
       <FilterBar
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Search by publisher or contact…"
-        filters={[
-          { key: "status", label: "Status", options: statusOptions },
-          { key: "payoutTerms", label: "Terms", options: termsOptions },
-        ]}
+        searchPlaceholder="Search publisher…"
+        filters={[]}
         values={values}
         onChange={setValue}
         onReset={reset}
@@ -114,45 +106,73 @@ function PublishersPage() {
 
       <DataTable
         columns={columns}
-        rows={filtered}
+        rows={sorted}
         onRowClick={(row) => setSelected(row)}
-        footer={<span>{filtered.length} of {publishers.length} publishers</span>}
+        footer={<span>{sorted.length} of {publisherCps.length} publishers shown, sorted by payout</span>}
       />
 
-      <Sheet open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-        <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
+      <Sheet open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
+        <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
           {selected && (
             <>
               <SheetHeader>
                 <SheetTitle>{selected.name}</SheetTitle>
-                <SheetDescription>{selected.contact}</SheetDescription>
+                <SheetDescription>
+                  {selected.validSales} valid sales · {selected.converted} converted calls · {money(selected.cps)} CPS
+                </SheetDescription>
               </SheetHeader>
               <div className="space-y-4 px-4 pb-6">
-                <div className="flex flex-wrap gap-2">
-                  <StatusBadge status={selected.status} />
-                  <Badge variant="secondary">{selected.payoutTerms}</Badge>
-                  <Badge variant="secondary">{selected.campaigns} campaigns</Badge>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <div className="text-xs text-muted-foreground uppercase">Revenue</div>
+                    <div className="font-medium text-foreground">{money(selected.revenue)}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground uppercase">Payout</div>
+                    <div className="font-medium text-foreground">{money(selected.payout)}</div>
+                  </div>
                 </div>
-                <dl className="grid grid-cols-2 gap-y-2 text-sm">
-                  <dt className="text-muted-foreground">Calls Today</dt>
-                  <dd className="text-right">{selected.callsToday}</dd>
-                  <dt className="text-muted-foreground">Paid Calls</dt>
-                  <dd className="text-right">{selected.paidCalls}</dd>
-                  <dt className="text-muted-foreground">Sales</dt>
-                  <dd className="text-right">{selected.sales}</dd>
-                  <dt className="text-muted-foreground">Conversion</dt>
-                  <dd className="text-right">{selected.conversion}</dd>
-                  <dt className="text-muted-foreground">Invalid Rate</dt>
-                  <dd className="text-right">{selected.invalidRate}</dd>
-                  <dt className="text-muted-foreground">CPA</dt>
-                  <dd className="text-right">{currency(cpa(selected), 2)}</dd>
-                  <dt className="text-muted-foreground">Cost</dt>
-                  <dd className="text-right">{currency(selected.cost)}</dd>
-                  <dt className="text-muted-foreground">Revenue</dt>
-                  <dd className="text-right">{currency(selected.revenue)}</dd>
-                  <dt className="text-muted-foreground">Quality Score</dt>
-                  <dd className="text-right">{qualityScore(selected)}</dd>
-                </dl>
+
+                <Separator />
+
+                <div>
+                  <div className="mb-2 text-xs font-medium text-muted-foreground uppercase">Attributed Sales ({selectedSales.length})</div>
+                  <div className="space-y-2">
+                    {selectedSales.length === 0 && <p className="text-sm text-muted-foreground">No sales rows matched this publisher name.</p>}
+                    {selectedSales.map((s) => (
+                      <div key={s.id} className="rounded-md border border-border bg-surface/60 p-2.5 text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-foreground">{s.customer}</span>
+                          <span className="text-xs text-muted-foreground">{s.saleDate}</span>
+                        </div>
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                          <span>{s.agent}</span>
+                          <span>·</span>
+                          <span>{money(s.premium)}/mo</span>
+                          {s.saleStatus && <StatusBadge status={s.saleStatus} />}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <div className="mb-2 text-xs font-medium text-muted-foreground uppercase">QA Calls ({selectedQa.length})</div>
+                  <div className="space-y-2">
+                    {selectedQa.length === 0 && <p className="text-sm text-muted-foreground">No QA calls logged for this publisher.</p>}
+                    {selectedQa.slice(0, 8).map((c) => (
+                      <div key={c.id} className="rounded-md border border-border bg-surface/60 p-2.5 text-sm">
+                        <div className="flex items-center justify-between">
+                          <Badge variant="outline">{c.qaStatus}</Badge>
+                          <span className="text-xs text-muted-foreground">{c.date}</span>
+                        </div>
+                        <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{c.notes}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </>
           )}

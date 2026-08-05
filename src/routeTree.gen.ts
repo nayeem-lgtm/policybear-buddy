@@ -30,6 +30,7 @@ import { Route as ShellDashboardRouteImport } from './routes/_shell.dashboard'
 import { Route as ShellDocumentsRouteImport } from './routes/_shell.documents'
 import { Route as ShellEmployeesRouteImport } from './routes/_shell.employees'
 import { Route as ShellExpensesRouteImport } from './routes/_shell.expenses'
+import { Route as ShellHrAutomationsRouteImport } from './routes/_shell.hr-automations'
 import { Route as ShellIncidentsRouteImport } from './routes/_shell.incidents'
 import { Route as ShellLeaveRouteImport } from './routes/_shell.leave'
 import { Route as ShellLiveOperationsRouteImport } from './routes/_shell.live-operations'
@@ -163,6 +164,11 @@ const ShellEmployeesRoute = ShellEmployeesRouteImport.update({
 const ShellExpensesRoute = ShellExpensesRouteImport.update({
   id: '/expenses',
   path: '/expenses',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellHrAutomationsRoute = ShellHrAutomationsRouteImport.update({
+  id: '/hr-automations',
+  path: '/hr-automations',
   getParentRoute: () => ShellRoute,
 } as any)
 const ShellIncidentsRoute = ShellIncidentsRouteImport.update({
@@ -332,6 +338,7 @@ export interface FileRoutesByFullPath {
   '/documents': typeof ShellDocumentsRoute
   '/employees': typeof ShellEmployeesRoute
   '/expenses': typeof ShellExpensesRoute
+  '/hr-automations': typeof ShellHrAutomationsRoute
   '/incidents': typeof ShellIncidentsRoute
   '/leave': typeof ShellLeaveRoute
   '/live-operations': typeof ShellLiveOperationsRoute
@@ -383,6 +390,7 @@ export interface FileRoutesByTo {
   '/documents': typeof ShellDocumentsRoute
   '/employees': typeof ShellEmployeesRoute
   '/expenses': typeof ShellExpensesRoute
+  '/hr-automations': typeof ShellHrAutomationsRoute
   '/incidents': typeof ShellIncidentsRoute
   '/leave': typeof ShellLeaveRoute
   '/live-operations': typeof ShellLiveOperationsRoute
@@ -436,6 +444,7 @@ export interface FileRoutesById {
   '/_shell/documents': typeof ShellDocumentsRoute
   '/_shell/employees': typeof ShellEmployeesRoute
   '/_shell/expenses': typeof ShellExpensesRoute
+  '/_shell/hr-automations': typeof ShellHrAutomationsRoute
   '/_shell/incidents': typeof ShellIncidentsRoute
   '/_shell/leave': typeof ShellLeaveRoute
   '/_shell/live-operations': typeof ShellLiveOperationsRoute
@@ -489,6 +498,7 @@ export interface FileRouteTypes {
     | '/documents'
     | '/employees'
     | '/expenses'
+    | '/hr-automations'
     | '/incidents'
     | '/leave'
     | '/live-operations'
@@ -540,6 +550,7 @@ export interface FileRouteTypes {
     | '/documents'
     | '/employees'
     | '/expenses'
+    | '/hr-automations'
     | '/incidents'
     | '/leave'
     | '/live-operations'
@@ -592,6 +603,7 @@ export interface FileRouteTypes {
     | '/_shell/documents'
     | '/_shell/employees'
     | '/_shell/expenses'
+    | '/_shell/hr-automations'
     | '/_shell/incidents'
     | '/_shell/leave'
     | '/_shell/live-operations'
@@ -775,6 +787,13 @@ declare module '@tanstack/react-router' {
       path: '/expenses'
       fullPath: '/expenses'
       preLoaderRoute: typeof ShellExpensesRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/hr-automations': {
+      id: '/_shell/hr-automations'
+      path: '/hr-automations'
+      fullPath: '/hr-automations'
+      preLoaderRoute: typeof ShellHrAutomationsRouteImport
       parentRoute: typeof ShellRoute
     }
     '/_shell/incidents': {
@@ -1040,6 +1059,7 @@ interface ShellRouteChildren {
   ShellDocumentsRoute: typeof ShellDocumentsRoute
   ShellEmployeesRoute: typeof ShellEmployeesRoute
   ShellExpensesRoute: typeof ShellExpensesRoute
+  ShellHrAutomationsRoute: typeof ShellHrAutomationsRoute
   ShellIncidentsRoute: typeof ShellIncidentsRoute
   ShellLeaveRoute: typeof ShellLeaveRoute
   ShellLiveOperationsRoute: typeof ShellLiveOperationsRoute
@@ -1087,6 +1107,7 @@ const ShellRouteChildren: ShellRouteChildren = {
   ShellDocumentsRoute: ShellDocumentsRoute,
   ShellEmployeesRoute: ShellEmployeesRoute,
   ShellExpensesRoute: ShellExpensesRoute,
+  ShellHrAutomationsRoute: ShellHrAutomationsRoute,
   ShellIncidentsRoute: ShellIncidentsRoute,
   ShellLeaveRoute: ShellLeaveRoute,
   ShellLiveOperationsRoute: ShellLiveOperationsRoute,

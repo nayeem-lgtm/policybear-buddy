@@ -1,177 +1,182 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { DollarSign, LineChart as LineChartIcon, PiggyBank, TrendingUp } from "lucide-react";
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { AlertTriangle, Banknote, DollarSign, TrendingUp } from "lucide-react";
 
 import { PageHeader } from "@/components/crm/PageHeader";
 import { StatCard } from "@/components/crm/StatCard";
+import { StatusBadge } from "@/components/crm/StatusBadge";
 import { DataTable, type Column } from "@/components/crm/DataTable";
-import { currency } from "@/lib/use-filters";
+import { FilterBar } from "@/components/crm/FilterBar";
+import { useFilters, unique } from "@/lib/use-filters";
 import { Card } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { policies, revenueTrend, carriers } from "@/lib/mock-data";
+import { sales, payrollWeeks, weekStarts, AGENT_NAMES, money, type SaleRecord } from "@/lib/company-data";
 
 export const Route = createFileRoute("/_shell/revenue")({
   head: () => ({
     meta: [
-      { title: "Revenue — Policy Bear CRM" },
-      { name: "description", content: "Revenue overview with MRR, trend chart, and breakdowns by carrier and campaign." },
-      { property: "og:title", content: "Revenue — Policy Bear CRM" },
-      { property: "og:description", content: "Revenue overview with MRR, trend chart, and breakdowns by carrier and campaign." },
+      { title: "Revenue & Cash Position — Policy Bear CRM" },
+      { name: "description", content: "Premium written, carrier revenue received, and weekly net cash position across payroll and traffic cost." },
+      { property: "og:title", content: "Revenue & Cash Position — Policy Bear CRM" },
+      { property: "og:description", content: "Premium written, carrier revenue received, and weekly net cash position across payroll and traffic cost." },
     ],
   }),
   component: RevenuePage,
 });
 
-const ranges = ["Last 3 months", "Last 6 months", "Year to date"];
-
-interface CarrierRevenue {
-  carrier: string;
-  policies: number;
-  premium: number;
-  commission: number;
+function fmtWeek(d: string) {
+  return new Date(d + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-interface CampaignRevenue {
-  campaign: string;
-  policies: number;
-  premium: number;
-  commission: number;
+function Bar({ label, value, max, tone = "brand" }: { label: string; value: number; max: number; tone?: "brand" | "danger" | "success" }) {
+  const pct = max > 0 ? Math.min(100, (Math.abs(value) / max) * 100) : 0;
+  const toneClass = tone === "danger" ? "bg-destructive" : tone === "success" ? "bg-success" : "bg-brand";
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-muted-foreground">{label}</span>
+        <span className="tabular font-medium text-foreground">{money(value)}</span>
+      </div>
+      <div className="h-2 w-full overflow-hidden rounded-full bg-surface">
+        <div className={`h-full rounded-full ${toneClass}`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
 }
 
 function RevenuePage() {
-  const [range, setRange] = useState(ranges[1]!);
+  const { search, setSearch, values, setValue, reset, filtered } = useFilters(sales, {
+    searchFields: (r) => [r.customer, r.agent, r.id],
+    filters: {
+      week: (r) => r.weekStart ?? "",
+      agent: (r) => r.agent,
+      paymentStatus: (r) => r.paymentStatus ?? "",
+    },
+  });
 
-  const trend = useMemo(() => {
-    if (range === "Last 3 months") return revenueTrend.slice(-3);
-    if (range === "Last 6 months") return revenueTrend;
-    return revenueTrend;
-  }, [range]);
+  const premiumWritten = filtered.reduce((s, r) => s + r.premium, 0);
+  const policyAmountTotal = filtered.reduce((s, r) => s + r.policyAmount, 0);
+  const carrierRevenueReceived = filtered.filter((r) => r.revenueReceived === "Yes").reduce((s, r) => s + r.carrierRevenue, 0);
+  const pendingFirstPayment = filtered.filter((r) => r.paymentStatus === "Pending First Payment");
+  const pendingExposure = pendingFirstPayment.reduce((s, r) => s + r.premium, 0);
 
-  const latest = revenueTrend[revenueTrend.length - 1]!;
-  const prior = revenueTrend[revenueTrend.length - 2]!;
-  const mrr = latest.revenue;
-  const mrrDelta = (((mrr - prior.revenue) / prior.revenue) * 100).toFixed(1);
-  const avgRevenuePerPolicy = mrr / policies.length;
-  const netMargin = (((latest.revenue - latest.cost) / latest.revenue) * 100).toFixed(1);
+  const totalCompanyCost = payrollWeeks.reduce((s, r) => s + r.totalCompanyCost, 0);
+  const netCashTotal = payrollWeeks.reduce((s, r) => s + r.netCash, 0);
 
-  const byCarrier: CarrierRevenue[] = carriers.map((carrier) => {
-    const rows = policies.filter((p) => p.carrier === carrier);
-    return {
-      carrier,
-      policies: rows.length,
-      premium: rows.reduce((s, p) => s + p.premium, 0),
-      commission: rows.reduce((s, p) => s + p.commission, 0),
-    };
-  }).sort((a, b) => b.commission - a.commission);
+  const weeklyRows = useMemo(() => {
+    return weekStarts.map((w) => {
+      const wp = payrollWeeks.filter((p) => p.weekStart === w);
+      const premium = sales.filter((s) => s.weekStart === w).reduce((s, r) => s + r.premium, 0);
+      const cost = wp.reduce((s, r) => s + r.totalCompanyCost, 0);
+      const netCash = wp.reduce((s, r) => s + r.netCash, 0);
+      return { week: w, premium, cost, netCash };
+    });
+  }, []);
 
-  const campaigns = Array.from(new Set(policies.map((p) => p.source)));
-  const byCampaign: CampaignRevenue[] = campaigns.map((campaign) => {
-    const rows = policies.filter((p) => p.source === campaign);
-    return {
-      campaign,
-      policies: rows.length,
-      premium: rows.reduce((s, p) => s + p.premium, 0),
-      commission: rows.reduce((s, p) => s + p.commission, 0),
-    };
-  }).sort((a, b) => b.commission - a.commission);
+  const maxWeekly = Math.max(...weeklyRows.map((r) => Math.max(r.premium, r.cost, Math.abs(r.netCash))), 1);
 
-  const carrierColumns: Column<CarrierRevenue>[] = [
-    { key: "carrier", header: "Carrier", cell: (r) => <span className="font-medium text-foreground">{r.carrier}</span> },
-    { key: "policies", header: "Policies", cell: (r) => <span className="tabular">{r.policies}</span>, align: "center" },
-    { key: "premium", header: "Premium", cell: (r) => <span className="tabular">{currency(r.premium)}</span>, align: "right" },
-    { key: "commission", header: "Commission", cell: (r) => <span className="tabular font-medium">{currency(r.commission)}</span>, align: "right" },
-  ];
+  const paymentStatusRows = useMemo(() => {
+    const map = new Map<string, { status: string; count: number; premium: number }>();
+    for (const s of sales) {
+      const key = s.paymentStatus ?? "Unknown";
+      const cur = map.get(key) ?? { status: key, count: 0, premium: 0 };
+      cur.count += 1;
+      cur.premium += s.premium;
+      map.set(key, cur);
+    }
+    return Array.from(map.values()).sort((a, b) => b.premium - a.premium);
+  }, []);
 
-  const campaignColumns: Column<CampaignRevenue>[] = [
-    { key: "campaign", header: "Source / campaign", cell: (r) => <span className="font-medium text-foreground">{r.campaign}</span> },
-    { key: "policies", header: "Policies", cell: (r) => <span className="tabular">{r.policies}</span>, align: "center" },
-    { key: "premium", header: "Premium", cell: (r) => <span className="tabular">{currency(r.premium)}</span>, align: "right" },
-    { key: "commission", header: "Commission", cell: (r) => <span className="tabular font-medium">{currency(r.commission)}</span>, align: "right" },
+  const columns: Column<SaleRecord>[] = [
+    { key: "id", header: "Sale", cell: (r) => <span className="font-medium text-foreground">{r.id}</span> },
+    { key: "agent", header: "Agent", cell: (r) => r.agent },
+    { key: "week", header: "Week", cell: (r) => (r.weekStart ? fmtWeek(r.weekStart) : "—") },
+    { key: "customer", header: "Customer", cell: (r) => r.customer },
+    { key: "policyAmount", header: "Policy Amount", cell: (r) => <span className="tabular">{money(r.policyAmount)}</span>, align: "right" },
+    { key: "premium", header: "Premium Written", cell: (r) => <span className="tabular font-medium">{money(r.premium)}</span>, align: "right" },
+    { key: "paymentStatus", header: "Payment Status", cell: (r) => <StatusBadge status={r.paymentStatus ?? "Unknown"} /> },
+    { key: "paymentRisk", header: "Payment Risk", cell: (r) => <span className="text-xs text-muted-foreground">{r.paymentRisk ?? "—"}</span> },
+    {
+      key: "carrierRevenue",
+      header: "Carrier Revenue Received",
+      cell: (r) => (
+        <div className="text-right">
+          <p className="tabular">{r.revenueReceived === "Yes" ? money(r.carrierRevenue) : "—"}</p>
+          {r.revenueReceivedDate && <p className="text-xs text-muted-foreground">{r.revenueReceivedDate}</p>}
+        </div>
+      ),
+      align: "right",
+    },
   ];
 
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Finance"
-        title="Revenue"
-        description="Company-wide revenue overview: recurring revenue trend, carrier mix, and campaign performance."
-        actions={
-          <Select value={range} onValueChange={setRange}>
-            <SelectTrigger className="h-9 w-[11rem]">
-              <SelectValue placeholder="Range" />
-            </SelectTrigger>
-            <SelectContent>
-              {ranges.map((r) => (
-                <SelectItem key={r} value={r}>{r}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        }
+        eyebrow="Accounting"
+        title="Revenue & Cash Position"
+        description="Premium written, carrier revenue, and net cash position by week. Carrier revenue posts only after the customer's first payment."
       />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label="MRR"
-          value={currency(mrr)}
-          delta={{ value: `${mrrDelta}%`, direction: Number(mrrDelta) >= 0 ? "up" : "down" }}
-          icon={<DollarSign className="size-4" />}
-          tone="brand"
-        />
-        <StatCard label="Avg. revenue / policy" value={currency(avgRevenuePerPolicy, 0)} icon={<PiggyBank className="size-4" />} tone="info" />
-        <StatCard label="Net margin" value={`${netMargin}%`} hint="this month" icon={<TrendingUp className="size-4" />} tone="success" />
-        <StatCard label="Total cost" value={currency(latest.cost)} icon={<LineChartIcon className="size-4" />} tone="warning" />
+        <StatCard label="Premium written" value={money(premiumWritten)} hint={`policy amount ${money(policyAmountTotal)}`} icon={<TrendingUp className="size-4" />} tone="brand" />
+        <StatCard label="Carrier revenue received" value={money(carrierRevenueReceived)} hint="posted after first payment" icon={<DollarSign className="size-4" />} tone="success" />
+        <StatCard label="Total company cost" value={money(totalCompanyCost)} hint="all weeks" icon={<Banknote className="size-4" />} tone="warning" />
+        <StatCard label="Net cash position" value={money(netCashTotal)} hint="all weeks" tone={netCashTotal < 0 ? "danger" : "success"} />
       </div>
 
-      <Card className="p-4 shadow-card">
-        <p className="mb-3 text-xs font-medium tracking-wide text-muted-foreground uppercase">Revenue vs. cost trend</p>
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={trend}>
-              <defs>
-                <linearGradient id="revFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--brand)" stopOpacity={0.35} />
-                  <stop offset="100%" stopColor="var(--brand)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="var(--muted-foreground)" />
-              <YAxis tick={{ fontSize: 12 }} stroke="var(--muted-foreground)" tickFormatter={(v) => `$${v / 1000}k`} />
-              <Tooltip
-                formatter={(value: number) => currency(value)}
-                contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }}
-              />
-              <Area type="monotone" dataKey="revenue" stroke="var(--brand)" fill="url(#revFill)" strokeWidth={2} />
-              <Area type="monotone" dataKey="cost" stroke="var(--muted-foreground)" fill="transparent" strokeWidth={1.5} strokeDasharray="4 3" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
+      <Card className="flex items-start gap-3 p-4 shadow-card">
+        <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" />
+        <p className="text-sm text-muted-foreground">
+          <span className="font-medium text-foreground">{pendingFirstPayment.length} policies</span> ({money(pendingExposure)} in premium) are
+          Pending First Payment — carrier revenue will not post for these until the customer's first draft succeeds.
+        </p>
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <div>
-          <p className="mb-2 text-sm font-medium text-foreground">Revenue by carrier</p>
-          <DataTable columns={carrierColumns} rows={byCarrier} />
-        </div>
-        <div>
-          <p className="mb-2 text-sm font-medium text-foreground">Revenue by campaign</p>
-          <DataTable columns={campaignColumns} rows={byCampaign} />
-        </div>
+        <Card className="space-y-3 p-4 shadow-card">
+          <h3 className="text-sm font-semibold text-foreground">Weekly premium vs. company cost vs. net cash</h3>
+          <div className="space-y-3">
+            {weeklyRows.map((r) => (
+              <div key={r.week} className="space-y-1.5 border-b border-border pb-2 last:border-0">
+                <p className="text-xs font-medium text-muted-foreground">Week of {fmtWeek(r.week)}</p>
+                <Bar label="Premium written" value={r.premium} max={maxWeekly} tone="brand" />
+                <Bar label="Total company cost" value={r.cost} max={maxWeekly} tone="danger" />
+                <Bar label="Net cash position" value={r.netCash} max={maxWeekly} tone={r.netCash < 0 ? "danger" : "success"} />
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="space-y-3 p-4 shadow-card">
+          <h3 className="text-sm font-semibold text-foreground">Exposure by payment status</h3>
+          <div className="space-y-2">
+            {paymentStatusRows.map((r) => (
+              <div key={r.status} className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <StatusBadge status={r.status} />
+                  <span className="text-xs text-muted-foreground">{r.count} sales</span>
+                </div>
+                <span className="tabular font-medium">{money(r.premium)}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
       </div>
+
+      <FilterBar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search customer or agent…"
+        filters={[
+          { key: "week", label: "Week", options: weekStarts.map((w) => w) },
+          { key: "agent", label: "Agent", options: AGENT_NAMES.slice() },
+          { key: "paymentStatus", label: "Payment Status", options: unique(sales, (r) => r.paymentStatus ?? "") },
+        ]}
+        values={values}
+        onChange={setValue}
+        onReset={reset}
+      />
+
+      <DataTable columns={columns} rows={filtered} />
     </div>
   );
 }

@@ -61,7 +61,7 @@ export function QuickActionButton() {
         <DropdownMenuSeparator />
         <DropdownMenuLabel>Create</DropdownMenuLabel>
         <DropdownMenuItem asChild>
-          <Link to="/customers/new">
+          <Link to="/customers">
             <UserPlus className="size-4" /> Add Customer
           </Link>
         </DropdownMenuItem>
