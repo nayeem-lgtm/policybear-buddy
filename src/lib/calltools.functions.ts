@@ -4,7 +4,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Json } from "@/integrations/supabase/types";
 
-const DEFAULT_BASE_URL = "https://app.calltools.com/api/v1";
+const DEFAULT_BASE_URL = "https://west-2.calltools.io/api";
 const PROVIDER = "calltools";
 
 /** CallTools accounts are hosted per-company, so the base URL is configurable. */
@@ -74,7 +74,7 @@ export const testCallTools = createServerFn({ method: "POST" })
     } else {
       try {
         // Probe a few lightweight endpoints; the first authenticated 2xx wins.
-        for (const path of ["/users/?limit=1", "/campaigns/?limit=1", "/calls/?limit=1"]) {
+        for (const path of ["/users/?page_size=1", "/campaigns/?page_size=1", "/calls/?page_size=1"]) {
           const result = await callTools(path, key);
           response = { path, httpStatus: result.status };
           if (result.ok) {
@@ -150,4 +150,65 @@ export const callToolsFetch = createServerFn({ method: "POST" })
     if (!result.ok) throw new Error(`CallTools returned HTTP ${result.status}`);
     return { data: result.body as Json };
 
+  });
+
+type CountResult = { count: number | null; error: string | null };
+
+async function countOf(path: string, key: string): Promise<CountResult> {
+  try {
+    const res = await callTools(`${path}?page_size=1`, key);
+    if (!res.ok) return { count: null, error: `HTTP ${res.status}` };
+    const body = res.body as { count?: number } | null;
+    return { count: typeof body?.count === "number" ? body.count : null, error: null };
+  } catch (err) {
+    return { count: null, error: err instanceof Error ? err.message : "Unknown error" };
+  }
+}
+
+/** Live CallTools account overview: record counts plus the most recent calls. */
+export const getCallToolsOverview = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertOps(context);
+    const key = process.env["CALLTOOLS_API_KEY"];
+    if (!key) throw new Error("CALLTOOLS_API_KEY is not configured");
+
+    const [users, campaigns, calls, contacts, sms] = await Promise.all([
+      countOf("/users/", key),
+      countOf("/campaigns/", key),
+      countOf("/calls/", key),
+      countOf("/contacts/", key),
+      countOf("/sms/", key),
+    ]);
+
+    let recentCalls: Array<{
+      id: string;
+      direction: string | null;
+      status: string | null;
+      from: string | null;
+      to: string | null;
+      duration: number | null;
+      startedAt: string | null;
+    }> = [];
+
+    try {
+      const res = await callTools("/calls/?page_size=10", key);
+      const body = res.body as { results?: Array<Record<string, unknown>> } | null;
+      recentCalls = (body?.results ?? []).map((c) => ({
+        id: String(c["uuid"] ?? c["id"] ?? ""),
+        direction: (c["direction"] as string) ?? null,
+        status: (c["status"] as string) ?? (c["disposition"] as string) ?? null,
+        from: (c["from_number"] as string) ?? (c["caller_id"] as string) ?? null,
+        to: (c["to_number"] as string) ?? (c["phone_number"] as string) ?? null,
+        duration: typeof c["duration"] === "number" ? (c["duration"] as number) : null,
+        startedAt: (c["start_time"] as string) ?? (c["created"] as string) ?? null,
+      }));
+    } catch {
+      /* counts still useful without the call list */
+    }
+
+    return {
+      counts: { users, campaigns, calls, contacts, sms },
+      recentCalls,
+    };
   });
