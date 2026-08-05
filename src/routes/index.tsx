@@ -150,8 +150,8 @@ function LoginPage() {
                 <Checkbox defaultChecked /> Keep me signed in on this device
               </label>
 
-              <Button type="submit" className="w-full">
-                Continue <ArrowRight className="size-4" />
+              <Button type="submit" className="w-full" disabled={busy}>
+                {busy ? "Signing in…" : "Continue"} <ArrowRight className="size-4" />
               </Button>
             </form>
           </Card>
