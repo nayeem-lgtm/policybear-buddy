@@ -1,3 +1,4 @@
+import type { Json } from "@/integrations/supabase/types";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
@@ -45,7 +46,7 @@ export const saveIntegration = createServerFn({ method: "POST" })
       base_url: data.baseUrl || null,
       auth_type: data.authType,
       secret_name: secretName ?? null,
-      config: data.config ?? {},
+      config: (data.config ?? {}) as Json,
       enabled: data.enabled ?? true,
       status: "Not Configured",
       created_by: context.userId,
@@ -156,7 +157,7 @@ export const testIntegration = createServerFn({ method: "POST" })
       event_type: "test_connection",
       status: status === "Connected" ? "success" : "error",
       payload: { triggeredBy: context.userId },
-      response,
+      response: response as Json,
       error: lastError,
     });
 
