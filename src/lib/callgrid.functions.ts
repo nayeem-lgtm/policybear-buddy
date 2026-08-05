@@ -153,20 +153,29 @@ export const callGridFetch = createServerFn({ method: "POST" })
 
 type CountResult = { count: number | null; error: string | null };
 
-/** Page-based endpoints return { data, totalCount }. */
+/** Page-based endpoints return { data, totalPages, counts: { all } }. */
 async function countOf(path: string, key: string): Promise<CountResult> {
   try {
     const res = await callGrid(`${path}?page=1&limit=1`, key);
     if (!res.ok) return { count: null, error: `HTTP ${res.status}` };
-    const body = res.body as { totalCount?: number; data?: unknown[] } | null;
-    return {
-      count: typeof body?.totalCount === "number" ? body.totalCount : (body?.data?.length ?? null),
-      error: null,
-    };
+    const body = res.body as
+      | { totalCount?: number; totalPages?: number; counts?: { all?: number }; data?: unknown[] }
+      | null;
+    const count =
+      typeof body?.counts?.all === "number"
+        ? body.counts.all
+        : typeof body?.totalCount === "number"
+          ? body.totalCount
+          : // limit=1, so one page per record.
+            typeof body?.totalPages === "number"
+            ? body.totalPages
+            : (body?.data?.length ?? null);
+    return { count, error: null };
   } catch (err) {
     return { count: null, error: err instanceof Error ? err.message : "Unknown error" };
   }
 }
+
 
 /** Live CallGrid overview: record counts plus the most recent tracked calls. */
 export const getCallGridOverview = createServerFn({ method: "GET" })
