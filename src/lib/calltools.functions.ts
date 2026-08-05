@@ -196,12 +196,12 @@ export const getCallToolsOverview = createServerFn({ method: "GET" })
       const body = res.body as { results?: Array<Record<string, unknown>> } | null;
       recentCalls = (body?.results ?? []).map((c) => ({
         id: String(c["uuid"] ?? c["id"] ?? ""),
-        direction: (c["direction"] as string) ?? null,
-        status: (c["status"] as string) ?? (c["disposition"] as string) ?? null,
-        from: (c["from_number"] as string) ?? (c["caller_id"] as string) ?? null,
-        to: (c["to_number"] as string) ?? (c["phone_number"] as string) ?? null,
-        duration: typeof c["duration"] === "number" ? (c["duration"] as number) : null,
-        startedAt: (c["start_time"] as string) ?? (c["created"] as string) ?? null,
+        direction: (c["call_type"] as string) ?? (c["inbound"] ? "inbound" : "outbound"),
+        status: (c["system_disposition"] as string) ?? null,
+        from: (c["source"] as string) ?? null,
+        to: (c["destination"] as string) ?? null,
+        duration: typeof c["billsec"] === "number" ? (c["billsec"] as number) : typeof c["duration"] === "number" ? (c["duration"] as number) : null,
+        startedAt: (c["start"] as string) ?? (c["created_on"] as string) ?? null,
       }));
     } catch {
       /* counts still useful without the call list */
