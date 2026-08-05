@@ -100,9 +100,14 @@ export async function fetchConversations(userId: string): Promise<ConversationVi
         new Date(m.created_at as string) > new Date(membership.last_read_at),
     ).length;
 
-    const others = memberIds.filter((id) => id !== userId).map((id) => staffById.get(id)).filter(Boolean) as StaffProfile[];
+    const others = memberIds
+      .filter((id) => id !== userId)
+      .map((id) => staffById.get(id))
+      .filter(Boolean) as StaffProfile[];
     const displayName =
-      conversation.kind === "dm" ? (others[0]?.name ?? conversation.name || "Direct message") : conversation.name;
+      conversation.kind === "dm"
+        ? (others[0]?.name ?? (conversation.name || "Direct message"))
+        : conversation.name;
 
     return {
       ...conversation,
