@@ -100,6 +100,8 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     items: [
       { title: "Customers", url: "/customers", icon: Contact },
       { title: "Calls", url: "/calls", icon: PhoneCall },
+      { title: "Live Call Monitor", url: "/telephony-monitor", icon: Radio },
+      { title: "Source Attribution", url: "/telephony-attribution", icon: Repeat },
       { title: "Reconciliation", url: "/call-reconciliation", icon: Repeat },
       { title: "Cost & Returns", url: "/call-costs", icon: BadgeDollarSign },
       { title: "Callback Queue", url: "/callbacks", icon: PhoneForwarded },
@@ -167,6 +169,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
       { title: "Users & Roles", url: "/admin/users", icon: UserCog },
       { title: "Business Rules", url: "/admin/rules", icon: SlidersHorizontal },
       { title: "Integrations", url: "/admin/integrations", icon: Plug },
+      { title: "Telephony Sync", url: "/admin/telephony", icon: Repeat },
       { title: "Import Center", url: "/admin/imports", icon: Database },
       { title: "Audit Logs", url: "/admin/audit", icon: ScrollText },
       { title: "System Health", url: "/admin/health", icon: Gauge },

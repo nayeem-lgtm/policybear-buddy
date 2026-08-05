@@ -94,6 +94,36 @@ export type Database = {
           },
         ]
       }
+      attribution_overrides: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          phone_e164: string
+          provider: string
+          reason: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          phone_e164: string
+          provider: string
+          reason?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          phone_e164?: string
+          provider?: string
+          reason?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       call_participants: {
         Row: {
           call_id: string
@@ -428,6 +458,122 @@ export type Database = {
           webhook_token?: string | null
         }
         Relationships: []
+      }
+      journey_touches: {
+        Row: {
+          call_id: string | null
+          created_at: string
+          direction: string | null
+          id: string
+          journey_id: string
+          occurred_at: string
+          provider: string
+          talk_seconds: number
+        }
+        Insert: {
+          call_id?: string | null
+          created_at?: string
+          direction?: string | null
+          id?: string
+          journey_id: string
+          occurred_at?: string
+          provider: string
+          talk_seconds?: number
+        }
+        Update: {
+          call_id?: string | null
+          created_at?: string
+          direction?: string | null
+          id?: string
+          journey_id?: string
+          occurred_at?: string
+          provider?: string
+          talk_seconds?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_touches_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "telephony_calls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_touches_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "lead_journeys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_journeys: {
+        Row: {
+          attributed_provider: string | null
+          callback_via_calltools: boolean
+          contact_id: string | null
+          created_at: string
+          days_to_contact: number | null
+          first_touch_at: string | null
+          first_touch_provider: string | null
+          id: string
+          inbound_callgrid_count: number
+          last_touch_at: string | null
+          last_touch_provider: string | null
+          outbound_calltools_count: number
+          owner_id: string | null
+          phone_e164: string
+          total_attempts: number
+          total_talk_seconds: number
+          updated_at: string
+        }
+        Insert: {
+          attributed_provider?: string | null
+          callback_via_calltools?: boolean
+          contact_id?: string | null
+          created_at?: string
+          days_to_contact?: number | null
+          first_touch_at?: string | null
+          first_touch_provider?: string | null
+          id?: string
+          inbound_callgrid_count?: number
+          last_touch_at?: string | null
+          last_touch_provider?: string | null
+          outbound_calltools_count?: number
+          owner_id?: string | null
+          phone_e164: string
+          total_attempts?: number
+          total_talk_seconds?: number
+          updated_at?: string
+        }
+        Update: {
+          attributed_provider?: string | null
+          callback_via_calltools?: boolean
+          contact_id?: string | null
+          created_at?: string
+          days_to_contact?: number | null
+          first_touch_at?: string | null
+          first_touch_provider?: string | null
+          id?: string
+          inbound_callgrid_count?: number
+          last_touch_at?: string | null
+          last_touch_provider?: string | null
+          outbound_calltools_count?: number
+          owner_id?: string | null
+          phone_e164?: string
+          total_attempts?: number
+          total_talk_seconds?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_journeys_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       messages: {
         Row: {
@@ -812,6 +958,192 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sync_state: {
+        Row: {
+          created_at: string
+          cursor: string | null
+          id: string
+          last_error: string | null
+          last_run_at: string | null
+          last_status: string | null
+          provider: string
+          records_last_run: number
+          records_total: number
+          resource: string
+          updated_at: string
+          watermark: string | null
+        }
+        Insert: {
+          created_at?: string
+          cursor?: string | null
+          id?: string
+          last_error?: string | null
+          last_run_at?: string | null
+          last_status?: string | null
+          provider: string
+          records_last_run?: number
+          records_total?: number
+          resource: string
+          updated_at?: string
+          watermark?: string | null
+        }
+        Update: {
+          created_at?: string
+          cursor?: string | null
+          id?: string
+          last_error?: string | null
+          last_run_at?: string | null
+          last_status?: string | null
+          provider?: string
+          records_last_run?: number
+          records_total?: number
+          resource?: string
+          updated_at?: string
+          watermark?: string | null
+        }
+        Relationships: []
+      }
+      telephony_agents: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          provider: string
+          provider_agent_email: string | null
+          provider_agent_id: string
+          provider_agent_name: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          provider: string
+          provider_agent_email?: string | null
+          provider_agent_id: string
+          provider_agent_name?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          provider?: string
+          provider_agent_email?: string | null
+          provider_agent_id?: string
+          provider_agent_name?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      telephony_calls: {
+        Row: {
+          agent_id: string | null
+          agent_name: string | null
+          agent_user_id: string | null
+          buyer: string | null
+          campaign: string | null
+          created_at: string
+          direction: string | null
+          disposition: string | null
+          ended_at: string | null
+          from_number: string | null
+          id: string
+          journey_id: string | null
+          lead_phone_e164: string | null
+          payout: number | null
+          provider: string
+          provider_call_id: string
+          publisher: string | null
+          raw: Json
+          recording_url: string | null
+          revenue: number | null
+          started_at: string | null
+          state_code: string | null
+          status: string | null
+          synced_at: string
+          talk_seconds: number
+          to_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          agent_id?: string | null
+          agent_name?: string | null
+          agent_user_id?: string | null
+          buyer?: string | null
+          campaign?: string | null
+          created_at?: string
+          direction?: string | null
+          disposition?: string | null
+          ended_at?: string | null
+          from_number?: string | null
+          id?: string
+          journey_id?: string | null
+          lead_phone_e164?: string | null
+          payout?: number | null
+          provider: string
+          provider_call_id: string
+          publisher?: string | null
+          raw?: Json
+          recording_url?: string | null
+          revenue?: number | null
+          started_at?: string | null
+          state_code?: string | null
+          status?: string | null
+          synced_at?: string
+          talk_seconds?: number
+          to_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string | null
+          agent_name?: string | null
+          agent_user_id?: string | null
+          buyer?: string | null
+          campaign?: string | null
+          created_at?: string
+          direction?: string | null
+          disposition?: string | null
+          ended_at?: string | null
+          from_number?: string | null
+          id?: string
+          journey_id?: string | null
+          lead_phone_e164?: string | null
+          payout?: number | null
+          provider?: string
+          provider_call_id?: string
+          publisher?: string | null
+          raw?: Json
+          recording_url?: string | null
+          revenue?: number | null
+          started_at?: string | null
+          state_code?: string | null
+          status?: string | null
+          synced_at?: string
+          talk_seconds?: number
+          to_number?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telephony_calls_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "telephony_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telephony_calls_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "lead_journeys"
             referencedColumns: ["id"]
           },
         ]
