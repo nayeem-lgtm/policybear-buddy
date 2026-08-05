@@ -4,8 +4,14 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Json } from "@/integrations/supabase/types";
 
-const CALLTOOLS_BASE_URL = "https://app.calltools.com/api/v1";
+const DEFAULT_BASE_URL = "https://app.calltools.com/api/v1";
 const PROVIDER = "calltools";
+
+/** CallTools accounts are hosted per-company, so the base URL is configurable. */
+function baseUrl() {
+  return (process.env["CALLTOOLS_BASE_URL"] || DEFAULT_BASE_URL).replace(/\/$/, "");
+}
+
 
 function authHeaders(key: string): Record<string, string> {
   return { Authorization: `Token ${key}`, Accept: "application/json" };
