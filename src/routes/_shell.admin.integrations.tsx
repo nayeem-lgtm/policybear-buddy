@@ -153,6 +153,88 @@ function CallToolsPanel() {
   );
 }
 
+function CallGridPanel() {
+  const fetchStatus = useServerFn(getCallGridStatus);
+  const runTest = useServerFn(testCallGrid);
+
+  const status = useQuery({ queryKey: ["callgrid-status"], queryFn: () => fetchStatus() });
+
+  const test = useMutation({
+    mutationFn: () => runTest(),
+    onSuccess: (res) => {
+      if (res.status === "Connected") toast.success(`CallGrid connected via ${res.workingPath}`);
+      else toast.error(res.lastError ?? "CallGrid connection failed");
+      status.refetch();
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const row = status.data?.integration;
+  const config = (row?.config as { resourcePath?: string | null; authScheme?: string | null } | null) ?? null;
+
+  return (
+    <Card className="gap-3 p-4 shadow-card">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <PhoneCall className="size-4 text-brand" />
+          <div>
+            <p className="text-sm font-semibold text-foreground">CallGrid</p>
+            <p className="text-xs text-muted-foreground">Dialer / Telephony · live connection</p>
+          </div>
+        </div>
+        <StatusBadge status={(row?.status as string) ?? "Not Configured"} />
+      </div>
+
+      <div className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+        <div>
+          <span className="text-foreground">Base URL:</span>{" "}
+          <span className="font-mono">{status.data?.baseUrl ?? "—"}</span>
+        </div>
+        <div>
+          <span className="text-foreground">API key:</span>{" "}
+          {status.data?.keyConfigured ? (
+            <Badge variant="default">Stored securely</Badge>
+          ) : (
+            <Badge variant="secondary">Missing</Badge>
+          )}
+        </div>
+        <div>
+          <span className="text-foreground">Last check:</span>{" "}
+          {row?.last_sync_at ? new Date(row.last_sync_at).toLocaleString() : "Never"}
+        </div>
+        <div>
+          <span className="text-foreground">Auth:</span> {config?.authScheme ?? "auto-detect"}
+        </div>
+        <div className="sm:col-span-2">
+          <span className="text-foreground">Resource path:</span>{" "}
+          <span className="font-mono">{config?.resourcePath ?? "not discovered yet"}</span>
+        </div>
+        <div className="sm:col-span-2">
+          <span className="text-foreground">Console:</span>{" "}
+          <a
+            className="font-mono underline"
+            href="https://app.callgrid.com/organization/api-keys"
+            target="_blank"
+            rel="noreferrer"
+          >
+            app.callgrid.com/organization/api-keys
+          </a>
+        </div>
+      </div>
+
+      {row?.last_error ? <p className="text-xs text-destructive">{row.last_error}</p> : null}
+
+      <div className="flex flex-wrap gap-2 pt-1">
+        <Button size="sm" onClick={() => test.mutate()} disabled={test.isPending}>
+          <RefreshCw className={`size-3.5 ${test.isPending ? "animate-spin" : ""}`} />
+          {test.isPending ? "Testing…" : "Test connection"}
+        </Button>
+      </div>
+    </Card>
+  );
+}
+
+
 
 function IntegrationsAdminPage() {
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
