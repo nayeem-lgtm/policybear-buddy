@@ -142,5 +142,6 @@ export const callToolsFetch = createServerFn({ method: "POST" })
     if (!key) throw new Error("CALLTOOLS_API_KEY is not configured");
     const result = await callTools(data.path, key);
     if (!result.ok) throw new Error(`CallTools returned HTTP ${result.status}`);
-    return result.body;
+    return { data: result.body as Json };
+
   });
