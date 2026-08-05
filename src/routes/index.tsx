@@ -60,14 +60,14 @@ function LoginPage() {
         <div className="absolute -bottom-32 -left-16 size-96 rounded-full bg-brand-cyan/20 blur-3xl" />
         <PolicyBearLogo tone="inverse" className="relative" />
         <div className="relative max-w-md">
-          <h2 className="text-3xl leading-tight font-semibold text-white">
+          <h2 className="text-3xl leading-tight font-semibold text-brand-ink-foreground">
             One workspace for the whole floor.
           </h2>
-          <p className="mt-3 text-sm text-white/70">
+          <p className="mt-3 text-sm text-brand-ink-foreground/70">
             Every department signs in with its own account and sees only the modules its
             role owns — from the sales floor to the CEO.
           </p>
-          <ul className="mt-8 space-y-3 text-sm text-white/80">
+          <ul className="mt-8 space-y-3 text-sm text-brand-ink-foreground/80">
             {[
               "Role-based access for Agents, QC, HR, Accounting, Operations",
               "Executive and administrator accounts see every module",
@@ -81,7 +81,7 @@ function LoginPage() {
             ))}
           </ul>
         </div>
-        <p className="relative text-xs text-white/40">
+        <p className="relative text-xs text-brand-ink-foreground/40">
           Authorized use only. All sessions are recorded for compliance.
         </p>
       </div>
