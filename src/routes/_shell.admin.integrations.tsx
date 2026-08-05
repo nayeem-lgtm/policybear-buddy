@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { integrations } from "@/lib/mock-data";
 import { getCallToolsOverview, getCallToolsStatus, testCallTools } from "@/lib/calltools.functions";
-import { getCallGridStatus, testCallGrid } from "@/lib/callgrid.functions";
+import { getCallGridOverview, getCallGridStatus, testCallGrid } from "@/lib/callgrid.functions";
 
 
 export const Route = createFileRoute("/_shell/admin/integrations")({
@@ -156,21 +156,23 @@ function CallToolsPanel() {
 function CallGridPanel() {
   const fetchStatus = useServerFn(getCallGridStatus);
   const runTest = useServerFn(testCallGrid);
+  const fetchOverview = useServerFn(getCallGridOverview);
 
   const status = useQuery({ queryKey: ["callgrid-status"], queryFn: () => fetchStatus() });
+  const overview = useQuery({ queryKey: ["callgrid-overview"], queryFn: () => fetchOverview() });
 
   const test = useMutation({
     mutationFn: () => runTest(),
     onSuccess: (res) => {
-      if (res.status === "Connected") toast.success(`CallGrid connected via ${res.workingPath}`);
+      if (res.status === "Connected") toast.success("CallGrid connected");
       else toast.error(res.lastError ?? "CallGrid connection failed");
       status.refetch();
+      overview.refetch();
     },
     onError: (err: Error) => toast.error(err.message),
   });
 
   const row = status.data?.integration;
-  const config = (row?.config as { resourcePath?: string | null; authScheme?: string | null } | null) ?? null;
 
   return (
     <Card className="gap-3 p-4 shadow-card">
@@ -179,7 +181,7 @@ function CallGridPanel() {
           <PhoneCall className="size-4 text-brand" />
           <div>
             <p className="text-sm font-semibold text-foreground">CallGrid</p>
-            <p className="text-xs text-muted-foreground">Dialer / Telephony · live connection</p>
+            <p className="text-xs text-muted-foreground">Call tracking / routing · live connection</p>
           </div>
         </div>
         <StatusBadge status={(row?.status as string) ?? "Not Configured"} />
@@ -203,11 +205,7 @@ function CallGridPanel() {
           {row?.last_sync_at ? new Date(row.last_sync_at).toLocaleString() : "Never"}
         </div>
         <div>
-          <span className="text-foreground">Auth:</span> {config?.authScheme ?? "auto-detect"}
-        </div>
-        <div className="sm:col-span-2">
-          <span className="text-foreground">Resource path:</span>{" "}
-          <span className="font-mono">{config?.resourcePath ?? "not discovered yet"}</span>
+          <span className="text-foreground">Auth:</span> Bearer token
         </div>
         <div className="sm:col-span-2">
           <span className="text-foreground">Console:</span>{" "}
@@ -229,10 +227,59 @@ function CallGridPanel() {
           <RefreshCw className={`size-3.5 ${test.isPending ? "animate-spin" : ""}`} />
           {test.isPending ? "Testing…" : "Test connection"}
         </Button>
+        <Button size="sm" variant="outline" onClick={() => overview.refetch()} disabled={overview.isFetching}>
+          Sync live data
+        </Button>
       </div>
+
+      {overview.data ? (
+        <>
+          <div className="grid grid-cols-2 gap-2 pt-1 sm:grid-cols-6">
+            {(
+              [
+                ["Calls", overview.data.counts.calls.count],
+                ["Campaigns", overview.data.counts.campaigns.count],
+                ["Destinations", overview.data.counts.destinations.count],
+                ["Buyers", overview.data.counts.buyers.count],
+                ["Webhooks", overview.data.counts.webhooks.count],
+                ["Tags", overview.data.counts.tags.count],
+              ] as const
+            ).map(([label, value]) => (
+              <div key={label} className="rounded-md border border-border p-2">
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
+                <p className="text-base font-semibold text-foreground">{value ?? "—"}</p>
+              </div>
+            ))}
+          </div>
+
+          {overview.data.recentCalls.length > 0 ? (
+            <div className="divide-y divide-border pt-1">
+              <p className="pb-1 text-xs font-semibold text-foreground">Recent CallGrid calls</p>
+              {overview.data.recentCalls.map((c) => (
+                <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 py-1.5 text-xs">
+                  <span className="font-mono text-foreground">
+                    {c.from ?? "—"} → {c.to ?? "—"}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {c.publisher ?? "—"} · {c.campaign ?? "—"} · {c.buyer ?? "—"}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {c.state ?? "—"} · {c.status ?? "—"} · {c.duration ?? 0}s · ${c.revenue ?? 0} rev / $
+                    {c.payout ?? 0} payout ·{" "}
+                    {c.startedAt ? new Date(c.startedAt).toLocaleString() : "—"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </>
+      ) : overview.isError ? (
+        <p className="text-xs text-destructive">{(overview.error as Error).message}</p>
+      ) : null}
     </Card>
   );
 }
+
 
 
 

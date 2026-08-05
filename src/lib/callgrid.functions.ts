@@ -7,26 +7,21 @@ import type { Json } from "@/integrations/supabase/types";
 const DEFAULT_BASE_URL = "https://api.callgrid.com";
 const PROVIDER = "callgrid";
 
-/** CallGrid API host (configurable in case the org is on a regional host). */
 function baseUrl() {
   return (process.env["CALLGRID_BASE_URL"] || DEFAULT_BASE_URL).replace(/\/$/, "");
 }
 
-type AuthScheme = "bearer" | "api_key" | "token";
-
-function authHeaders(key: string, scheme: AuthScheme): Record<string, string> {
-  const base: Record<string, string> = { Accept: "application/json" };
-  if (scheme === "bearer") base["Authorization"] = `Bearer ${key}`;
-  else if (scheme === "token") base["Authorization"] = `Token ${key}`;
-  else base["X-API-Key"] = key;
-  return base;
-}
-
-async function callGrid(path: string, key: string, scheme: AuthScheme, init?: RequestInit) {
+/** CallGrid authenticates server-to-server with a Bearer API key. */
+async function callGrid(path: string, key: string, init?: RequestInit) {
   const res = await fetch(`${baseUrl()}${path}`, {
     ...init,
-    headers: { ...authHeaders(key, scheme), ...(init?.headers as Record<string, string> | undefined) },
-    signal: AbortSignal.timeout(12000),
+    headers: {
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      ...(init?.headers as Record<string, string> | undefined),
+    },
+    signal: AbortSignal.timeout(15000),
   });
   const text = await res.text();
   let body: unknown = text;
@@ -43,20 +38,11 @@ async function assertOps(context: { supabase: any; userId: string }) {
   if (error || !data) throw new Error("Forbidden: operations access required");
 }
 
-/** Candidate resource paths probed during discovery, in priority order. */
-const CANDIDATE_PATHS = [
-  "/api/v1/me",
-  "/api/v1/account",
-  "/api/v1/organization",
-  "/api/v1/users",
-  "/api/v1/calls",
-  "/v1/me",
-  "/v1/calls",
-  "/me",
-  "/calls",
-];
-
-const SCHEMES: AuthScheme[] = ["bearer", "api_key", "token"];
+function apiKey() {
+  const key = process.env["CALLGRID_API_KEY"];
+  if (!key) throw new Error("CALLGRID_API_KEY is not configured");
+  return key;
+}
 
 /** Current CallGrid connection state (row + whether the API key secret is present). */
 export const getCallGridStatus = createServerFn({ method: "GET" })
@@ -77,10 +63,7 @@ export const getCallGridStatus = createServerFn({ method: "GET" })
     };
   });
 
-/**
- * Live health check against CallGrid. Confirms the host is reachable, then probes
- * candidate resource paths across auth schemes and remembers whichever authenticates.
- */
+/** Live health check against CallGrid; persists status on the integrations row. */
 export const testCallGrid = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -91,43 +74,22 @@ export const testCallGrid = createServerFn({ method: "POST" })
     let status = "Error";
     let lastError: string | null = null;
     let response: unknown = null;
-    let workingPath: string | null = null;
-    let workingScheme: AuthScheme | null = null;
-    const probes: Array<{ path: string; scheme: AuthScheme; httpStatus: number }> = [];
 
     if (!key) {
       lastError = "CALLGRID_API_KEY is not configured";
     } else {
       try {
-        // 1) Host reachability.
-        const health = await callGrid("/health", key, "bearer");
-        if (health.ok) {
+        const result = await callGrid("/api/campaign?page=1&limit=1", key);
+        response = { path: "/api/campaign", httpStatus: result.status };
+        if (result.ok) {
+          status = "Connected";
+        } else if (result.status === 401 || result.status === 403) {
+          lastError = `Authentication rejected (HTTP ${result.status})`;
+        } else {
           status = "Degraded";
-          lastError = "Host reachable, but no authenticated resource endpoint found yet";
+          lastError = `HTTP ${result.status} from /api/campaign`;
         }
-
-        // 2) Find a resource endpoint that accepts the key.
-        outer: for (const path of CANDIDATE_PATHS) {
-          for (const scheme of SCHEMES) {
-            const result = await callGrid(path, key, scheme);
-            probes.push({ path, scheme, httpStatus: result.status });
-            if (result.ok) {
-              status = "Connected";
-              lastError = null;
-              workingPath = path;
-              workingScheme = scheme;
-              response = { path, scheme, httpStatus: result.status };
-              break outer;
-            }
-            if (result.status === 401 || result.status === 403) {
-              status = "Error";
-              lastError = `Authentication rejected on ${path} (HTTP ${result.status})`;
-            }
-          }
-        }
-        if (!response) response = { probes: probes.slice(0, 12), health: health.status };
       } catch (err) {
-        status = "Error";
         lastError = err instanceof Error ? err.message : "Unknown error";
       }
     }
@@ -138,10 +100,10 @@ export const testCallGrid = createServerFn({ method: "POST" })
         {
           provider: PROVIDER,
           name: "CallGrid",
-          category: "Dialer / Telephony",
+          category: "Call Tracking / Routing",
           direction: "bidirectional",
           base_url: baseUrl(),
-          auth_type: workingScheme ?? "bearer",
+          auth_type: "bearer",
           secret_name: "CALLGRID_API_KEY",
           enabled: true,
           status,
@@ -149,8 +111,8 @@ export const testCallGrid = createServerFn({ method: "POST" })
           last_sync_at: new Date().toISOString(),
           config: {
             consoleUrl: "https://app.callgrid.com/organization/api-keys",
-            resourcePath: workingPath,
-            authScheme: workingScheme,
+            docsUrl: "https://callgrid.com/api",
+            endpoints: ["/api/call", "/api/campaign", "/api/destination", "/api/buyer", "/api/webhook", "/api/tag", "/api/organization"],
           } as Json,
           created_by: context.userId,
         },
@@ -171,38 +133,116 @@ export const testCallGrid = createServerFn({ method: "POST" })
       error: lastError,
     });
 
-    return { status, lastError, workingPath, workingScheme, probes, integration: saved };
+    return { status, lastError, integration: saved };
   });
 
-/** Read-through proxy for CallGrid GET endpoints, using the discovered auth scheme. */
+/** Read-through proxy for CallGrid GET endpoints. */
 export const callGridFetch = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: unknown) =>
     z
-      .object({
-        path: z.string().regex(/^\/[A-Za-z0-9_\-/?=&.]*$/, "Invalid CallGrid path"),
-        scheme: z.enum(["bearer", "api_key", "token"]).optional(),
-      })
+      .object({ path: z.string().regex(/^\/api\/[A-Za-z0-9_\-/?=&.%+]*$/, "Invalid CallGrid path") })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
     await assertOps(context);
-    const key = process.env["CALLGRID_API_KEY"];
-    if (!key) throw new Error("CALLGRID_API_KEY is not configured");
-
-    let scheme: AuthScheme = data.scheme ?? "bearer";
-    if (!data.scheme) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { data: row } = await supabaseAdmin
-        .from("integrations")
-        .select("config")
-        .eq("provider", PROVIDER)
-        .maybeSingle();
-      const stored = (row?.config as { authScheme?: AuthScheme } | null)?.authScheme;
-      if (stored) scheme = stored;
-    }
-
-    const result = await callGrid(data.path, key, scheme);
+    const result = await callGrid(data.path, apiKey());
     if (!result.ok) throw new Error(`CallGrid returned HTTP ${result.status}`);
     return { data: result.body as Json };
+  });
+
+type CountResult = { count: number | null; error: string | null };
+
+/** Page-based endpoints return { data, totalPages, counts: { all } }. */
+async function countOf(path: string, key: string): Promise<CountResult> {
+  try {
+    const res = await callGrid(`${path}?page=1&limit=1`, key);
+    if (!res.ok) return { count: null, error: `HTTP ${res.status}` };
+    const body = res.body as
+      | { totalCount?: number; totalPages?: number; counts?: { all?: number }; data?: unknown[] }
+      | null;
+    const count =
+      typeof body?.counts?.all === "number"
+        ? body.counts.all
+        : typeof body?.totalCount === "number"
+          ? body.totalCount
+          : // limit=1, so one page per record.
+            typeof body?.totalPages === "number"
+            ? body.totalPages
+            : (body?.data?.length ?? null);
+    return { count, error: null };
+  } catch (err) {
+    return { count: null, error: err instanceof Error ? err.message : "Unknown error" };
+  }
+}
+
+
+/** Live CallGrid overview: record counts plus the most recent tracked calls. */
+export const getCallGridOverview = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertOps(context);
+    const key = apiKey();
+
+    const [campaigns, destinations, buyers, webhooks, tags] = await Promise.all([
+      countOf("/api/campaign", key),
+      countOf("/api/destination", key),
+      countOf("/api/buyer", key),
+      countOf("/api/webhook", key),
+      countOf("/api/tag", key),
+    ]);
+
+    let calls: CountResult = { count: null, error: null };
+    let recentCalls: Array<{
+      id: string;
+      from: string | null;
+      to: string | null;
+      campaign: string | null;
+      buyer: string | null;
+      publisher: string | null;
+      state: string | null;
+      status: string | null;
+      duration: number | null;
+      revenue: number | null;
+      payout: number | null;
+      recordingUrl: string | null;
+      startedAt: string | null;
+    }> = [];
+
+    try {
+      // The calls endpoint uses cursor pagination.
+      const res = await callGrid("/api/call?useCursor=true&maxItems=15", key);
+      const body = res.body as
+        | { data?: Array<Record<string, unknown>>; totalCount?: number }
+        | null;
+      if (!res.ok) {
+        calls = { count: null, error: `HTTP ${res.status}` };
+      } else {
+        calls = { count: typeof body?.totalCount === "number" ? body.totalCount : null, error: null };
+        const str = (v: unknown) => (typeof v === "string" && v.length > 0 ? v : null);
+        const num = (v: unknown) => (typeof v === "number" ? v : null);
+        recentCalls = (body?.data ?? []).map((c) => ({
+          id: String(c["id"] ?? c["CallId"] ?? ""),
+          from: str(c["CallerId"]) ?? str(c["InboundNumber"]),
+          to: str(c["VariablePhone"]) ?? str(c["SourceNumber"]),
+          campaign: str(c["CampaignName"]),
+          buyer: str(c["BuyerName"]) ?? str(c["DestinationName"]),
+          publisher: str(c["VendorName"]) ?? str(c["SourceName"]),
+          state: str(c["InboundStateCode"]) ?? str(c["InboundState"]),
+          status: str(c["callStatus"]) ?? str(c["outcome"]),
+          duration: num(c["callDuration"]),
+          revenue: num(c["revenue"]),
+          payout: num(c["payout"]),
+          recordingUrl: str(c["callRecordingUrl"]),
+          startedAt: str(c["UTCISODate"]) ?? str(c["createdAt"]),
+        }));
+      }
+    } catch (err) {
+      calls = { count: null, error: err instanceof Error ? err.message : "Unknown error" };
+    }
+
+    return {
+      counts: { calls, campaigns, destinations, buyers, webhooks, tags },
+      recentCalls,
+    };
   });
