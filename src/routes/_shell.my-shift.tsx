@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Coffee, LogIn, LogOut, Sandwich, PhoneCall, Clock } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { Coffee, LogIn, LogOut, Sandwich, PhoneCall, Clock, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/crm/PageHeader";
 import { StatCard } from "@/components/crm/StatCard";
@@ -10,8 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { shiftTimeline } from "@/lib/mock-data";
 import { formatDuration, useShift } from "@/context/ShiftContext";
+import { getMyShiftDay } from "@/lib/shift.functions";
+import { formatClock, formatHm, workedSeconds, type ShiftDay } from "@/lib/shift-shared";
 
 export const Route = createFileRoute("/_shell/my-shift")({
   head: () => ({
@@ -31,56 +33,80 @@ export const Route = createFileRoute("/_shell/my-shift")({
   component: MyShiftPage,
 });
 
-const weeklyHours = [
-  { day: "Mon", hours: 8.2 },
-  { day: "Tue", hours: 8.0 },
-  { day: "Wed", hours: 7.6 },
-  { day: "Thu", hours: 8.4 },
-  { day: "Fri", hours: 5.1 },
-  { day: "Sat", hours: 0 },
-  { day: "Sun", hours: 0 },
-];
+const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function MyShiftPage() {
-  const { status, statusSeconds, signedIn, allowanceSeconds, overrunSeconds, setStatus, events } =
-    useShift();
-  const [signedInAtStr] = useState("07:00");
+  const {
+    status,
+    statusSeconds,
+    signedIn,
+    allowanceSeconds,
+    overrunSeconds,
+    setStatus,
+    events,
+    totals,
+    signedInAt,
+    signedOutAt,
+    session,
+    syncing,
+    refreshSession,
+    config,
+  } = useShift();
 
-  const weeklyTotal = useMemo(
-    () => weeklyHours.reduce((sum, d) => sum + d.hours, 0),
-    [],
-  );
+  const loadDay = useServerFn(getMyShiftDay);
+  const dayQuery = useQuery({
+    queryKey: ["my-shift-day", session?.id ?? "none"],
+    queryFn: () => loadDay() as Promise<ShiftDay>,
+    refetchInterval: 60_000,
+  });
 
-  const breakUsedSeconds = status === "Break" ? statusSeconds : 0;
-  const lunchUsedSeconds = status === "Lunch" ? statusSeconds : 0;
+  const week = dayQuery.data?.week ?? [];
+  const weeklySeconds = week.reduce((sum, s) => sum + workedSeconds(s), 0);
+  const maxDaySeconds = Math.max(8.5 * 3600, ...week.map((s) => workedSeconds(s)));
+
+  const breakUsed = totals.breakSeconds;
+  const lunchUsed = totals.lunchSeconds;
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <PageHeader
         eyebrow="Attendance"
         title="My Shift"
-        description="Clock in, take breaks and lunch on schedule, and keep an eye on today's timeline."
+        description="Your sign-in and sign-out are recorded automatically — breaks, lunch and available time are tracked for HR."
         actions={
-          signedIn ? (
+          <div className="flex items-center gap-2">
             <Button
-              variant="destructive"
+              variant="outline"
+              size="icon"
+              aria-label="Refresh shift record"
               onClick={() => {
-                setStatus("Signed Out", "End of shift");
-                toast.success("Signed out — have a good evening");
+                void refreshSession();
+                void dayQuery.refetch();
               }}
             >
-              <LogOut className="size-4" /> Sign out
+              <RefreshCw className={syncing ? "size-4 animate-spin" : "size-4"} />
             </Button>
-          ) : (
-            <Button
-              onClick={() => {
-                setStatus("Available", "Ready for calls");
-                toast.success("Signed in — status set to Available");
-              }}
-            >
-              <LogIn className="size-4" /> Sign in
-            </Button>
-          )
+            {signedIn ? (
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  setStatus("Signed Out", "End of shift");
+                  toast.success("Signed out — attendance recorded");
+                }}
+              >
+                <LogOut className="size-4" /> Sign out
+              </Button>
+            ) : (
+              <Button
+                onClick={() => {
+                  setStatus("Available", "Ready for calls");
+                  toast.success("Signed in — status set to Available");
+                }}
+              >
+                <LogIn className="size-4" /> Sign in
+              </Button>
+            )}
+          </div>
         }
       />
 
@@ -94,18 +120,22 @@ function MyShiftPage() {
         />
         <StatCard
           label="Signed in at"
-          value={signedIn ? signedInAtStr : "—"}
-          hint="Standard Pacific 7:00–16:00"
+          value={formatClock(signedInAt)}
+          hint={
+            signedOutAt
+              ? `Signed out ${formatClock(signedOutAt)}`
+              : "Recorded automatically on login"
+          }
         />
         <StatCard
-          label="Overrun"
-          value={`+${formatDuration(overrunSeconds)}`}
-          hint={overrunSeconds > 0 ? "Over allowance" : "Within allowance"}
-          tone={overrunSeconds > 0 ? "danger" : "success"}
+          label="Worked today"
+          value={formatHm(totals.workedSeconds)}
+          hint={`Break ${formatHm(breakUsed)} · Lunch ${formatHm(lunchUsed)}`}
+          tone="brand"
         />
         <StatCard
           label="Week to date"
-          value={`${weeklyTotal.toFixed(1)}h`}
+          value={formatHm(weeklySeconds)}
           hint="Target 40h"
           tone="info"
         />
@@ -117,7 +147,7 @@ function MyShiftPage() {
             <div>
               <h2 className="text-sm font-semibold text-foreground">Presence controls</h2>
               <p className="text-xs text-muted-foreground">
-                Switch status to trigger the break/lunch allowance timers.
+                Every change is saved to your attendance record instantly.
               </p>
             </div>
             <Separator />
@@ -144,11 +174,25 @@ function MyShiftPage() {
                 <Sandwich className="size-4" /> Start lunch
               </Button>
               <Button
-                variant="outline"
+                variant={status === "Meeting" ? "default" : "outline"}
                 disabled={!signedIn}
                 onClick={() => setStatus("Meeting", "Team huddle")}
               >
                 Meeting
+              </Button>
+              <Button
+                variant={status === "Training" ? "default" : "outline"}
+                disabled={!signedIn}
+                onClick={() => setStatus("Training", "Course / coaching")}
+              >
+                Training
+              </Button>
+              <Button
+                variant={status === "Not Available" ? "default" : "outline"}
+                disabled={!signedIn}
+                onClick={() => setStatus("Not Available", "Technical issue")}
+              >
+                Not available
               </Button>
             </div>
           </Card>
@@ -157,17 +201,39 @@ function MyShiftPage() {
             <h2 className="text-sm font-semibold text-foreground">Break allowance</h2>
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>Break (15 min allowance)</span>
-                <span className="tabular">{formatDuration(breakUsedSeconds)} / 15:00</span>
+                <span>Break ({Math.round(config.breakAllowanceSeconds / 60)} min allowance)</span>
+                <span className="tabular">
+                  {formatHm(breakUsed)} / {Math.round(config.breakAllowanceSeconds / 60)}m
+                </span>
               </div>
-              <Progress value={Math.min(100, (breakUsedSeconds / (15 * 60)) * 100)} />
+              <Progress
+                value={Math.min(100, (breakUsed / config.breakAllowanceSeconds) * 100)}
+              />
             </div>
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>Lunch (30 min allowance)</span>
-                <span className="tabular">{formatDuration(lunchUsedSeconds)} / 30:00</span>
+                <span>Lunch ({Math.round(config.lunchAllowanceSeconds / 60)} min allowance)</span>
+                <span className="tabular">
+                  {formatHm(lunchUsed)} / {Math.round(config.lunchAllowanceSeconds / 60)}m
+                </span>
               </div>
-              <Progress value={Math.min(100, (lunchUsedSeconds / (30 * 60)) * 100)} />
+              <Progress
+                value={Math.min(100, (lunchUsed / config.lunchAllowanceSeconds) * 100)}
+              />
+            </div>
+            <div className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+              <p>
+                Break overrun today:{" "}
+                <span className="font-medium text-foreground tabular">
+                  {formatHm(totals.breakOverrunSeconds)}
+                </span>
+              </p>
+              <p>
+                Lunch overrun today:{" "}
+                <span className="font-medium text-foreground tabular">
+                  {formatHm(totals.lunchOverrunSeconds)}
+                </span>
+              </p>
             </div>
             {allowanceSeconds !== null && overrunSeconds > 0 && (
               <p className="text-xs font-medium text-destructive">
@@ -178,29 +244,45 @@ function MyShiftPage() {
           </Card>
 
           <Card className="gap-4 p-5 shadow-card">
-            <h2 className="text-sm font-semibold text-foreground">Weekly hours</h2>
-            <div className="space-y-2">
-              {weeklyHours.map((d) => (
-                <div key={d.day} className="flex items-center gap-3">
-                  <span className="w-9 text-xs text-muted-foreground">{d.day}</span>
-                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface">
-                    <div
-                      className="h-full rounded-full bg-brand"
-                      style={{ width: `${Math.min(100, (d.hours / 8.5) * 100)}%` }}
-                    />
-                  </div>
-                  <span className="w-10 text-right text-xs tabular text-foreground">
-                    {d.hours.toFixed(1)}h
-                  </span>
-                </div>
-              ))}
-            </div>
+            <h2 className="text-sm font-semibold text-foreground">Last 7 days</h2>
+            {week.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                No shift records yet — your first sign-in starts the history.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {week.map((s) => {
+                  const worked = workedSeconds(s);
+                  const date = new Date(`${s.work_date}T12:00:00`);
+                  return (
+                    <div key={s.id} className="flex items-center gap-3">
+                      <span className="w-9 text-xs text-muted-foreground">
+                        {DAY_LABELS[date.getDay()]}
+                      </span>
+                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface">
+                        <div
+                          className="h-full rounded-full bg-brand"
+                          style={{ width: `${Math.min(100, (worked / maxDaySeconds) * 100)}%` }}
+                        />
+                      </div>
+                      <span className="w-16 text-right text-xs tabular text-foreground">
+                        {formatHm(worked)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </Card>
         </div>
 
         <Card className="gap-4 p-5 shadow-card">
           <h2 className="text-sm font-semibold text-foreground">Today's timeline</h2>
-          <Timeline items={[...shiftTimeline, ...events.slice(2)].slice(-12) as any} />
+          {events.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No activity recorded yet today.</p>
+          ) : (
+            <Timeline items={events.slice(-14)} />
+          )}
         </Card>
       </div>
     </div>
