@@ -363,8 +363,17 @@ export function TaskDetailSheet({
   currentUser: string;
   onEdit: (task: WorkTask) => void;
 }) {
-  const { updateTask, addComment, addSubtask, toggleSubtask, claimTask, deleteTask, decideApproval } =
-    useTaskStore();
+  const {
+    updateTask,
+    addComment,
+    addSubtask,
+    toggleSubtask,
+    claimTask,
+    deleteTask,
+    decideApproval,
+    snoozeReminder,
+    clearReminder,
+  } = useTaskStore();
   const [comment, setComment] = useState("");
   const [subtask, setSubtask] = useState("");
 
