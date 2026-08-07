@@ -1,16 +1,19 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle, Radio, Users, Timer } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { AlertTriangle, Radio, RefreshCw, Users, Timer } from "lucide-react";
 import { PageHeader } from "@/components/crm/PageHeader";
 import { StatCard } from "@/components/crm/StatCard";
 import { StatusBadge } from "@/components/crm/StatusBadge";
 import { DataTable } from "@/components/crm/DataTable";
 import { FilterBar } from "@/components/crm/FilterBar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { employees, type PresenceStatus } from "@/lib/mock-data";
-import { unique } from "@/lib/use-filters";
-import { useFilters } from "@/lib/use-filters";
+import { getAttendanceRegister } from "@/lib/shift.functions";
+import { formatClock, formatHm, pacificDate } from "@/lib/shift-shared";
+import type { PresenceStatus } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_shell/live-operations")({
@@ -19,26 +22,31 @@ export const Route = createFileRoute("/_shell/live-operations")({
       { title: "Live Operations — Policy Bear CRM" },
       {
         name: "description",
-        content: "Real-time floor view of every agent's presence status, duration and over-break warnings.",
+        content:
+          "Real-time floor view of every employee's presence status, time in status and break overruns.",
       },
       { property: "og:title", content: "Live Operations — Policy Bear CRM" },
       {
         property: "og:description",
-        content: "Presence tiles and status table for the live floor supervisor view.",
+        content: "Presence tiles and live status table for the floor supervisor view.",
       },
     ],
   }),
   component: LiveOperationsPage,
 });
 
-const OVER_BREAK_MINUTES = 16;
+const STATUSES: PresenceStatus[] = [
+  "Available",
+  "On Call",
+  "Break",
+  "Lunch",
+  "Meeting",
+  "Training",
+  "Not Available",
+  "Signed Out",
+];
 
-function durationMinutes(duration: string) {
-  const match = duration.match(/(\d+)m/);
-  return match ? Number(match[1]) : 0;
-}
-
-function toneForStatus(status: PresenceStatus) {
+function toneForStatus(status: string) {
   switch (status) {
     case "Available":
       return "success" as const;
@@ -57,50 +65,79 @@ function toneForStatus(status: PresenceStatus) {
 }
 
 function LiveOperationsPage() {
-  const teams = useMemo(() => unique(employees, (e) => e.team), []);
-  const statuses = useMemo(() => unique(employees, (e) => e.status), []);
+  const load = useServerFn(getAttendanceRegister);
+  const today = pacificDate();
 
-  const { search, setSearch, values, setValue, reset, filtered } = useFilters(employees, {
-    searchFields: (e) => [e.name, e.email, e.team],
-    filters: {
-      team: (e) => e.team,
-      status: (e) => e.status,
-    },
+  const query = useQuery({
+    queryKey: ["live-operations", today],
+    queryFn: () => load({ data: { from: today, to: today } }),
+    refetchInterval: 20_000,
   });
 
-  const [minDuration, setMinDuration] = useState(false);
+  const rows = useMemo(() => {
+    const profiles = new Map((query.data?.profiles ?? []).map((p) => [p.id, p]));
+    const now = Date.now();
+    return (query.data?.sessions ?? []).map((s) => {
+      const p = profiles.get(s.user_id);
+      const inStatus = Math.max(0, Math.round((now - new Date(s.current_status_at).getTime()) / 1000));
+      const overrun = s.break_overrun_seconds + s.lunch_overrun_seconds;
+      return {
+        id: s.id,
+        name: p?.name ?? "Unknown employee",
+        title: p?.title ?? "",
+        team: p?.team ?? "—",
+        initials: p?.avatar_initials ?? "??",
+        status: s.signed_out_at ? "Signed Out" : s.current_status,
+        inStatus,
+        signedInAt: s.signed_in_at,
+        breakSeconds: s.break_seconds,
+        lunchSeconds: s.lunch_seconds,
+        overrun,
+      };
+    });
+  }, [query.data]);
 
-  const counts = useMemo(() => {
-    const map: Record<string, number> = {};
-    for (const e of employees) map[e.status] = (map[e.status] ?? 0) + 1;
-    return map;
-  }, []);
+  const [search, setSearch] = useState("");
+  const [team, setTeam] = useState("all");
+  const [status, setStatus] = useState("all");
+  const [overrunOnly, setOverrunOnly] = useState(false);
 
-  const overBreak = employees.filter(
-    (e) =>
-      (e.status === "Break" || e.status === "Lunch") &&
-      durationMinutes(e.statusDuration) > OVER_BREAK_MINUTES,
+  const teams = useMemo(() => Array.from(new Set(rows.map((r) => r.team))).sort(), [rows]);
+
+  const filtered = rows.filter(
+    (r) =>
+      (!search || `${r.name} ${r.team}`.toLowerCase().includes(search.toLowerCase())) &&
+      (team === "all" || r.team === team) &&
+      (status === "all" || r.status === status) &&
+      (!overrunOnly || r.overrun > 0),
   );
 
-  const onFloor = employees.filter((e) => e.status !== "Signed Out").length;
+  const counts = rows.reduce<Record<string, number>>((acc, r) => {
+    acc[r.status] = (acc[r.status] ?? 0) + 1;
+    return acc;
+  }, {});
 
-  const rows = minDuration
-    ? filtered.filter((e) => durationMinutes(e.statusDuration) > OVER_BREAK_MINUTES)
-    : filtered;
+  const onFloor = rows.filter((r) => r.status !== "Signed Out").length;
+  const overrunCount = rows.filter((r) => r.overrun > 0).length;
 
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Attendance"
         title="Live Operations"
-        description="Real-time presence across the floor — spot over-break agents and monitor team coverage."
+        description="Real-time presence for everyone signed in today — spot break overruns and monitor coverage."
+        actions={
+          <Button variant="outline" onClick={() => void query.refetch()}>
+            <RefreshCw className={cn("size-4", query.isFetching && "animate-spin")} /> Refresh
+          </Button>
+        }
       />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="On the floor"
           value={onFloor}
-          hint={`of ${employees.length} employees`}
+          hint={`of ${rows.length} signed in today`}
           icon={<Users className="size-4" />}
           tone="brand"
         />
@@ -118,21 +155,22 @@ function LiveOperationsPage() {
           tone="warning"
         />
         <StatCard
-          label="Over-break warnings"
-          value={overBreak.length}
-          hint="Past allowance"
+          label="Overrun warnings"
+          value={overrunCount}
+          hint="Past allowance today"
           icon={<AlertTriangle className="size-4" />}
-          tone={overBreak.length > 0 ? "danger" : "success"}
+          tone={overrunCount > 0 ? "danger" : "success"}
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-9">
-        {statuses.map((s) => (
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
+        {STATUSES.map((s) => (
           <Card
             key={s}
+            onClick={() => setStatus(status === s ? "all" : s)}
             className={cn(
-              "gap-1 p-3 shadow-card",
-              values["status"] === s && "ring-2 ring-brand",
+              "cursor-pointer gap-1 p-3 shadow-card",
+              status === s && "ring-2 ring-brand",
             )}
           >
             <p className="text-[0.65rem] font-medium tracking-wide text-muted-foreground uppercase">
@@ -149,24 +187,29 @@ function LiveOperationsPage() {
         searchPlaceholder="Search employees…"
         filters={[
           { key: "team", label: "Team", options: teams },
-          { key: "status", label: "Status", options: statuses },
+          { key: "status", label: "Status", options: STATUSES },
         ]}
-        values={values}
-        onChange={setValue}
+        values={{ team, status }}
+        onChange={(key, value) => {
+          if (key === "team") setTeam(value);
+          if (key === "status") setStatus(value);
+        }}
         onReset={() => {
-          reset();
-          setMinDuration(false);
+          setSearch("");
+          setTeam("all");
+          setStatus("all");
+          setOverrunOnly(false);
         }}
         trailing={
           <button
             type="button"
-            onClick={() => setMinDuration((v) => !v)}
+            onClick={() => setOverrunOnly((v) => !v)}
             className={cn(
               "inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm font-medium",
-              minDuration ? "bg-destructive/10 text-destructive" : "text-muted-foreground",
+              overrunOnly ? "bg-destructive/10 text-destructive" : "text-muted-foreground",
             )}
           >
-            <Timer className="size-3.5" /> Over-break only
+            <Timer className="size-3.5" /> Overrun only
           </button>
         }
       />
@@ -179,7 +222,7 @@ function LiveOperationsPage() {
             cell: (e) => (
               <div className="flex items-center gap-2.5">
                 <Avatar className="size-7">
-                  <AvatarFallback className="text-[0.65rem]">{e.avatarInitials}</AvatarFallback>
+                  <AvatarFallback className="text-[0.65rem]">{e.initials}</AvatarFallback>
                 </Avatar>
                 <div className="min-w-0">
                   <p className="font-medium text-foreground">{e.name}</p>
@@ -196,37 +239,40 @@ function LiveOperationsPage() {
           },
           {
             key: "duration",
-            header: "Duration",
+            header: "In status",
+            align: "right",
+            cell: (e) => <span className="tabular">{formatHm(e.inStatus)}</span>,
+          },
+          { key: "in", header: "Signed in", cell: (e) => formatClock(e.signedInAt) },
+          {
+            key: "break",
+            header: "Break / lunch",
             align: "right",
             cell: (e) => (
-              <span
-                className={cn(
-                  "tabular",
-                  (e.status === "Break" || e.status === "Lunch") &&
-                    durationMinutes(e.statusDuration) > OVER_BREAK_MINUTES &&
-                    "font-semibold text-destructive",
-                )}
-              >
-                {e.statusDuration}
+              <span className="tabular">
+                {formatHm(e.breakSeconds)} / {formatHm(e.lunchSeconds)}
               </span>
             ),
           },
-          { key: "calls", header: "Calls today", align: "right", cell: (e) => e.callsToday },
           {
             key: "alert",
             header: "Alert",
             cell: (e) =>
-              e.alert ? (
+              e.overrun > 0 ? (
                 <span className="inline-flex items-center gap-1 text-xs font-medium text-destructive">
-                  <AlertTriangle className="size-3.5" /> {e.alert}
+                  <AlertTriangle className="size-3.5" /> {formatHm(e.overrun)} overrun
                 </span>
               ) : (
                 <span className="text-xs text-muted-foreground">—</span>
               ),
           },
         ]}
-        rows={rows}
-        empty="No employees match the current filters."
+        rows={filtered}
+        empty={
+          query.isLoading
+            ? "Loading the floor…"
+            : "Nobody has signed in today yet — records appear automatically on login."
+        }
       />
     </div>
   );
