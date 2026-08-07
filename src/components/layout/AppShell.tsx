@@ -9,6 +9,7 @@ import { BreakAlarmOverlay } from "@/components/shift/BreakAlarmOverlay";
 import { ShiftProvider } from "@/context/ShiftContext";
 import { CallProvider } from "@/context/CallContext";
 import { CallOverlay } from "@/components/messaging/CallOverlay";
+import { TaskStoreProvider } from "@/lib/task-store";
 import { useAuth } from "@/context/AuthContext";
 import { Toaster } from "@/components/ui/sonner";
 import { AccessDenied } from "@/components/auth/AccessDenied";
