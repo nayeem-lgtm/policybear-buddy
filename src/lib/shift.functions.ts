@@ -7,6 +7,7 @@ import {
   pacificDate,
   type ShiftDay,
   type ShiftEventRow,
+  type ShiftSessionUpdate,
   type ShiftSessionRow,
 } from "@/lib/shift-shared";
 
