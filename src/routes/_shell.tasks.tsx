@@ -81,16 +81,21 @@ function TasksApprovalsPage() {
       if (scope === "department" && t.department !== myDepartment) return false;
       if (scope === "mine" && t.owner !== me && !t.assignees.includes(me)) return false;
       if (scope === "unassigned" && t.owner) return false;
-      if (values.department && values.department !== "all" && t.department !== values.department) return false;
-      if (values.status && values.status !== "all" && t.status !== values.status) return false;
-      if (values.priority && values.priority !== "all" && t.priority !== values.priority) return false;
-      if (values.owner && values.owner !== "all") {
-        if (values.owner === "Unassigned" ? !!t.owner : t.owner !== values.owner) return false;
+      const fDept = values["department"];
+      const fStatus = values["status"];
+      const fPriority = values["priority"];
+      const fOwner = values["owner"];
+      const fDue = values["due"];
+      if (fDept && fDept !== "all" && t.department !== fDept) return false;
+      if (fStatus && fStatus !== "all" && t.status !== fStatus) return false;
+      if (fPriority && fPriority !== "all" && t.priority !== fPriority) return false;
+      if (fOwner && fOwner !== "all") {
+        if (fOwner === "Unassigned" ? !!t.owner : t.owner !== fOwner) return false;
       }
-      if (values.due && values.due !== "all") {
-        if (values.due === "Overdue" && !isOverdue(t)) return false;
-        if (values.due === "Open" && t.status === "Completed") return false;
-        if (values.due === "Completed" && t.status !== "Completed") return false;
+      if (fDue && fDue !== "all") {
+        if (fDue === "Overdue" && !isOverdue(t)) return false;
+        if (fDue === "Open" && t.status === "Completed") return false;
+        if (fDue === "Completed" && t.status !== "Completed") return false;
       }
       if (q && !`${t.title} ${t.id} ${t.related} ${t.tags.join(" ")} ${t.owner ?? ""}`.toLowerCase().includes(q))
         return false;
