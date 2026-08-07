@@ -461,5 +461,17 @@ export async function runSync(options?: { providers?: Provider[]; maxItems?: num
   }
 
   const journeys = await rebuildJourneys([...phones]);
-  return { outcomes, journeysRebuilt: journeys, phonesTouched: phones.size };
+
+  // Auto-fill the main system: contacts + texting threads for every synced lead.
+  let autofill = { contacts: 0, threads: 0, journeysLinked: 0 };
+  let autofillError: string | null = null;
+  try {
+    const { autofillFromTelephony } = await import("@/lib/telephony-autofill.server");
+    autofill = await autofillFromTelephony([...phones]);
+  } catch (err) {
+    autofillError = err instanceof Error ? err.message : "Unknown error";
+    console.error("telephony autofill failed:", autofillError);
+  }
+
+  return { outcomes, journeysRebuilt: journeys, phonesTouched: phones.size, autofill, autofillError };
 }
