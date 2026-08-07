@@ -65,7 +65,7 @@ function TasksApprovalsPage() {
   const me = user?.name ?? "Amelia Carter";
   const myDepartment = (user?.department ?? "Operations") as TaskDepartment;
 
-  const { tasks, decideApproval, resetBoard, claimTask } = useTaskStore();
+  const { tasks, decideApproval, resetBoard, claimTask, snoozeReminder, clearReminder } = useTaskStore();
 
   const [search, setSearch] = useState("");
   const [values, setValues] = useState<Record<string, string>>({});
