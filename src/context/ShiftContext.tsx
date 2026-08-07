@@ -263,37 +263,73 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
   const escalated = overrunSeconds >= (demoMode ? autoCallThreshold * 2 : config.escalateAfterSeconds);
 
 
-  const setStatus = useCallback((next: PresenceStatus, detail?: string) => {
-    setStatusState(next);
-    setStatusSeconds(0);
-    setTestKind(null);
-    setAlarmAcknowledgedAt(null);
-    setAutoCallAnswered(false);
-    setEvents((prev) => [
-      ...prev,
-      {
-        time: clockLabel(),
-        event: next,
-        detail:
-          detail ??
-          (next === "Break"
-            ? "Allowance 15 minutes"
-            : next === "Lunch"
-              ? "Allowance 30 minutes"
-              : next === "Available"
-                ? "Ready for calls"
-                : ""),
-        tone:
-          next === "Break" || next === "Lunch"
-            ? "warning"
+  const setStatus = useCallback(
+    (next: PresenceStatus, detail?: string) => {
+      setStatusState(next);
+      setStatusSeconds(0);
+      setTestKind(null);
+      setAlarmAcknowledgedAt(null);
+      setAutoCallAnswered(false);
+      const resolvedDetail =
+        detail ??
+        (next === "Break"
+          ? "Allowance 15 minutes"
+          : next === "Lunch"
+            ? "Allowance 30 minutes"
             : next === "Available"
-              ? "info"
-              : next === "Signed Out"
-                ? "muted"
-                : "brand",
-      },
-    ]);
-  }, []);
+              ? "Ready for calls"
+              : "");
+      setEvents((prev) => [
+        ...prev,
+        {
+          time: clockLabel(),
+          event: next,
+          detail: resolvedDetail,
+          tone: TONE_FOR_STATUS[next] ?? "brand",
+        },
+      ]);
+
+      if (!user) return;
+      const allowance =
+        next === "Break"
+          ? demoMode
+            ? DEMO_BREAK_ALLOWANCE_SECONDS
+            : config.breakAllowanceSeconds
+          : next === "Lunch"
+            ? demoMode
+              ? DEMO_LUNCH_ALLOWANCE_SECONDS
+              : config.lunchAllowanceSeconds
+            : null;
+
+      void (async () => {
+        setSyncing(true);
+        try {
+          // Re-open today's record when the agent signs back in after signing out.
+          if (next !== "Signed Out" && (!session || session.signed_out_at)) {
+            await startSession({ data: { detail: resolvedDetail } });
+          }
+          const updated = await pushStatus({
+            data: { status: next, detail: resolvedDetail, allowanceSeconds: allowance },
+          });
+          if (updated) setSession(updated as ShiftSessionRow);
+        } catch {
+          /* keep local state; the next refresh reconciles */
+        } finally {
+          setSyncing(false);
+        }
+      })();
+    },
+    [
+      user,
+      session,
+      demoMode,
+      config.breakAllowanceSeconds,
+      config.lunchAllowanceSeconds,
+      startSession,
+      pushStatus,
+    ],
+  );
+
 
   const logEvent = useCallback((event: ShiftEvent) => setEvents((prev) => [...prev, event]), []);
 
