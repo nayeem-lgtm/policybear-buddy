@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { ClipboardList, LayoutGrid, Plus, RotateCcw } from "lucide-react";
+import { BellRing, ClipboardList, LayoutGrid, Plus, RotateCcw } from "lucide-react";
 
 import { PageHeader } from "@/components/crm/PageHeader";
 import { StatCard } from "@/components/crm/StatCard";
