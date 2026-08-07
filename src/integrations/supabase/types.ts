@@ -859,6 +859,128 @@ export type Database = {
         }
         Relationships: []
       }
+      shift_sessions: {
+        Row: {
+          auto_closed: boolean
+          available_seconds: number
+          break_count: number
+          break_overrun_seconds: number
+          break_seconds: number
+          created_at: string
+          current_status: string
+          current_status_at: string
+          id: string
+          lunch_count: number
+          lunch_overrun_seconds: number
+          lunch_seconds: number
+          meeting_seconds: number
+          on_call_seconds: number
+          signed_in_at: string
+          signed_out_at: string | null
+          training_seconds: number
+          unavailable_seconds: number
+          updated_at: string
+          user_id: string
+          work_date: string
+        }
+        Insert: {
+          auto_closed?: boolean
+          available_seconds?: number
+          break_count?: number
+          break_overrun_seconds?: number
+          break_seconds?: number
+          created_at?: string
+          current_status?: string
+          current_status_at?: string
+          id?: string
+          lunch_count?: number
+          lunch_overrun_seconds?: number
+          lunch_seconds?: number
+          meeting_seconds?: number
+          on_call_seconds?: number
+          signed_in_at?: string
+          signed_out_at?: string | null
+          training_seconds?: number
+          unavailable_seconds?: number
+          updated_at?: string
+          user_id: string
+          work_date?: string
+        }
+        Update: {
+          auto_closed?: boolean
+          available_seconds?: number
+          break_count?: number
+          break_overrun_seconds?: number
+          break_seconds?: number
+          created_at?: string
+          current_status?: string
+          current_status_at?: string
+          id?: string
+          lunch_count?: number
+          lunch_overrun_seconds?: number
+          lunch_seconds?: number
+          meeting_seconds?: number
+          on_call_seconds?: number
+          signed_in_at?: string
+          signed_out_at?: string | null
+          training_seconds?: number
+          unavailable_seconds?: number
+          updated_at?: string
+          user_id?: string
+          work_date?: string
+        }
+        Relationships: []
+      }
+      shift_status_events: {
+        Row: {
+          allowance_seconds: number | null
+          created_at: string
+          detail: string | null
+          duration_seconds: number | null
+          ended_at: string | null
+          id: string
+          overrun_seconds: number
+          session_id: string
+          started_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          allowance_seconds?: number | null
+          created_at?: string
+          detail?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          overrun_seconds?: number
+          session_id: string
+          started_at?: string
+          status: string
+          user_id: string
+        }
+        Update: {
+          allowance_seconds?: number | null
+          created_at?: string
+          detail?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          overrun_seconds?: number
+          session_id?: string
+          started_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shift_status_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "shift_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sms_messages: {
         Row: {
           body: string
@@ -1191,6 +1313,10 @@ export type Database = {
         Returns: boolean
       }
       is_ops: { Args: { _user_id: string }; Returns: boolean }
+      shift_close_stale_sessions: {
+        Args: { _max_hours?: number }
+        Returns: number
+      }
     }
     Enums: {
       app_role:

@@ -10,6 +10,7 @@ import {
 
 import { supabase } from "@/integrations/supabase/client";
 import { provisionStaffAccounts } from "@/lib/auth.functions";
+import { recordStatusChange } from "@/lib/shift.functions";
 import type { Role } from "@/lib/mock-data";
 import {
   DEMO_ACCOUNTS,
@@ -156,10 +157,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
-    if (user) await supabase.from("profiles").update({ presence: "offline" }).eq("id", user.id);
+    if (user) {
+      // Close today's attendance record before the session token is dropped.
+      try {
+        await recordStatusChange({ data: { status: "Signed Out", detail: "Signed out of CRM" } });
+      } catch {
+        /* stale sessions are auto-closed server-side */
+      }
+      await supabase.from("profiles").update({ presence: "offline" }).eq("id", user.id);
+    }
     await supabase.auth.signOut();
     setUser(null);
   }, [user]);
+
 
   const setPresence = useCallback(
     async (presence: string) => {
