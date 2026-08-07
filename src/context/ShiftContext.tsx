@@ -8,7 +8,23 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useServerFn } from "@tanstack/react-start";
+
+import { useAuth } from "@/context/AuthContext";
 import type { PresenceStatus } from "@/lib/mock-data";
+import {
+  getMyShiftDay,
+  recordStatusChange,
+  shiftHeartbeat,
+  startShiftSession,
+} from "@/lib/shift.functions";
+import {
+  formatClock,
+  workedSeconds as computeWorked,
+  type ShiftDay,
+  type ShiftSessionRow,
+} from "@/lib/shift-shared";
+
 
 /**
  * Shift + presence state for the signed-in employee.
