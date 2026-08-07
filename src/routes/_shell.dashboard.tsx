@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/crm/PageHeader";
+import { RoleDashboard } from "@/components/dashboard/RoleDashboard";
+import { useAuth } from "@/context/AuthContext";
 
 export const Route = createFileRoute("/_shell/dashboard")({
   head: () => ({
@@ -14,11 +16,16 @@ export const Route = createFileRoute("/_shell/dashboard")({
 });
 
 function DashboardPage() {
+  const { user } = useAuth();
+
   return (
-    <PageHeader
-      eyebrow="Workspace"
-      title="Dashboard"
-      description="Your shift, queue and priorities at a glance."
-    />
+    <div className="space-y-5">
+      <PageHeader
+        eyebrow={user?.department ?? "Workspace"}
+        title="Dashboard"
+        description="Your shift, queue and priorities at a glance."
+      />
+      <RoleDashboard role={user?.role ?? "Agent"} name={user?.name ?? "Team member"} />
+    </div>
   );
 }
