@@ -600,6 +600,30 @@ export function TaskDetailSheet({
             </Button>
           </div>
 
+          <div className="space-y-2">
+            <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+              <History className="size-4 text-muted-foreground" />
+              Activity history
+            </p>
+            <ol className="relative space-y-3 pl-5">
+              <span className="absolute top-1.5 bottom-1.5 left-[0.19rem] w-px bg-border" />
+              {task.activity.map((a) => (
+                <li key={a.id} className="relative">
+                  <span className="absolute top-1.5 -left-[0.94rem] size-2 rounded-full bg-brand ring-2 ring-card" />
+                  <p className="text-sm text-foreground">{a.message}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {a.actor} · {a.at} · {a.kind}
+                  </p>
+                </li>
+              ))}
+              {task.activity.length === 0 && (
+                <li className="text-xs text-muted-foreground">No activity recorded yet.</li>
+              )}
+            </ol>
+          </div>
+
+
+
           <div className="flex items-center justify-between border-t border-border pt-4">
             <Button variant="outline" size="sm" onClick={() => onEdit(task)}>Edit task</Button>
             <Button
