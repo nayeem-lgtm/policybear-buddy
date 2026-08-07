@@ -364,7 +364,38 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
     });
   }, [logEvent]);
 
+  const live = (bucket: keyof ShiftSessionRow, forStatus: PresenceStatus[]) => {
+    const base = session ? Number(session[bucket] ?? 0) : 0;
+    return base + (forStatus.includes(status) && !testKind ? statusSeconds : 0);
+  };
+
+  const totals = {
+    availableSeconds: live("available_seconds", ["Available"]),
+    onCallSeconds: live("on_call_seconds", ["On Call", "Post Call"]),
+    breakSeconds: live("break_seconds", ["Break"]),
+    lunchSeconds: live("lunch_seconds", ["Lunch"]),
+    meetingSeconds: live("meeting_seconds", ["Meeting"]),
+    trainingSeconds: live("training_seconds", ["Training"]),
+    unavailableSeconds: live("unavailable_seconds", ["Not Available"]),
+    workedSeconds:
+      (session ? computeWorked(session) : 0) +
+      (["Available", "On Call", "Post Call", "Meeting", "Training", "Not Available"].includes(
+        status,
+      ) && !testKind
+        ? statusSeconds
+        : 0),
+    breakOverrunSeconds: (session?.break_overrun_seconds ?? 0) + (status === "Break" ? overrunSeconds : 0),
+    lunchOverrunSeconds: (session?.lunch_overrun_seconds ?? 0) + (status === "Lunch" ? overrunSeconds : 0),
+  };
+
   const value: ShiftContextValue = {
+    session,
+    totals,
+    signedInAt: session?.signed_in_at ?? null,
+    signedOutAt: session?.signed_out_at ?? null,
+    syncing,
+    refreshSession,
+
     status,
     statusSeconds,
     signedIn: status !== "Signed Out",
