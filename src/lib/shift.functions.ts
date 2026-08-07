@@ -102,7 +102,8 @@ export const recordStatusChange = createServerFn({ method: "POST" })
       .limit(1)
       .maybeSingle();
 
-    const patch: Record<string, unknown> = {
+    const numbers = session as unknown as Record<string, number>;
+    const patch: ShiftSessionUpdate = {
       current_status: data.status,
       current_status_at: now.toISOString(),
     };
@@ -126,19 +127,20 @@ export const recordStatusChange = createServerFn({ method: "POST" })
 
       const bucket = bucketColumnFor(openEvent.status);
       if (bucket) {
-        patch[bucket] = ((session as Record<string, number>)[bucket] ?? 0) + elapsed;
+        patch[bucket] = (numbers[bucket] ?? 0) + elapsed;
       }
       const overrunColumn = overrunColumnFor(openEvent.status);
       if (overrunColumn && overrun > 0) {
-        patch[overrunColumn] = ((session as Record<string, number>)[overrunColumn] ?? 0) + overrun;
+        patch[overrunColumn] = (numbers[overrunColumn] ?? 0) + overrun;
       }
     }
 
-    if (data.status === "Break") patch["break_count"] = (session.break_count ?? 0) + 1;
-    if (data.status === "Lunch") patch["lunch_count"] = (session.lunch_count ?? 0) + 1;
-    if (data.status === "Signed Out") patch["signed_out_at"] = now.toISOString();
+    if (data.status === "Break") patch.break_count = (session.break_count ?? 0) + 1;
+    if (data.status === "Lunch") patch.lunch_count = (session.lunch_count ?? 0) + 1;
+    if (data.status === "Signed Out") patch.signed_out_at = now.toISOString();
 
     await supabase.from("shift_sessions").update(patch).eq("id", session.id);
+
 
     if (data.status !== "Signed Out") {
       await supabase.from("shift_status_events").insert({
