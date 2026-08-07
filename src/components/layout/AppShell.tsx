@@ -49,6 +49,5 @@ export function AppShell({ children }: { children?: ReactNode }) {
         </TaskStoreProvider>
       </CallProvider>
     </ShiftProvider>
-    </ShiftProvider>
   );
 }
