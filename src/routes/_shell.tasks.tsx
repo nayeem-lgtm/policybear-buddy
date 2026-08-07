@@ -114,6 +114,9 @@ function TasksApprovalsPage() {
   const open = tasks.filter((t) => t.status !== "Completed");
   const overdue = tasks.filter(isOverdue);
   const unowned = tasks.filter((t) => !t.owner);
+  const reminderRows = tasks
+    .filter((t) => t.reminderAt && t.status !== "Completed")
+    .sort((a, b) => (a.reminderAt ?? "").localeCompare(b.reminderAt ?? ""));
 
   function openNew() {
     setEditing(undefined);
