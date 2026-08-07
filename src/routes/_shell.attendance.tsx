@@ -1,27 +1,17 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { CalendarDays, Clock3, Download, TrendingUp, UserX } from "lucide-react";
-import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { CalendarDays, Clock3, Coffee, RefreshCw, UtensilsCrossed } from "lucide-react";
 import { PageHeader } from "@/components/crm/PageHeader";
 import { StatCard } from "@/components/crm/StatCard";
-import { Timeline } from "@/components/crm/Timeline";
+import { StatusBadge } from "@/components/crm/StatusBadge";
+import { DataTable } from "@/components/crm/DataTable";
+import { FilterBar } from "@/components/crm/FilterBar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { employees } from "@/lib/mock-data";
+import { getAttendanceRegister } from "@/lib/shift.functions";
+import { formatClock, formatHm, pacificDate, workedSeconds } from "@/lib/shift-shared";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_shell/attendance")({
@@ -30,224 +20,247 @@ export const Route = createFileRoute("/_shell/attendance")({
       { title: "Attendance Register — Policy Bear CRM" },
       {
         name: "description",
-        content: "Monthly attendance register with present/absent/late/holiday marks per employee.",
+        content:
+          "HR attendance register with automatic sign-in and sign-out times, worked hours, break and lunch totals per employee.",
       },
       { property: "og:title", content: "Attendance Register — Policy Bear CRM" },
       {
         property: "og:description",
-        content: "HR monthly attendance grid with drill-in punch detail per employee.",
+        content: "Live attendance tracking: available time, break time, lunch time and overruns.",
       },
     ],
   }),
   component: AttendancePage,
 });
 
-type Mark = "P" | "A" | "L" | "H";
-
-const MONTHS = [
-  "January 2026",
-  "February 2026",
-  "March 2026",
-  "April 2026",
-  "May 2026",
-  "June 2026",
-  "July 2026",
-  "August 2026",
+const RANGES = [
+  { label: "Today", days: 0 },
+  { label: "Last 7 days", days: 6 },
+  { label: "Last 30 days", days: 29 },
 ];
 
-const markLabel: Record<Mark, string> = {
-  P: "Present",
-  A: "Absent",
-  L: "Late",
-  H: "Holiday",
-};
-
-const markClass: Record<Mark, string> = {
-  P: "bg-success/12 text-success",
-  A: "bg-destructive/12 text-destructive",
-  L: "bg-warning/22 text-brand-tan",
-  H: "bg-muted text-muted-foreground",
-};
-
-const DAYS_IN_MONTH = 22; // weekday cadence for a working month
-
-function markFor(empIndex: number, day: number): Mark {
-  if (day === 8 || day === 16) return "H";
-  const seed = (empIndex * 13 + day * 7) % 29;
-  if (seed === 0) return "A";
-  if (seed < 4) return "L";
-  return "P";
+function shiftDate(days: number) {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return pacificDate(d);
 }
 
 function AttendancePage() {
-  const roster = useMemo(() => employees.slice(0, 16), []);
-  const [month, setMonth] = useState<string>(MONTHS[MONTHS.length - 1] as string);
-  const [selected, setSelected] = useState<(typeof roster)[number] | null>(null);
+  const [rangeIndex, setRangeIndex] = useState(1);
+  const range = RANGES[rangeIndex]!;
+  const load = useServerFn(getAttendanceRegister);
 
-  const days = Array.from({ length: DAYS_IN_MONTH }, (_, i) => i + 1);
+  const query = useQuery({
+    queryKey: ["attendance-register", range.days],
+    queryFn: () => load({ data: { from: shiftDate(range.days), to: pacificDate() } }),
+    refetchInterval: 60_000,
+  });
 
-  const grid = useMemo(
-    () =>
-      roster.map((emp, i) => ({
-        emp,
-        marks: days.map((d) => markFor(i, d)),
-      })),
-    [roster],
+  const [search, setSearch] = useState("");
+  const [team, setTeam] = useState("all");
+
+  const rows = useMemo(() => {
+    const profiles = new Map((query.data?.profiles ?? []).map((p) => [p.id, p]));
+    return (query.data?.sessions ?? []).map((s) => {
+      const p = profiles.get(s.user_id);
+      return {
+        ...s,
+        name: p?.name ?? "Unknown employee",
+        team: p?.team ?? "—",
+        title: p?.title ?? "",
+        initials: p?.avatar_initials ?? "??",
+        worked: workedSeconds(s),
+      };
+    });
+  }, [query.data]);
+
+  const teams = useMemo(() => Array.from(new Set(rows.map((r) => r.team))).sort(), [rows]);
+
+  const filtered = rows.filter((r) => {
+    const matchesSearch =
+      !search ||
+      `${r.name} ${r.team} ${r.work_date}`.toLowerCase().includes(search.toLowerCase());
+    const matchesTeam = team === "all" || r.team === team;
+    return matchesSearch && matchesTeam;
+  });
+
+  const totals = filtered.reduce(
+    (acc, r) => ({
+      worked: acc.worked + r.worked,
+      breaks: acc.breaks + r.break_seconds,
+      lunch: acc.lunch + r.lunch_seconds,
+      overrun: acc.overrun + r.break_overrun_seconds + r.lunch_overrun_seconds,
+    }),
+    { worked: 0, breaks: 0, lunch: 0, overrun: 0 },
   );
-
-  const stats = useMemo(() => {
-    let present = 0;
-    let late = 0;
-    let absent = 0;
-    let total = 0;
-    for (const row of grid) {
-      for (const m of row.marks) {
-        if (m === "H") continue;
-        total += 1;
-        if (m === "P") present += 1;
-        if (m === "L") late += 1;
-        if (m === "A") absent += 1;
-      }
-    }
-    return {
-      presentPct: total ? Math.round(((present + late) / total) * 100) : 0,
-      late,
-      absent,
-      overtimeHours: 46.5,
-    };
-  }, [grid]);
-
-  const selectedIndex = selected ? roster.findIndex((e) => e.id === selected.id) : -1;
-  const selectedMarks = selectedIndex >= 0 ? (grid[selectedIndex]?.marks ?? []) : [];
 
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Attendance"
         title="Attendance Register"
-        description="Monthly presence register for every employee — drill in for daily punch detail."
+        description="Automatic sign-in and sign-out times with break, lunch and available-time totals for every employee."
         actions={
-          <>
-            <Select value={month} onValueChange={setMonth}>
-              <SelectTrigger className="h-9 w-44">
-                <CalendarDays className="size-3.5 text-muted-foreground" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {MONTHS.map((m) => (
-                  <SelectItem key={m} value={m}>
-                    {m}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              variant="outline"
-              onClick={() => toast.success(`Attendance register for ${month} exported`)}
-            >
-              <Download className="size-4" /> Export
-            </Button>
-          </>
+          <Button variant="outline" onClick={() => void query.refetch()}>
+            <RefreshCw className={cn("size-4", query.isFetching && "animate-spin")} /> Refresh
+          </Button>
         }
       />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label="Present rate"
-          value={`${stats.presentPct}%`}
-          hint={month}
-          tone="success"
-          icon={<TrendingUp className="size-4" />}
+          label="Shift records"
+          value={filtered.length}
+          hint={`${range.label} · ${query.data?.from ?? "—"} → ${query.data?.to ?? "—"}`}
+          icon={<CalendarDays className="size-4" />}
+          tone="brand"
         />
-        <StatCard label="Late arrivals" value={stats.late} hint="Clocked in after grace" tone="warning" icon={<Clock3 className="size-4" />} />
-        <StatCard label="Absences" value={stats.absent} hint="Unplanned" tone="danger" icon={<UserX className="size-4" />} />
-        <StatCard label="Overtime hours" value={`${stats.overtimeHours}h`} hint="Payroll period" tone="info" />
+        <StatCard
+          label="Worked time"
+          value={formatHm(totals.worked)}
+          hint="Excludes break & lunch"
+          icon={<Clock3 className="size-4" />}
+        />
+        <StatCard
+          label="Break / lunch"
+          value={`${formatHm(totals.breaks)} / ${formatHm(totals.lunch)}`}
+          hint="Combined for the selection"
+          icon={<Coffee className="size-4" />}
+          tone="warning"
+        />
+        <StatCard
+          label="Overrun time"
+          value={formatHm(totals.overrun)}
+          hint="Past break/lunch allowance"
+          icon={<UtensilsCrossed className="size-4" />}
+          tone={totals.overrun > 0 ? "danger" : "success"}
+        />
       </div>
 
-      <Card className="gap-0 overflow-hidden p-0 shadow-card">
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr className="bg-surface/70">
-                <th className="sticky left-0 z-10 bg-surface/70 px-3 py-2 text-left text-[0.7rem] font-semibold tracking-wide text-muted-foreground uppercase">
-                  Employee
-                </th>
-                {days.map((d) => (
-                  <th
-                    key={d}
-                    className="w-8 px-1 py-2 text-center text-[0.65rem] font-medium text-muted-foreground"
-                  >
-                    {d}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {grid.map((row) => (
-                <tr
-                  key={row.emp.id}
-                  className="cursor-pointer border-t border-border hover:bg-surface/50"
-                  onClick={() => setSelected(row.emp)}
-                >
-                  <td className="sticky left-0 z-10 bg-card px-3 py-1.5 whitespace-nowrap">
-                    <p className="font-medium text-foreground">{row.emp.name}</p>
-                    <p className="text-xs text-muted-foreground">{row.emp.team}</p>
-                  </td>
-                  {row.marks.map((m, i) => (
-                    <td key={i} className="px-1 py-1.5 text-center">
-                      <span
-                        className={cn(
-                          "inline-flex size-6 items-center justify-center rounded text-[0.68rem] font-semibold",
-                          markClass[m],
-                        )}
-                        title={markLabel[m]}
-                      >
-                        {m}
-                      </span>
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="flex flex-wrap items-center gap-4 border-t border-border px-4 py-2.5 text-xs text-muted-foreground">
-          {(Object.keys(markLabel) as Mark[]).map((m) => (
-            <span key={m} className="inline-flex items-center gap-1.5">
-              <span className={cn("inline-flex size-4 items-center justify-center rounded text-[0.6rem] font-semibold", markClass[m])}>
-                {m}
-              </span>
-              {markLabel[m]}
-            </span>
-          ))}
-        </div>
-      </Card>
+      <FilterBar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search employee, team or date…"
+        filters={[
+          { key: "range", label: "Range", options: RANGES.map((r) => r.label) },
+          { key: "team", label: "Team", options: teams },
+        ]}
+        values={{ range: range.label, team }}
+        onChange={(key, value) => {
+          if (key === "team") setTeam(value);
+          if (key === "range") {
+            const idx = RANGES.findIndex((r) => r.label === value);
+            setRangeIndex(idx === -1 ? 1 : idx);
+          }
+        }}
+        onReset={() => {
+          setSearch("");
+          setTeam("all");
+          setRangeIndex(1);
+        }}
+      />
 
-      <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{selected?.name}</DialogTitle>
-            <DialogDescription>
-              {month} punch detail · {selected?.title} · {selected?.team}
-            </DialogDescription>
-          </DialogHeader>
-          <Timeline
-            items={selectedMarks.slice(0, 10).map((m, i) => ({
-              time: `Aug ${i + 1}`,
-              event: markLabel[m],
-              detail:
-                m === "P"
-                  ? "07:00 in · 16:02 out"
-                  : m === "L"
-                    ? "07:14 in · 16:00 out"
-                    : m === "A"
-                      ? "No punches recorded"
-                      : "Company holiday",
-              tone: m === "P" ? "success" : m === "L" ? "warning" : m === "A" ? "danger" : "muted",
-            }))}
-          />
-        </DialogContent>
-      </Dialog>
+      <DataTable
+        columns={[
+          {
+            key: "employee",
+            header: "Employee",
+            cell: (r) => (
+              <div className="flex items-center gap-2.5">
+                <Avatar className="size-7">
+                  <AvatarFallback className="text-[0.65rem]">{r.initials}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0">
+                  <p className="font-medium text-foreground">{r.name}</p>
+                  <p className="text-xs text-muted-foreground">{r.team}</p>
+                </div>
+              </div>
+            ),
+          },
+          { key: "date", header: "Date", cell: (r) => r.work_date },
+          { key: "in", header: "Sign in", cell: (r) => formatClock(r.signed_in_at) },
+          {
+            key: "out",
+            header: "Sign out",
+            cell: (r) =>
+              r.signed_out_at ? (
+                <span>
+                  {formatClock(r.signed_out_at)}
+                  {r.auto_closed && (
+                    <span className="ml-1 text-xs text-muted-foreground">(auto)</span>
+                  )}
+                </span>
+              ) : (
+                <StatusBadge status="Active" tone="success" />
+              ),
+          },
+          {
+            key: "worked",
+            header: "Worked",
+            align: "right",
+            cell: (r) => <span className="tabular font-medium">{formatHm(r.worked)}</span>,
+          },
+          {
+            key: "available",
+            header: "Available",
+            align: "right",
+            cell: (r) => <span className="tabular">{formatHm(r.available_seconds)}</span>,
+          },
+          {
+            key: "call",
+            header: "On call",
+            align: "right",
+            cell: (r) => <span className="tabular">{formatHm(r.on_call_seconds)}</span>,
+          },
+          {
+            key: "break",
+            header: "Break",
+            align: "right",
+            cell: (r) => (
+              <span className={cn("tabular", r.break_overrun_seconds > 0 && "text-destructive")}>
+                {formatHm(r.break_seconds)}
+                {r.break_count > 0 && (
+                  <span className="ml-1 text-xs text-muted-foreground">×{r.break_count}</span>
+                )}
+              </span>
+            ),
+          },
+          {
+            key: "lunch",
+            header: "Lunch",
+            align: "right",
+            cell: (r) => (
+              <span className={cn("tabular", r.lunch_overrun_seconds > 0 && "text-destructive")}>
+                {formatHm(r.lunch_seconds)}
+              </span>
+            ),
+          },
+          {
+            key: "overrun",
+            header: "Overrun",
+            align: "right",
+            cell: (r) => {
+              const over = r.break_overrun_seconds + r.lunch_overrun_seconds;
+              return over > 0 ? (
+                <span className="tabular font-semibold text-destructive">{formatHm(over)}</span>
+              ) : (
+                <span className="text-xs text-muted-foreground">—</span>
+              );
+            },
+          },
+          {
+            key: "status",
+            header: "Current",
+            cell: (r) => <StatusBadge status={r.current_status} />,
+          },
+        ]}
+        rows={filtered}
+        empty={
+          query.isLoading
+            ? "Loading attendance records…"
+            : "No shift records for this range yet — records appear as soon as employees sign in."
+        }
+      />
     </div>
   );
 }
