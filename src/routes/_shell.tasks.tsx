@@ -146,6 +146,49 @@ function TasksApprovalsPage() {
         <StatCard label="Pending approvals" value={pendingApprovals.length} tone="info" />
       </div>
 
+      <Card className="p-4 shadow-card">
+        <div className="mb-3 flex items-center justify-between">
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+            <BellRing className="size-4 text-warning" />
+            Reminders &amp; recurring work
+          </p>
+          <span className="text-xs text-muted-foreground">
+            {reminderRows.length} reminder{reminderRows.length === 1 ? "" : "s"} ·{" "}
+            {tasks.filter((t) => t.recurrence !== "None").length} recurring
+          </span>
+        </div>
+        {reminderRows.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No reminders scheduled. Set one from any task panel.</p>
+        ) : (
+          <div className="divide-y divide-border">
+            {reminderRows.slice(0, 6).map((t) => (
+              <div key={t.id} className="flex flex-wrap items-center gap-2 py-2">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-foreground">
+                    {t.title}
+                    {t.recurrence !== "None" && (
+                      <Badge variant="secondary" className="ml-2 text-[0.65rem]">{t.recurrence}</Badge>
+                    )}
+                  </p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {(t.reminderAt ?? "").replace("T", " ")} · {t.department} · {t.owner ?? "Unassigned"}
+                    {reminderState(t) === "due" ? " · fired" : ""}
+                  </p>
+                </div>
+                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => snoozeReminder(t.id, 60)}>
+                  Snooze 1h
+                </Button>
+                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => clearReminder(t.id)}>
+                  Clear
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+
+
       <Tabs defaultValue="board">
         <TabsList>
           <TabsTrigger value="board" className="gap-1.5">
