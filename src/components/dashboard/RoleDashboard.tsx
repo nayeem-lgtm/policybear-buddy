@@ -409,7 +409,7 @@ export function RoleDashboard({ role, name }: { role: Role; name: string }) {
       </div>
 
       <div className="grid gap-3 lg:grid-cols-3">
-        <Panel title={config.chartTitle} hint={period === "today" ? "Last 7 days" : undefined} className="lg:col-span-2">
+        <Panel title={config.chartTitle} hint="Last 7 days" className="lg:col-span-2">
           <TrendChart kind={config.chart} />
         </Panel>
         <Panel title="Daily goal progress" hint="Placeholder">
