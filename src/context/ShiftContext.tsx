@@ -89,6 +89,25 @@ interface ShiftContextValue {
   answerAutoCall: () => void;
   confirmations: Record<string, boolean>;
   toggleConfirmation: (key: string) => void;
+  /** Persisted attendance record for today (null until the session is opened). */
+  session: ShiftSessionRow | null;
+  /** Live totals: persisted buckets plus the seconds elapsed in the current status. */
+  totals: {
+    availableSeconds: number;
+    onCallSeconds: number;
+    breakSeconds: number;
+    lunchSeconds: number;
+    meetingSeconds: number;
+    trainingSeconds: number;
+    unavailableSeconds: number;
+    workedSeconds: number;
+    breakOverrunSeconds: number;
+    lunchOverrunSeconds: number;
+  };
+  signedInAt: string | null;
+  signedOutAt: string | null;
+  syncing: boolean;
+  refreshSession: () => Promise<void>;
 }
 
 
@@ -99,24 +118,36 @@ function clockLabel(offsetSeconds = 0) {
   return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
+const TONE_FOR_STATUS: Record<string, ShiftEvent["tone"]> = {
+  Break: "warning",
+  Lunch: "warning",
+  Available: "info",
+  "Signed Out": "muted",
+};
+
 export function ShiftProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [status, setStatusState] = useState<PresenceStatus>("Available");
   const [statusSeconds, setStatusSeconds] = useState(0);
-  const [demoMode, setDemoMode] = useState(true);
+  const [demoMode, setDemoMode] = useState(false);
   const [alarmAcknowledgedAt, setAlarmAcknowledgedAt] = useState<number | null>(null);
   const [autoCallAnswered, setAutoCallAnswered] = useState(false);
   const [config, setConfig] = useState<AlarmConfig>(DEFAULT_ALARM_CONFIG);
   const [testKind, setTestKind] = useState<"Break" | "Lunch" | null>(null);
-  const [events, setEvents] = useState<ShiftEvent[]>([
-    { time: "07:00", event: "Sign In", detail: "CRM · CallTools · Google Meet confirmed", tone: "success" },
-    { time: "07:04", event: "Available", detail: "Ready for calls", tone: "info" },
-  ]);
+  const [session, setSession] = useState<ShiftSessionRow | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [events, setEvents] = useState<ShiftEvent[]>([]);
   const [confirmations, setConfirmations] = useState<Record<string, boolean>>({
     "Google Meet joined": true,
     "Camera on": true,
     "CallTools opened": true,
     "Ready for calls": false,
   });
+
+  const startSession = useServerFn(startShiftSession);
+  const pushStatus = useServerFn(recordStatusChange);
+  const heartbeat = useServerFn(shiftHeartbeat);
+  const loadDay = useServerFn(getMyShiftDay);
 
   const tick = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -126,6 +157,72 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
       if (tick.current) clearInterval(tick.current);
     };
   }, []);
+
+  const applyDay = useCallback((day: ShiftDay) => {
+    setSession(day.session);
+    if (day.session) {
+      setStatusState(day.session.current_status as PresenceStatus);
+      setStatusSeconds(
+        Math.max(
+          0,
+          Math.round((Date.now() - new Date(day.session.current_status_at).getTime()) / 1000),
+        ),
+      );
+    }
+    setEvents(
+      day.events.map((e) => ({
+        time: formatClock(e.started_at),
+        event: e.status,
+        detail: e.detail ?? "",
+        tone: TONE_FOR_STATUS[e.status] ?? "brand",
+      })),
+    );
+  }, []);
+
+  const refreshSession = useCallback(async () => {
+    if (!user) return;
+    try {
+      const day = (await loadDay()) as ShiftDay;
+      applyDay(day);
+    } catch {
+      /* offline / not signed in — keep local state */
+    }
+  }, [user, loadDay, applyDay]);
+
+  /** Automatic sign-in: opening the CRM starts (or resumes) today's shift record. */
+  useEffect(() => {
+    if (!user) {
+      setSession(null);
+      setEvents([]);
+      return;
+    }
+    let active = true;
+    void (async () => {
+      setSyncing(true);
+      try {
+        await startSession({ data: {} });
+        const day = (await loadDay()) as ShiftDay;
+        if (active) applyDay(day);
+      } catch {
+        /* leave local-only state in place */
+      } finally {
+        if (active) setSyncing(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [user, startSession, loadDay, applyDay]);
+
+  /** Heartbeat so a forgotten session auto-closes at the last real activity. */
+  useEffect(() => {
+    if (!user) return;
+    const id = setInterval(() => {
+      void heartbeat().catch(() => undefined);
+    }, 60_000);
+    return () => clearInterval(id);
+  }, [user, heartbeat]);
+
 
   const allowanceSeconds = useMemo(() => {
     if (testKind) return 0;
