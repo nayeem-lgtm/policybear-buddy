@@ -218,6 +218,62 @@ export function TaskFormDialog({
                 onChange={(e) => set("estimateHours", Number(e.target.value))}
               />
             </div>
+            <div className="grid gap-1.5">
+              <Label>Repeats</Label>
+              <Select value={draft.recurrence} onValueChange={(v) => set("recurrence", v as TaskDraft["recurrence"])}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {TASK_RECURRENCES.map((r) => (
+                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {draft.recurrence === "None"
+                  ? "One-off task."
+                  : `A fresh ${draft.recurrence.toLowerCase()} copy is created when this task is completed.`}
+              </p>
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="task-reminder">Reminder</Label>
+              <Input
+                id="task-reminder"
+                type="datetime-local"
+                value={draft.reminderAt ?? ""}
+                onChange={(e) => set("reminderAt", e.target.value || null)}
+              />
+              <div className="flex flex-wrap gap-1.5">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  onClick={() => set("reminderAt", `${draft.dueDate}T09:00`)}
+                >
+                  Due date 9:00
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  onClick={() => set("reminderAt", `${addDays(draft.dueDate, -1)}T09:00`)}
+                >
+                  1 day before
+                </Button>
+                {draft.reminderAt && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-xs"
+                    onClick={() => set("reminderAt", null)}
+                  >
+                    Clear
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="grid gap-1.5">
