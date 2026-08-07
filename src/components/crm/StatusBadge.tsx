@@ -48,6 +48,7 @@ export const STATUS_TONES: Record<string, Tone> = {
   New: "info",
   Open: "info",
 
+  Blocked: "danger",
   Overdue: "danger",
   Missed: "danger",
   Invalid: "danger",
