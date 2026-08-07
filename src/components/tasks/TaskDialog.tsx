@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check, Plus, Trash2 } from "lucide-react";
+import { Bell, BellRing, Check, History, Plus, Repeat, Trash2 } from "lucide-react";
 
 import {
   Dialog,
@@ -33,14 +33,26 @@ import {
   TASK_GROUPS,
   TASK_PRIORITIES,
   TASK_RECORD_TYPES,
+  TASK_RECURRENCES,
   TASK_STATUSES,
   emptyDraft,
+  reminderState,
   taskProgress,
   useTaskStore,
   type TaskDepartment,
   type TaskDraft,
   type WorkTask,
 } from "@/lib/task-store";
+
+/** Shift a YYYY-MM-DD string by a number of days. */
+function addDays(date: string, days: number) {
+  const [y, m, d] = date.split("-").map(Number);
+  const base = new Date(y ?? 2026, (m ?? 1) - 1, d ?? 1);
+  base.setDate(base.getDate() + days);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${base.getFullYear()}-${pad(base.getMonth() + 1)}-${pad(base.getDate())}`;
+}
+
 
 /** Create / edit form used by every board. */
 export function TaskFormDialog({
@@ -218,6 +230,62 @@ export function TaskFormDialog({
                 onChange={(e) => set("estimateHours", Number(e.target.value))}
               />
             </div>
+            <div className="grid gap-1.5">
+              <Label>Repeats</Label>
+              <Select value={draft.recurrence} onValueChange={(v) => set("recurrence", v as TaskDraft["recurrence"])}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {TASK_RECURRENCES.map((r) => (
+                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {draft.recurrence === "None"
+                  ? "One-off task."
+                  : `A fresh ${draft.recurrence.toLowerCase()} copy is created when this task is completed.`}
+              </p>
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="task-reminder">Reminder</Label>
+              <Input
+                id="task-reminder"
+                type="datetime-local"
+                value={draft.reminderAt ?? ""}
+                onChange={(e) => set("reminderAt", e.target.value || null)}
+              />
+              <div className="flex flex-wrap gap-1.5">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  onClick={() => set("reminderAt", `${draft.dueDate}T09:00`)}
+                >
+                  Due date 9:00
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  onClick={() => set("reminderAt", `${addDays(draft.dueDate, -1)}T09:00`)}
+                >
+                  1 day before
+                </Button>
+                {draft.reminderAt && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-xs"
+                    onClick={() => set("reminderAt", null)}
+                  >
+                    Clear
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="grid gap-1.5">
@@ -295,8 +363,17 @@ export function TaskDetailSheet({
   currentUser: string;
   onEdit: (task: WorkTask) => void;
 }) {
-  const { updateTask, addComment, addSubtask, toggleSubtask, claimTask, deleteTask, decideApproval } =
-    useTaskStore();
+  const {
+    updateTask,
+    addComment,
+    addSubtask,
+    toggleSubtask,
+    claimTask,
+    deleteTask,
+    decideApproval,
+    snoozeReminder,
+    clearReminder,
+  } = useTaskStore();
   const [comment, setComment] = useState("");
   const [subtask, setSubtask] = useState("");
 
@@ -426,6 +503,72 @@ export function TaskDetailSheet({
             </div>
           )}
 
+          <div className="space-y-3 rounded-md border border-border p-3">
+            <div className="flex items-center justify-between">
+              <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                {reminderState(task) === "due" ? (
+                  <BellRing className="size-4 text-warning" />
+                ) : (
+                  <Bell className="size-4 text-muted-foreground" />
+                )}
+                Reminder
+              </p>
+              <span className="text-xs text-muted-foreground">
+                {task.reminderAt
+                  ? `${task.reminderAt.replace("T", " ")}${task.reminderSent ? " · delivered" : " · scheduled"}`
+                  : "Not set"}
+              </span>
+            </div>
+            <Input
+              type="datetime-local"
+              className="h-9"
+              value={task.reminderAt ?? ""}
+              onChange={(e) => updateTask(task.id, { reminderAt: e.target.value || null })}
+            />
+            <div className="flex flex-wrap gap-1.5">
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => snoozeReminder(task.id, 15)}>
+                Snooze 15m
+              </Button>
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => snoozeReminder(task.id, 60)}>
+                Snooze 1h
+              </Button>
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => snoozeReminder(task.id, 1440)}>
+                Tomorrow
+              </Button>
+              {task.reminderAt && (
+                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => clearReminder(task.id)}>
+                  Clear
+                </Button>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between border-t border-border pt-3">
+              <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                <Repeat className="size-4 text-brand-cyan" />
+                Recurring
+              </p>
+              <Select
+                value={task.recurrence}
+                onValueChange={(v) => updateTask(task.id, { recurrence: v as WorkTask["recurrence"] })}
+              >
+                <SelectTrigger className="h-8 w-36 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {TASK_RECURRENCES.map((r) => (
+                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {task.recurrence !== "None" && (
+              <p className="text-xs text-muted-foreground">
+                Completing this task automatically opens the next {task.recurrence.toLowerCase()} occurrence.
+              </p>
+            )}
+            {task.recurredFrom && (
+              <p className="text-xs text-muted-foreground">Created automatically from {task.recurredFrom}.</p>
+            )}
+          </div>
+
           <div className="space-y-2">
             <p className="text-sm font-semibold text-foreground">Updates</p>
             <div className="space-y-2">
@@ -456,6 +599,30 @@ export function TaskDetailSheet({
               Post update
             </Button>
           </div>
+
+          <div className="space-y-2">
+            <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+              <History className="size-4 text-muted-foreground" />
+              Activity history
+            </p>
+            <ol className="relative space-y-3 pl-5">
+              <span className="absolute top-1.5 bottom-1.5 left-[0.19rem] w-px bg-border" />
+              {task.activity.map((a) => (
+                <li key={a.id} className="relative">
+                  <span className="absolute top-1.5 -left-[0.94rem] size-2 rounded-full bg-brand ring-2 ring-card" />
+                  <p className="text-sm text-foreground">{a.message}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {a.actor} · {a.at} · {a.kind}
+                  </p>
+                </li>
+              ))}
+              {task.activity.length === 0 && (
+                <li className="text-xs text-muted-foreground">No activity recorded yet.</li>
+              )}
+            </ol>
+          </div>
+
+
 
           <div className="flex items-center justify-between border-t border-border pt-4">
             <Button variant="outline" size="sm" onClick={() => onEdit(task)}>Edit task</Button>

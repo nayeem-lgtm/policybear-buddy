@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Copy, MessageSquare, Paperclip } from "lucide-react";
+import { Bell, BellRing, ChevronDown, ChevronRight, Copy, GripVertical, MessageSquare, Paperclip, Repeat } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { Card } from "@/components/ui/card";
@@ -19,6 +19,7 @@ import {
   TASK_PRIORITIES,
   TASK_STATUSES,
   isOverdue,
+  reminderState,
   taskProgress,
   useTaskStore,
   type WorkTask,
@@ -41,7 +42,8 @@ const STATUS_ACCENT: Record<string, string> = {
 
 /**
  * Monday.com-style grouped board: every row is editable inline
- * (status, owner, priority) and opens a detail panel on click.
+ * (status, owner, priority), draggable between groups, and opens a
+ * detail panel on click.
  */
 export function TaskBoard({
   tasks,
@@ -54,8 +56,10 @@ export function TaskBoard({
   onOpen: (task: WorkTask) => void;
   emptyLabel?: string;
 }) {
-  const { updateTask, duplicateTask } = useTaskStore();
+  const { updateTask, duplicateTask, moveTask, reorderTask } = useTaskStore();
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
 
   const groups = useMemo(() => {
     const map = new Map<string, WorkTask[]>();
@@ -66,6 +70,17 @@ export function TaskBoard({
     return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
   }, [tasks, groupBy]);
 
+  function handleDropInGroup(groupValue: string, beforeId: string | null) {
+    if (!dragId) return;
+    const dragged = tasks.find((t) => t.id === dragId);
+    if (dragged && groupKey(dragged, groupBy) !== groupValue) {
+      moveTask(dragId, groupBy, groupValue);
+    }
+    reorderTask(dragId, beforeId);
+    setDragId(null);
+    setDropTarget(null);
+  }
+
   if (tasks.length === 0) {
     return (
       <Card className="p-10 text-center text-sm text-muted-foreground shadow-card">{emptyLabel}</Card>
@@ -74,11 +89,32 @@ export function TaskBoard({
 
   return (
     <div className="space-y-4">
+      <p className="text-xs text-muted-foreground">
+        Drag a row by its handle to move it between groups — dropping updates the{" "}
+        <span className="font-medium text-foreground">{groupBy === "group" ? "timeline group" : groupBy}</span>.
+      </p>
       {groups.map(([key, rows]) => {
         const done = rows.filter((r) => r.status === "Completed").length;
         const isCollapsed = collapsed[key];
+        const isDropZone = dropTarget === `group:${key}`;
         return (
-          <Card key={key} className="gap-0 overflow-hidden p-0 shadow-card">
+          <Card
+            key={key}
+            className={cn(
+              "gap-0 overflow-hidden p-0 shadow-card transition-colors",
+              isDropZone && "ring-2 ring-brand",
+            )}
+            onDragOver={(e) => {
+              if (!dragId) return;
+              e.preventDefault();
+              setDropTarget(`group:${key}`);
+            }}
+            onDragLeave={() => setDropTarget((p) => (p === `group:${key}` ? null : p))}
+            onDrop={(e) => {
+              e.preventDefault();
+              handleDropInGroup(key, null);
+            }}
+          >
             <button
               type="button"
               onClick={() => setCollapsed((p) => ({ ...p, [key]: !p[key] }))}
@@ -94,11 +130,40 @@ export function TaskBoard({
 
             {!isCollapsed && (
               <div className="divide-y divide-border">
-                {rows.map((t) => (
+                {rows.map((t) => {
+                  const rem = reminderState(t);
+                  return (
                   <div
                     key={t.id}
-                    className="grid grid-cols-1 items-center gap-2 px-3 py-2.5 hover:bg-surface/50 lg:grid-cols-[minmax(0,2.2fr)_10rem_11rem_8rem_8rem_9rem_2.5rem]"
+                    draggable
+                    onDragStart={(e) => {
+                      setDragId(t.id);
+                      e.dataTransfer.effectAllowed = "move";
+                      e.dataTransfer.setData("text/plain", t.id);
+                    }}
+                    onDragEnd={() => {
+                      setDragId(null);
+                      setDropTarget(null);
+                    }}
+                    onDragOver={(e) => {
+                      if (!dragId || dragId === t.id) return;
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setDropTarget(`row:${t.id}`);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleDropInGroup(key, t.id);
+                    }}
+                    className={cn(
+                      "grid grid-cols-1 items-center gap-2 px-3 py-2.5 hover:bg-surface/50 lg:grid-cols-[1.25rem_minmax(0,2.2fr)_10rem_11rem_8rem_8rem_9rem_2.5rem]",
+                      dragId === t.id && "opacity-50",
+                      dropTarget === `row:${t.id}` && "border-t-2 border-t-brand",
+                    )}
                   >
+                    <GripVertical className="size-4 cursor-grab text-muted-foreground/70 active:cursor-grabbing" />
+
                     <div className="flex min-w-0 items-center gap-2">
                       <span className={cn("h-8 w-1 shrink-0 rounded-full", STATUS_ACCENT[t.status])} />
                       <button
@@ -106,7 +171,14 @@ export function TaskBoard({
                         onClick={() => onOpen(t)}
                         className="min-w-0 text-left"
                       >
-                        <p className="truncate text-sm font-medium text-foreground">{t.title}</p>
+                        <p className="flex items-center gap-1.5 truncate text-sm font-medium text-foreground">
+                          <span className="truncate">{t.title}</span>
+                          {t.recurrence !== "None" && (
+                            <Repeat className="size-3 shrink-0 text-brand-cyan" aria-label={`Repeats ${t.recurrence}`} />
+                          )}
+                          {rem === "due" && <BellRing className="size-3 shrink-0 text-warning" aria-label="Reminder fired" />}
+                          {rem === "scheduled" && <Bell className="size-3 shrink-0 text-muted-foreground" aria-label="Reminder scheduled" />}
+                        </p>
                         <p className="truncate text-xs text-muted-foreground">
                           {t.id} · {t.department} · {t.recordType}
                           {t.related && t.related !== "—" ? ` · ${t.related}` : ""}
@@ -174,7 +246,8 @@ export function TaskBoard({
                       <Copy className="size-3.5" />
                     </Button>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </Card>

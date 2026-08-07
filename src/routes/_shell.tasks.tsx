@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { ClipboardList, LayoutGrid, Plus, RotateCcw } from "lucide-react";
+import { BellRing, ClipboardList, LayoutGrid, Plus, RotateCcw } from "lucide-react";
 
 import { PageHeader } from "@/components/crm/PageHeader";
 import { StatCard } from "@/components/crm/StatCard";
@@ -25,6 +25,7 @@ import {
   TASK_PRIORITIES,
   TASK_STATUSES,
   isOverdue,
+  reminderState,
   useTaskStore,
   type TaskDepartment,
   type WorkTask,
@@ -65,7 +66,7 @@ function TasksApprovalsPage() {
   const me = user?.name ?? "Amelia Carter";
   const myDepartment = (user?.department ?? "Operations") as TaskDepartment;
 
-  const { tasks, decideApproval, resetBoard, claimTask } = useTaskStore();
+  const { tasks, decideApproval, resetBoard, claimTask, snoozeReminder, clearReminder } = useTaskStore();
 
   const [search, setSearch] = useState("");
   const [values, setValues] = useState<Record<string, string>>({});
@@ -113,6 +114,9 @@ function TasksApprovalsPage() {
   const open = tasks.filter((t) => t.status !== "Completed");
   const overdue = tasks.filter(isOverdue);
   const unowned = tasks.filter((t) => !t.owner);
+  const reminderRows = tasks
+    .filter((t) => t.reminderAt && t.status !== "Completed")
+    .sort((a, b) => (a.reminderAt ?? "").localeCompare(b.reminderAt ?? ""));
 
   function openNew() {
     setEditing(undefined);
@@ -145,6 +149,49 @@ function TasksApprovalsPage() {
         <StatCard label="Unassigned" value={unowned.length} tone="warning" hint="need an owner" />
         <StatCard label="Pending approvals" value={pendingApprovals.length} tone="info" />
       </div>
+
+      <Card className="p-4 shadow-card">
+        <div className="mb-3 flex items-center justify-between">
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+            <BellRing className="size-4 text-warning" />
+            Reminders &amp; recurring work
+          </p>
+          <span className="text-xs text-muted-foreground">
+            {reminderRows.length} reminder{reminderRows.length === 1 ? "" : "s"} ·{" "}
+            {tasks.filter((t) => t.recurrence !== "None").length} recurring
+          </span>
+        </div>
+        {reminderRows.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No reminders scheduled. Set one from any task panel.</p>
+        ) : (
+          <div className="divide-y divide-border">
+            {reminderRows.slice(0, 6).map((t) => (
+              <div key={t.id} className="flex flex-wrap items-center gap-2 py-2">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-foreground">
+                    {t.title}
+                    {t.recurrence !== "None" && (
+                      <Badge variant="secondary" className="ml-2 text-[0.65rem]">{t.recurrence}</Badge>
+                    )}
+                  </p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {(t.reminderAt ?? "").replace("T", " ")} · {t.department} · {t.owner ?? "Unassigned"}
+                    {reminderState(t) === "due" ? " · fired" : ""}
+                  </p>
+                </div>
+                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => snoozeReminder(t.id, 60)}>
+                  Snooze 1h
+                </Button>
+                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => clearReminder(t.id)}>
+                  Clear
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+
 
       <Tabs defaultValue="board">
         <TabsList>
