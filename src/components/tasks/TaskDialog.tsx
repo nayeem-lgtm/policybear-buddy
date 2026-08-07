@@ -33,14 +33,26 @@ import {
   TASK_GROUPS,
   TASK_PRIORITIES,
   TASK_RECORD_TYPES,
+  TASK_RECURRENCES,
   TASK_STATUSES,
   emptyDraft,
+  reminderState,
   taskProgress,
   useTaskStore,
   type TaskDepartment,
   type TaskDraft,
   type WorkTask,
 } from "@/lib/task-store";
+
+/** Shift a YYYY-MM-DD string by a number of days. */
+function addDays(date: string, days: number) {
+  const [y, m, d] = date.split("-").map(Number);
+  const base = new Date(y ?? 2026, (m ?? 1) - 1, d ?? 1);
+  base.setDate(base.getDate() + days);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${base.getFullYear()}-${pad(base.getMonth() + 1)}-${pad(base.getDate())}`;
+}
+
 
 /** Create / edit form used by every board. */
 export function TaskFormDialog({
