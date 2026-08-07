@@ -10,6 +10,7 @@ import {
 
 import { supabase } from "@/integrations/supabase/client";
 import { provisionStaffAccounts } from "@/lib/auth.functions";
+import { recordStatusChange } from "@/lib/shift.functions";
 import type { Role } from "@/lib/mock-data";
 import {
   DEMO_ACCOUNTS,
