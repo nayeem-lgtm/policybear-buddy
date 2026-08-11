@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ShellRouteImport } from './routes/_shell'
+import { Route as ShellAgentDeskRouteImport } from './routes/_shell.agent-desk'
 import { Route as ShellAnnouncementsRouteImport } from './routes/_shell.announcements'
 import { Route as ShellAttendanceRouteImport } from './routes/_shell.attendance'
 import { Route as ShellAttendanceExceptionsRouteImport } from './routes/_shell.attendance-exceptions'
@@ -51,10 +52,12 @@ import { Route as ShellSalesRouteImport } from './routes/_shell.sales'
 import { Route as ShellSearchRouteImport } from './routes/_shell.search'
 import { Route as ShellTasksRouteImport } from './routes/_shell.tasks'
 import { Route as ShellTelephonyAttributionRouteImport } from './routes/_shell.telephony-attribution'
+import { Route as ShellTelephonyFloorRouteImport } from './routes/_shell.telephony-floor'
 import { Route as ShellTelephonyMonitorRouteImport } from './routes/_shell.telephony-monitor'
 import { Route as ShellTextingRouteImport } from './routes/_shell.texting'
 import { Route as ShellTrainingRouteImport } from './routes/_shell.training'
 import { Route as ShellAdminAuditRouteImport } from './routes/_shell.admin.audit'
+import { Route as ShellAdminCalltoolsRouteImport } from './routes/_shell.admin.calltools'
 import { Route as ShellAdminHealthRouteImport } from './routes/_shell.admin.health'
 import { Route as ShellAdminImportsRouteImport } from './routes/_shell.admin.imports'
 import { Route as ShellAdminIntegrationsRouteImport } from './routes/_shell.admin.integrations'
@@ -65,6 +68,8 @@ import { Route as ShellCallbacksCalendarRouteImport } from './routes/_shell.call
 import { Route as ShellQaDisputesRouteImport } from './routes/_shell.qa.disputes'
 import { Route as ShellQaImportRouteImport } from './routes/_shell.qa.import'
 import { Route as ShellSalesNewRouteImport } from './routes/_shell.sales.new'
+import { Route as ApiPublicHooksCalltoolsRouteImport } from './routes/api.public.hooks.calltools'
+import { Route as ApiPublicHooksCalltoolsQueueRouteImport } from './routes/api.public.hooks.calltools-queue'
 import { Route as ApiPublicHooksTelephonySyncRouteImport } from './routes/api.public.hooks.telephony-sync'
 
 const IndexRoute = IndexRouteImport.update({
@@ -75,6 +80,11 @@ const IndexRoute = IndexRouteImport.update({
 const ShellRoute = ShellRouteImport.update({
   id: '/_shell',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ShellAgentDeskRoute = ShellAgentDeskRouteImport.update({
+  id: '/agent-desk',
+  path: '/agent-desk',
+  getParentRoute: () => ShellRoute,
 } as any)
 const ShellAnnouncementsRoute = ShellAnnouncementsRouteImport.update({
   id: '/announcements',
@@ -278,6 +288,11 @@ const ShellTelephonyAttributionRoute =
     path: '/telephony-attribution',
     getParentRoute: () => ShellRoute,
   } as any)
+const ShellTelephonyFloorRoute = ShellTelephonyFloorRouteImport.update({
+  id: '/telephony-floor',
+  path: '/telephony-floor',
+  getParentRoute: () => ShellRoute,
+} as any)
 const ShellTelephonyMonitorRoute = ShellTelephonyMonitorRouteImport.update({
   id: '/telephony-monitor',
   path: '/telephony-monitor',
@@ -296,6 +311,11 @@ const ShellTrainingRoute = ShellTrainingRouteImport.update({
 const ShellAdminAuditRoute = ShellAdminAuditRouteImport.update({
   id: '/admin/audit',
   path: '/admin/audit',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellAdminCalltoolsRoute = ShellAdminCalltoolsRouteImport.update({
+  id: '/admin/calltools',
+  path: '/admin/calltools',
   getParentRoute: () => ShellRoute,
 } as any)
 const ShellAdminHealthRoute = ShellAdminHealthRouteImport.update({
@@ -348,6 +368,17 @@ const ShellSalesNewRoute = ShellSalesNewRouteImport.update({
   path: '/new',
   getParentRoute: () => ShellSalesRoute,
 } as any)
+const ApiPublicHooksCalltoolsRoute = ApiPublicHooksCalltoolsRouteImport.update({
+  id: '/api/public/hooks/calltools',
+  path: '/api/public/hooks/calltools',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicHooksCalltoolsQueueRoute =
+  ApiPublicHooksCalltoolsQueueRouteImport.update({
+    id: '/api/public/hooks/calltools-queue',
+    path: '/api/public/hooks/calltools-queue',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksTelephonySyncRoute =
   ApiPublicHooksTelephonySyncRouteImport.update({
     id: '/api/public/hooks/telephony-sync',
@@ -357,6 +388,7 @@ const ApiPublicHooksTelephonySyncRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/agent-desk': typeof ShellAgentDeskRoute
   '/announcements': typeof ShellAnnouncementsRoute
   '/attendance': typeof ShellAttendanceRoute
   '/attendance-exceptions': typeof ShellAttendanceExceptionsRoute
@@ -397,10 +429,12 @@ export interface FileRoutesByFullPath {
   '/search': typeof ShellSearchRoute
   '/tasks': typeof ShellTasksRoute
   '/telephony-attribution': typeof ShellTelephonyAttributionRoute
+  '/telephony-floor': typeof ShellTelephonyFloorRoute
   '/telephony-monitor': typeof ShellTelephonyMonitorRoute
   '/texting': typeof ShellTextingRoute
   '/training': typeof ShellTrainingRoute
   '/admin/audit': typeof ShellAdminAuditRoute
+  '/admin/calltools': typeof ShellAdminCalltoolsRoute
   '/admin/health': typeof ShellAdminHealthRoute
   '/admin/imports': typeof ShellAdminImportsRoute
   '/admin/integrations': typeof ShellAdminIntegrationsRoute
@@ -411,10 +445,13 @@ export interface FileRoutesByFullPath {
   '/qa/disputes': typeof ShellQaDisputesRoute
   '/qa/import': typeof ShellQaImportRoute
   '/sales/new': typeof ShellSalesNewRoute
+  '/api/public/hooks/calltools': typeof ApiPublicHooksCalltoolsRoute
+  '/api/public/hooks/calltools-queue': typeof ApiPublicHooksCalltoolsQueueRoute
   '/api/public/hooks/telephony-sync': typeof ApiPublicHooksTelephonySyncRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/agent-desk': typeof ShellAgentDeskRoute
   '/announcements': typeof ShellAnnouncementsRoute
   '/attendance': typeof ShellAttendanceRoute
   '/attendance-exceptions': typeof ShellAttendanceExceptionsRoute
@@ -455,10 +492,12 @@ export interface FileRoutesByTo {
   '/search': typeof ShellSearchRoute
   '/tasks': typeof ShellTasksRoute
   '/telephony-attribution': typeof ShellTelephonyAttributionRoute
+  '/telephony-floor': typeof ShellTelephonyFloorRoute
   '/telephony-monitor': typeof ShellTelephonyMonitorRoute
   '/texting': typeof ShellTextingRoute
   '/training': typeof ShellTrainingRoute
   '/admin/audit': typeof ShellAdminAuditRoute
+  '/admin/calltools': typeof ShellAdminCalltoolsRoute
   '/admin/health': typeof ShellAdminHealthRoute
   '/admin/imports': typeof ShellAdminImportsRoute
   '/admin/integrations': typeof ShellAdminIntegrationsRoute
@@ -469,12 +508,15 @@ export interface FileRoutesByTo {
   '/qa/disputes': typeof ShellQaDisputesRoute
   '/qa/import': typeof ShellQaImportRoute
   '/sales/new': typeof ShellSalesNewRoute
+  '/api/public/hooks/calltools': typeof ApiPublicHooksCalltoolsRoute
+  '/api/public/hooks/calltools-queue': typeof ApiPublicHooksCalltoolsQueueRoute
   '/api/public/hooks/telephony-sync': typeof ApiPublicHooksTelephonySyncRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_shell': typeof ShellRouteWithChildren
+  '/_shell/agent-desk': typeof ShellAgentDeskRoute
   '/_shell/announcements': typeof ShellAnnouncementsRoute
   '/_shell/attendance': typeof ShellAttendanceRoute
   '/_shell/attendance-exceptions': typeof ShellAttendanceExceptionsRoute
@@ -515,10 +557,12 @@ export interface FileRoutesById {
   '/_shell/search': typeof ShellSearchRoute
   '/_shell/tasks': typeof ShellTasksRoute
   '/_shell/telephony-attribution': typeof ShellTelephonyAttributionRoute
+  '/_shell/telephony-floor': typeof ShellTelephonyFloorRoute
   '/_shell/telephony-monitor': typeof ShellTelephonyMonitorRoute
   '/_shell/texting': typeof ShellTextingRoute
   '/_shell/training': typeof ShellTrainingRoute
   '/_shell/admin/audit': typeof ShellAdminAuditRoute
+  '/_shell/admin/calltools': typeof ShellAdminCalltoolsRoute
   '/_shell/admin/health': typeof ShellAdminHealthRoute
   '/_shell/admin/imports': typeof ShellAdminImportsRoute
   '/_shell/admin/integrations': typeof ShellAdminIntegrationsRoute
@@ -529,12 +573,15 @@ export interface FileRoutesById {
   '/_shell/qa/disputes': typeof ShellQaDisputesRoute
   '/_shell/qa/import': typeof ShellQaImportRoute
   '/_shell/sales/new': typeof ShellSalesNewRoute
+  '/api/public/hooks/calltools': typeof ApiPublicHooksCalltoolsRoute
+  '/api/public/hooks/calltools-queue': typeof ApiPublicHooksCalltoolsQueueRoute
   '/api/public/hooks/telephony-sync': typeof ApiPublicHooksTelephonySyncRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/agent-desk'
     | '/announcements'
     | '/attendance'
     | '/attendance-exceptions'
@@ -575,10 +622,12 @@ export interface FileRouteTypes {
     | '/search'
     | '/tasks'
     | '/telephony-attribution'
+    | '/telephony-floor'
     | '/telephony-monitor'
     | '/texting'
     | '/training'
     | '/admin/audit'
+    | '/admin/calltools'
     | '/admin/health'
     | '/admin/imports'
     | '/admin/integrations'
@@ -589,10 +638,13 @@ export interface FileRouteTypes {
     | '/qa/disputes'
     | '/qa/import'
     | '/sales/new'
+    | '/api/public/hooks/calltools'
+    | '/api/public/hooks/calltools-queue'
     | '/api/public/hooks/telephony-sync'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/agent-desk'
     | '/announcements'
     | '/attendance'
     | '/attendance-exceptions'
@@ -633,10 +685,12 @@ export interface FileRouteTypes {
     | '/search'
     | '/tasks'
     | '/telephony-attribution'
+    | '/telephony-floor'
     | '/telephony-monitor'
     | '/texting'
     | '/training'
     | '/admin/audit'
+    | '/admin/calltools'
     | '/admin/health'
     | '/admin/imports'
     | '/admin/integrations'
@@ -647,11 +701,14 @@ export interface FileRouteTypes {
     | '/qa/disputes'
     | '/qa/import'
     | '/sales/new'
+    | '/api/public/hooks/calltools'
+    | '/api/public/hooks/calltools-queue'
     | '/api/public/hooks/telephony-sync'
   id:
     | '__root__'
     | '/'
     | '/_shell'
+    | '/_shell/agent-desk'
     | '/_shell/announcements'
     | '/_shell/attendance'
     | '/_shell/attendance-exceptions'
@@ -692,10 +749,12 @@ export interface FileRouteTypes {
     | '/_shell/search'
     | '/_shell/tasks'
     | '/_shell/telephony-attribution'
+    | '/_shell/telephony-floor'
     | '/_shell/telephony-monitor'
     | '/_shell/texting'
     | '/_shell/training'
     | '/_shell/admin/audit'
+    | '/_shell/admin/calltools'
     | '/_shell/admin/health'
     | '/_shell/admin/imports'
     | '/_shell/admin/integrations'
@@ -706,12 +765,16 @@ export interface FileRouteTypes {
     | '/_shell/qa/disputes'
     | '/_shell/qa/import'
     | '/_shell/sales/new'
+    | '/api/public/hooks/calltools'
+    | '/api/public/hooks/calltools-queue'
     | '/api/public/hooks/telephony-sync'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ShellRoute: typeof ShellRouteWithChildren
+  ApiPublicHooksCalltoolsRoute: typeof ApiPublicHooksCalltoolsRoute
+  ApiPublicHooksCalltoolsQueueRoute: typeof ApiPublicHooksCalltoolsQueueRoute
   ApiPublicHooksTelephonySyncRoute: typeof ApiPublicHooksTelephonySyncRoute
 }
 
@@ -730,6 +793,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof ShellRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_shell/agent-desk': {
+      id: '/_shell/agent-desk'
+      path: '/agent-desk'
+      fullPath: '/agent-desk'
+      preLoaderRoute: typeof ShellAgentDeskRouteImport
+      parentRoute: typeof ShellRoute
     }
     '/_shell/announcements': {
       id: '/_shell/announcements'
@@ -1011,6 +1081,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellTelephonyAttributionRouteImport
       parentRoute: typeof ShellRoute
     }
+    '/_shell/telephony-floor': {
+      id: '/_shell/telephony-floor'
+      path: '/telephony-floor'
+      fullPath: '/telephony-floor'
+      preLoaderRoute: typeof ShellTelephonyFloorRouteImport
+      parentRoute: typeof ShellRoute
+    }
     '/_shell/telephony-monitor': {
       id: '/_shell/telephony-monitor'
       path: '/telephony-monitor'
@@ -1037,6 +1114,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/audit'
       fullPath: '/admin/audit'
       preLoaderRoute: typeof ShellAdminAuditRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/admin/calltools': {
+      id: '/_shell/admin/calltools'
+      path: '/admin/calltools'
+      fullPath: '/admin/calltools'
+      preLoaderRoute: typeof ShellAdminCalltoolsRouteImport
       parentRoute: typeof ShellRoute
     }
     '/_shell/admin/health': {
@@ -1109,6 +1193,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellSalesNewRouteImport
       parentRoute: typeof ShellSalesRoute
     }
+    '/api/public/hooks/calltools': {
+      id: '/api/public/hooks/calltools'
+      path: '/api/public/hooks/calltools'
+      fullPath: '/api/public/hooks/calltools'
+      preLoaderRoute: typeof ApiPublicHooksCalltoolsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/calltools-queue': {
+      id: '/api/public/hooks/calltools-queue'
+      path: '/api/public/hooks/calltools-queue'
+      fullPath: '/api/public/hooks/calltools-queue'
+      preLoaderRoute: typeof ApiPublicHooksCalltoolsQueueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/telephony-sync': {
       id: '/api/public/hooks/telephony-sync'
       path: '/api/public/hooks/telephony-sync'
@@ -1157,6 +1255,7 @@ const ShellSalesRouteWithChildren = ShellSalesRoute._addFileChildren(
 )
 
 interface ShellRouteChildren {
+  ShellAgentDeskRoute: typeof ShellAgentDeskRoute
   ShellAnnouncementsRoute: typeof ShellAnnouncementsRoute
   ShellAttendanceRoute: typeof ShellAttendanceRoute
   ShellAttendanceExceptionsRoute: typeof ShellAttendanceExceptionsRoute
@@ -1197,10 +1296,12 @@ interface ShellRouteChildren {
   ShellSearchRoute: typeof ShellSearchRoute
   ShellTasksRoute: typeof ShellTasksRoute
   ShellTelephonyAttributionRoute: typeof ShellTelephonyAttributionRoute
+  ShellTelephonyFloorRoute: typeof ShellTelephonyFloorRoute
   ShellTelephonyMonitorRoute: typeof ShellTelephonyMonitorRoute
   ShellTextingRoute: typeof ShellTextingRoute
   ShellTrainingRoute: typeof ShellTrainingRoute
   ShellAdminAuditRoute: typeof ShellAdminAuditRoute
+  ShellAdminCalltoolsRoute: typeof ShellAdminCalltoolsRoute
   ShellAdminHealthRoute: typeof ShellAdminHealthRoute
   ShellAdminImportsRoute: typeof ShellAdminImportsRoute
   ShellAdminIntegrationsRoute: typeof ShellAdminIntegrationsRoute
@@ -1210,6 +1311,7 @@ interface ShellRouteChildren {
 }
 
 const ShellRouteChildren: ShellRouteChildren = {
+  ShellAgentDeskRoute: ShellAgentDeskRoute,
   ShellAnnouncementsRoute: ShellAnnouncementsRoute,
   ShellAttendanceRoute: ShellAttendanceRoute,
   ShellAttendanceExceptionsRoute: ShellAttendanceExceptionsRoute,
@@ -1250,10 +1352,12 @@ const ShellRouteChildren: ShellRouteChildren = {
   ShellSearchRoute: ShellSearchRoute,
   ShellTasksRoute: ShellTasksRoute,
   ShellTelephonyAttributionRoute: ShellTelephonyAttributionRoute,
+  ShellTelephonyFloorRoute: ShellTelephonyFloorRoute,
   ShellTelephonyMonitorRoute: ShellTelephonyMonitorRoute,
   ShellTextingRoute: ShellTextingRoute,
   ShellTrainingRoute: ShellTrainingRoute,
   ShellAdminAuditRoute: ShellAdminAuditRoute,
+  ShellAdminCalltoolsRoute: ShellAdminCalltoolsRoute,
   ShellAdminHealthRoute: ShellAdminHealthRoute,
   ShellAdminImportsRoute: ShellAdminImportsRoute,
   ShellAdminIntegrationsRoute: ShellAdminIntegrationsRoute,
@@ -1267,18 +1371,10 @@ const ShellRouteWithChildren = ShellRoute._addFileChildren(ShellRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ShellRoute: ShellRouteWithChildren,
+  ApiPublicHooksCalltoolsRoute: ApiPublicHooksCalltoolsRoute,
+  ApiPublicHooksCalltoolsQueueRoute: ApiPublicHooksCalltoolsQueueRoute,
   ApiPublicHooksTelephonySyncRoute: ApiPublicHooksTelephonySyncRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
