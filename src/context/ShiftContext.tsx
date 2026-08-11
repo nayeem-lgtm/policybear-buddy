@@ -12,6 +12,20 @@ import { useServerFn } from "@tanstack/react-start";
 
 import { useAuth } from "@/context/AuthContext";
 import type { PresenceStatus } from "@/lib/mock-data";
+import type { CrmStatus } from "@/lib/calltools-shared";
+import { syncMyStatus } from "@/lib/calltools-desk.functions";
+
+/** CRM presence -> the status CallTools understands. */
+const CALLTOOLS_STATUS: Partial<Record<PresenceStatus, CrmStatus>> = {
+  Available: "Available",
+  "On Call": "On Call",
+  Break: "Break",
+  Lunch: "Lunch",
+  Meeting: "Meeting",
+  Training: "Training",
+  "Not Available": "Unavailable",
+  "Signed Out": "Signed Out",
+};
 import {
   getMyShiftDay,
   recordStatusChange,
@@ -312,6 +326,15 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
             data: { status: next, detail: resolvedDetail, allowanceSeconds: allowance },
           });
           if (updated) setSession(updated as ShiftSessionRow);
+          // Mirror presence into CallTools so the dialer never rings an agent on break.
+          const ctStatus = CALLTOOLS_STATUS[next];
+          if (ctStatus) {
+            try {
+              await syncMyStatus({ data: { status: ctStatus, detail: resolvedDetail } });
+            } catch {
+              /* queued by the outbox on the server; nothing to do here */
+            }
+          }
         } catch {
           /* keep local state; the next refresh reconciles */
         } finally {
