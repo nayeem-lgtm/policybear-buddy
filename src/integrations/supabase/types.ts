@@ -1129,39 +1129,110 @@ export type Database = {
         }
         Relationships: []
       }
+      telephony_action_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          duration_ms: number | null
+          error: string | null
+          id: string
+          method: string
+          ok: boolean
+          outbox_id: string | null
+          path: string
+          provider: string
+          request: Json | null
+          response: Json | null
+          response_status: number | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          method: string
+          ok?: boolean
+          outbox_id?: string | null
+          path: string
+          provider?: string
+          request?: Json | null
+          response?: Json | null
+          response_status?: number | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          method?: string
+          ok?: boolean
+          outbox_id?: string | null
+          path?: string
+          provider?: string
+          request?: Json | null
+          response?: Json | null
+          response_status?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telephony_action_log_outbox_id_fkey"
+            columns: ["outbox_id"]
+            isOneToOne: false
+            referencedRelation: "telephony_outbox"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       telephony_agents: {
         Row: {
           active: boolean
           created_at: string
           id: string
+          last_seen_at: string | null
           provider: string
           provider_agent_email: string | null
           provider_agent_id: string
           provider_agent_name: string | null
+          provider_status: string | null
+          provider_status_at: string | null
           updated_at: string
           user_id: string | null
+          web_phone_status: string | null
         }
         Insert: {
           active?: boolean
           created_at?: string
           id?: string
+          last_seen_at?: string | null
           provider: string
           provider_agent_email?: string | null
           provider_agent_id: string
           provider_agent_name?: string | null
+          provider_status?: string | null
+          provider_status_at?: string | null
           updated_at?: string
           user_id?: string | null
+          web_phone_status?: string | null
         }
         Update: {
           active?: boolean
           created_at?: string
           id?: string
+          last_seen_at?: string | null
           provider?: string
           provider_agent_email?: string | null
           provider_agent_id?: string
           provider_agent_name?: string | null
+          provider_status?: string | null
+          provider_status_at?: string | null
           updated_at?: string
           user_id?: string | null
+          web_phone_status?: string | null
         }
         Relationships: []
       }
@@ -1172,7 +1243,9 @@ export type Database = {
           agent_user_id: string | null
           buyer: string | null
           campaign: string | null
+          contact_id: string | null
           created_at: string
+          crm_originated: boolean
           direction: string | null
           disposition: string | null
           ended_at: string | null
@@ -1187,12 +1260,14 @@ export type Database = {
           raw: Json
           recording_url: string | null
           revenue: number | null
+          script_name: string | null
           started_at: string | null
           state_code: string | null
           status: string | null
           synced_at: string
           talk_seconds: number
           to_number: string | null
+          transcript: string | null
           updated_at: string
         }
         Insert: {
@@ -1201,7 +1276,9 @@ export type Database = {
           agent_user_id?: string | null
           buyer?: string | null
           campaign?: string | null
+          contact_id?: string | null
           created_at?: string
+          crm_originated?: boolean
           direction?: string | null
           disposition?: string | null
           ended_at?: string | null
@@ -1216,12 +1293,14 @@ export type Database = {
           raw?: Json
           recording_url?: string | null
           revenue?: number | null
+          script_name?: string | null
           started_at?: string | null
           state_code?: string | null
           status?: string | null
           synced_at?: string
           talk_seconds?: number
           to_number?: string | null
+          transcript?: string | null
           updated_at?: string
         }
         Update: {
@@ -1230,7 +1309,9 @@ export type Database = {
           agent_user_id?: string | null
           buyer?: string | null
           campaign?: string | null
+          contact_id?: string | null
           created_at?: string
+          crm_originated?: boolean
           direction?: string | null
           disposition?: string | null
           ended_at?: string | null
@@ -1245,12 +1326,14 @@ export type Database = {
           raw?: Json
           recording_url?: string | null
           revenue?: number | null
+          script_name?: string | null
           started_at?: string | null
           state_code?: string | null
           status?: string | null
           synced_at?: string
           talk_seconds?: number
           to_number?: string | null
+          transcript?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1262,6 +1345,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "telephony_calls_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "telephony_calls_journey_id_fkey"
             columns: ["journey_id"]
             isOneToOne: false
@@ -1269,6 +1359,263 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      telephony_dispositions: {
+        Row: {
+          active: boolean
+          category: string | null
+          created_at: string
+          id: string
+          is_callback: boolean
+          is_sale: boolean
+          name: string
+          provider: string
+          provider_disposition_id: string
+          raw: Json
+          sort_order: number
+          synced_at: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          category?: string | null
+          created_at?: string
+          id?: string
+          is_callback?: boolean
+          is_sale?: boolean
+          name: string
+          provider?: string
+          provider_disposition_id: string
+          raw?: Json
+          sort_order?: number
+          synced_at?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          category?: string | null
+          created_at?: string
+          id?: string
+          is_callback?: boolean
+          is_sale?: boolean
+          name?: string
+          provider?: string
+          provider_disposition_id?: string
+          raw?: Json
+          sort_order?: number
+          synced_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      telephony_outbox: {
+        Row: {
+          action: string
+          attempts: number
+          completed_at: string | null
+          created_at: string
+          id: string
+          last_error: string | null
+          max_attempts: number
+          method: string
+          next_attempt_at: string
+          path: string
+          payload: Json
+          provider: string
+          requested_by: string | null
+          response: Json | null
+          response_status: number | null
+          status: string
+          target_ref: string | null
+          updated_at: string
+        }
+        Insert: {
+          action: string
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          max_attempts?: number
+          method?: string
+          next_attempt_at?: string
+          path: string
+          payload?: Json
+          provider?: string
+          requested_by?: string | null
+          response?: Json | null
+          response_status?: number | null
+          status?: string
+          target_ref?: string | null
+          updated_at?: string
+        }
+        Update: {
+          action?: string
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          max_attempts?: number
+          method?: string
+          next_attempt_at?: string
+          path?: string
+          payload?: Json
+          provider?: string
+          requested_by?: string | null
+          response?: Json | null
+          response_status?: number | null
+          status?: string
+          target_ref?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      telephony_queue_items: {
+        Row: {
+          assigned_user_id: string | null
+          attempts: number
+          campaign: string | null
+          contact_id: string | null
+          contact_name: string | null
+          created_at: string
+          id: string
+          kind: string
+          notes: string | null
+          phone_e164: string | null
+          provider: string
+          provider_item_id: string | null
+          raw: Json
+          scheduled_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_user_id?: string | null
+          attempts?: number
+          campaign?: string | null
+          contact_id?: string | null
+          contact_name?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          notes?: string | null
+          phone_e164?: string | null
+          provider?: string
+          provider_item_id?: string | null
+          raw?: Json
+          scheduled_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_user_id?: string | null
+          attempts?: number
+          campaign?: string | null
+          contact_id?: string | null
+          contact_name?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          notes?: string | null
+          phone_e164?: string | null
+          provider?: string
+          provider_item_id?: string | null
+          raw?: Json
+          scheduled_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telephony_queue_items_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      telephony_settings: {
+        Row: {
+          connector_button_id: string | null
+          created_at: string
+          default_campaign_id: string | null
+          dial_enabled: boolean
+          id: string
+          notes: string | null
+          provider: string
+          status_sync_enabled: boolean
+          updated_at: string
+          updated_by: string | null
+          webhook_token: string
+          webhooks_enabled: boolean
+          writes_enabled: boolean
+        }
+        Insert: {
+          connector_button_id?: string | null
+          created_at?: string
+          default_campaign_id?: string | null
+          dial_enabled?: boolean
+          id?: string
+          notes?: string | null
+          provider?: string
+          status_sync_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          webhook_token?: string
+          webhooks_enabled?: boolean
+          writes_enabled?: boolean
+        }
+        Update: {
+          connector_button_id?: string | null
+          created_at?: string
+          default_campaign_id?: string | null
+          dial_enabled?: boolean
+          id?: string
+          notes?: string | null
+          provider?: string
+          status_sync_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          webhook_token?: string
+          webhooks_enabled?: boolean
+          writes_enabled?: boolean
+        }
+        Relationships: []
+      }
+      telephony_status_map: {
+        Row: {
+          created_at: string
+          crm_status: string
+          id: string
+          provider: string
+          provider_status: string
+          ready: boolean
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          crm_status: string
+          id?: string
+          provider?: string
+          provider_status: string
+          ready?: boolean
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          crm_status?: string
+          id?: string
+          provider?: string
+          provider_status?: string
+          ready?: boolean
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
