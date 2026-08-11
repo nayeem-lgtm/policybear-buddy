@@ -98,10 +98,13 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   {
     label: "Pipeline",
     items: [
+      { title: "Agent Desk", url: "/agent-desk", icon: Headphones },
       { title: "Customers", url: "/customers", icon: Contact },
       { title: "Calls", url: "/calls", icon: PhoneCall },
+      { title: "Live Floor", url: "/telephony-floor", icon: Radio },
       { title: "Live Call Monitor", url: "/telephony-monitor", icon: Radio },
       { title: "Source Attribution", url: "/telephony-attribution", icon: Repeat },
+
       { title: "Reconciliation", url: "/call-reconciliation", icon: Repeat },
       { title: "Cost & Returns", url: "/call-costs", icon: BadgeDollarSign },
       { title: "Callback Queue", url: "/callbacks", icon: PhoneForwarded },
