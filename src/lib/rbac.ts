@@ -157,8 +157,11 @@ export const ROUTE_ACCESS: { prefix: string; roles: Role[] }[] = [
   { prefix: "/break-alarm", roles: ["Operations", "HR"] },
 
   // Telephony sync, monitoring and attribution
+  { prefix: "/agent-desk", roles: ["Agent", "QC", "Operations"] },
+  { prefix: "/telephony-floor", roles: ["Operations", "QC", "HR"] },
   { prefix: "/telephony-monitor", roles: ["Operations", "QC"] },
   { prefix: "/telephony-attribution", roles: ["Operations", "Accounting"] },
+
 
   // Pipeline
   { prefix: "/customers", roles: ["Agent", "QC", "Operations"] },
