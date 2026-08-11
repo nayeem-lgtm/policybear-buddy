@@ -19,6 +19,7 @@ import { syncMyStatus } from "@/lib/calltools-desk.functions";
 const CALLTOOLS_STATUS: Partial<Record<PresenceStatus, CrmStatus>> = {
   Available: "Available",
   "On Call": "On Call",
+  "Post Call": "On Call",
   Break: "Break",
   Lunch: "Lunch",
   Meeting: "Meeting",
