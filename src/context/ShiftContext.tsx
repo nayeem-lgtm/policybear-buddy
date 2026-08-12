@@ -17,6 +17,17 @@ import type { CrmStatus } from "@/lib/calltools-shared";
 import { syncMyStatus } from "@/lib/calltools-desk.functions";
 
 /** CRM presence -> the status CallTools understands. */
+/**
+ * The shift server functions require a bearer token. A cached CRM user can
+ * outlive the Supabase session (expired token, sign-out in another tab), and
+ * calling them without one throws "No authorization header provided", so every
+ * call site checks for a live token first.
+ */
+async function hasLiveSession() {
+  const { data } = await supabase.auth.getSession();
+  return Boolean(data.session?.access_token);
+}
+
 const CALLTOOLS_STATUS: Partial<Record<PresenceStatus, CrmStatus>> = {
   Available: "Available",
   "On Call": "On Call",
