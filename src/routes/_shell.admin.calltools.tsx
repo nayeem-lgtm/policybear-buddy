@@ -73,6 +73,9 @@ function CallToolsControlPage() {
 
   const [connectorId, setConnectorId] = useState<string | null>(null);
   const [campaignId, setCampaignId] = useState<string | null>(null);
+  const [queueId, setQueueId] = useState<string | null>(null);
+  const [callerId, setCallerId] = useState<string | null>(null);
+  const [callerNumber, setCallerNumber] = useState<string | null>(null);
 
   const control = useQuery({
     queryKey: ["calltools-control"],
