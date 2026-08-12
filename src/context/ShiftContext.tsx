@@ -11,6 +11,7 @@ import {
 import { useServerFn } from "@tanstack/react-start";
 
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import type { PresenceStatus } from "@/lib/mock-data";
 import type { CrmStatus } from "@/lib/calltools-shared";
 import { syncMyStatus } from "@/lib/calltools-desk.functions";
