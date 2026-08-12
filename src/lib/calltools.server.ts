@@ -468,6 +468,8 @@ export async function dialNumber(input: {
   phone: string;
   providerContactId?: string;
   campaignId?: string;
+  queueId?: string;
+  callerId?: string;
 }) {
   const settings = await getSettings();
   if (!settings.dial_enabled) throw new CallToolsError("Calling from the CRM is switched off in settings");
