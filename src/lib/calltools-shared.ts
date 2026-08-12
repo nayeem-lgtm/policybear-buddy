@@ -162,6 +162,9 @@ export const settingsSchema = z.object({
   webhooks_enabled: z.boolean().optional(),
   connector_button_id: z.string().max(64).nullable().optional(),
   default_campaign_id: z.string().max(64).nullable().optional(),
+  default_queue_id: z.string().max(64).nullable().optional(),
+  default_caller_id: z.string().max(64).nullable().optional(),
+  default_caller_number: z.string().max(32).nullable().optional(),
   notes: z.string().max(500).nullable().optional(),
 });
 
