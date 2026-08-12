@@ -110,6 +110,8 @@ export const dialSchema = z.object({
   contactId: z.string().uuid().optional(),
   providerContactId: z.string().max(64).optional(),
   campaignId: z.string().max(64).optional(),
+  queueId: z.string().max(64).optional(),
+  callerId: z.string().max(64).optional(),
   queueItemId: z.string().uuid().optional(),
 });
 
@@ -160,6 +162,9 @@ export const settingsSchema = z.object({
   webhooks_enabled: z.boolean().optional(),
   connector_button_id: z.string().max(64).nullable().optional(),
   default_campaign_id: z.string().max(64).nullable().optional(),
+  default_queue_id: z.string().max(64).nullable().optional(),
+  default_caller_id: z.string().max(64).nullable().optional(),
+  default_caller_number: z.string().max(32).nullable().optional(),
   notes: z.string().max(500).nullable().optional(),
 });
 
@@ -176,6 +181,9 @@ export interface TelephonySettings {
   webhooks_enabled: boolean;
   connector_button_id: string | null;
   default_campaign_id: string | null;
+  default_queue_id: string | null;
+  default_caller_id: string | null;
+  default_caller_number: string | null;
   webhook_token: string;
   notes: string | null;
   updated_at: string;

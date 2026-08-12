@@ -117,6 +117,8 @@ export const dialFromCrm = createServerFn({ method: "POST" })
       phone: data.phone,
       ...(data.providerContactId ? { providerContactId: data.providerContactId } : {}),
       ...(data.campaignId ? { campaignId: data.campaignId } : {}),
+      ...(data.queueId ? { queueId: data.queueId } : {}),
+      ...(data.callerId ? { callerId: data.callerId } : {}),
     });
 
     if (data.queueItemId) {

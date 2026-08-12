@@ -468,6 +468,8 @@ export async function dialNumber(input: {
   phone: string;
   providerContactId?: string;
   campaignId?: string;
+  queueId?: string;
+  callerId?: string;
 }) {
   const settings = await getSettings();
   if (!settings.dial_enabled) throw new CallToolsError("Calling from the CRM is switched off in settings");
@@ -475,15 +477,19 @@ export async function dialNumber(input: {
   if (!link) throw new CallToolsError("Link your CallTools agent before dialing");
 
   const phone = normalizeE164(input.phone) ?? input.phone;
+  const campaign = input.campaignId ?? settings.default_campaign_id;
+  const queue = input.queueId ?? settings.default_queue_id;
+  const callerId = input.callerId ?? settings.default_caller_id;
+
   const payload: Record<string, unknown> = {
     connector_button: settings.connector_button_id,
     app_user: link.provider_agent_id,
     phone_number: phone,
     auto_call_triggered: true,
     ...(input.providerContactId ? { contact: input.providerContactId } : {}),
-    ...(input.campaignId ?? settings.default_campaign_id
-      ? { campaign: input.campaignId ?? settings.default_campaign_id }
-      : {}),
+    ...(campaign ? { campaign } : {}),
+    ...(queue ? { queue } : {}),
+    ...(callerId ? { caller_id: callerId } : {}),
   };
 
   const result = await enqueueWrite({
@@ -807,38 +813,51 @@ export async function fetchLiveCalls(): Promise<LiveCall[]> {
 
 /* ------------------------------------------------------------------ webhooks */
 
-const HOOK_EVENTS = [
-  "call.started",
-  "call.ended",
-  "call.disposition",
-  "agent.status",
-  "sms.received",
+/**
+ * CallTools subscribes per record type ("resthook_model") on create — there is
+ * no agent-status hook, so presence is refreshed by the scheduled sweep. The
+ * event name we want is carried in the callback URL query string.
+ */
+const HOOK_MODELS = [
+  { model: "Call", event: "call.updated" },
+  { model: "Call Disposition", event: "call.disposition" },
+  { model: "Contact Disposition", event: "call.disposition" },
+  { model: "Connector Button Click", event: "call.started" },
+  { model: "Sms", event: "sms.received" },
+  { model: "Contact", event: "contact.updated" },
 ] as const;
 
 /** Register (or refresh) the real-time subscriptions that feed the CRM. */
 export async function ensureWebhooks(publicBaseUrl: string, actorId: string) {
   const settings = await getSettings();
-  const target = `${publicBaseUrl.replace(/\/$/, "")}/api/public/hooks/calltools?token=${settings.webhook_token}`;
+  const base = publicBaseUrl.replace(/\/$/, "");
+  const target = `${base}/api/public/hooks/calltools?token=${settings.webhook_token}`;
 
   const existing = await ctList<Record<string, unknown>>(CT.restHooks, 2, 100).catch(() => []);
   const already = new Set(
     existing
-      .filter((h) => String(h["target_url"] ?? h["target"] ?? "").startsWith(publicBaseUrl))
-      .map((h) => String(h["event"] ?? h["event_type"] ?? "")),
+      .filter((h) => String(h["url"] ?? h["target_url"] ?? "").startsWith(base))
+      .map((h) => String(h["resthook_model"] ?? "")),
   );
 
   const created: string[] = [];
-  for (const event of HOOK_EVENTS) {
-    if (already.has(event)) continue;
+  for (const hook of HOOK_MODELS) {
+    if (already.has(hook.model)) continue;
     const res = await enqueueWrite({
       action: "registerWebhook",
       method: "POST",
       path: CT.restHooks,
-      payload: { event, target_url: target, is_active: true },
+      payload: {
+        resthook_model: hook.model,
+        resthook_method: "Create",
+        request_type: "Post",
+        description: `Policy Bear CRM — ${hook.model}`,
+        url: `${target}&event=${encodeURIComponent(hook.event)}`,
+      },
       actorId,
-      targetRef: event,
+      targetRef: hook.model,
     });
-    if (res.sent) created.push(event);
+    if (res.sent) created.push(hook.model);
   }
   return { target, registered: created, alreadyActive: [...already] };
 }
