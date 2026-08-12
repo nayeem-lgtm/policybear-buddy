@@ -51,12 +51,15 @@ export const startShiftSession = createServerFn({ method: "POST" })
       return reopened as ShiftSessionRow;
     }
 
+    // Concurrent sign-ins can race on the (user_id, work_date) unique key —
+    // upsert so the second caller reuses the row instead of throwing.
     const { data: created, error } = await supabase
       .from("shift_sessions")
-      .insert({ user_id: userId, work_date: workDate })
+      .upsert({ user_id: userId, work_date: workDate }, { onConflict: "user_id,work_date" })
       .select("*")
       .single();
     if (error) throw new Error(error.message);
+    if (!created) throw new Error("Could not open shift session");
 
     await supabase.from("shift_status_events").insert({
       session_id: created.id,
