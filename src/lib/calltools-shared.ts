@@ -110,6 +110,8 @@ export const dialSchema = z.object({
   contactId: z.string().uuid().optional(),
   providerContactId: z.string().max(64).optional(),
   campaignId: z.string().max(64).optional(),
+  queueId: z.string().max(64).optional(),
+  callerId: z.string().max(64).optional(),
   queueItemId: z.string().uuid().optional(),
 });
 
