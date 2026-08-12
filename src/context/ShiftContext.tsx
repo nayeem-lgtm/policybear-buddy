@@ -223,7 +223,7 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshSession = useCallback(async () => {
-    if (!user) return;
+    if (!user || !(await hasLiveSession())) return;
     try {
       const day = (await loadDay()) as ShiftDay;
       applyDay(day);
@@ -241,6 +241,7 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
     }
     let active = true;
     void (async () => {
+      if (!(await hasLiveSession())) return;
       setSyncing(true);
       try {
         await startSession({ data: {} });
@@ -261,7 +262,9 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user) return;
     const id = setInterval(() => {
-      void heartbeat().catch(() => undefined);
+      void (async () => {
+        if (await hasLiveSession()) await heartbeat();
+      })().catch(() => undefined);
     }, 60_000);
     return () => clearInterval(id);
   }, [user, heartbeat]);
@@ -329,6 +332,7 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
             : null;
 
       void (async () => {
+        if (!(await hasLiveSession())) return;
         setSyncing(true);
         try {
           // Re-open today's record when the agent signs back in after signing out.
