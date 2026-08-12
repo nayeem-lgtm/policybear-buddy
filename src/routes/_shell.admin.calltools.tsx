@@ -278,6 +278,71 @@ function CallToolsControlPage() {
                       Save
                     </Button>
                   </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Currently Final Expense Inbound (power dial).
+                  </p>
+                </div>
+                <div>
+                  <Label className="mb-1.5 block">Inbound queue ID</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={queueId ?? settings?.default_queue_id ?? ""}
+                      onChange={(e) => setQueueId(e.target.value)}
+                      placeholder="Optional"
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={() => settingsMutation.mutate({ default_queue_id: (queueId ?? "").trim() || null })}
+                      disabled={queueId === null || settingsMutation.isPending}
+                    >
+                      Save
+                    </Button>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    FE Inbound Queue (extension 110) routes Final Expense calls to agents.
+                  </p>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <Label className="mb-1.5 block">Caller ID</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        value={callerId ?? settings?.default_caller_id ?? ""}
+                        onChange={(e) => setCallerId(e.target.value)}
+                        placeholder="Caller ID reference"
+                      />
+                      <Button
+                        variant="outline"
+                        onClick={() =>
+                          settingsMutation.mutate({ default_caller_id: (callerId ?? "").trim() || null })
+                        }
+                        disabled={callerId === null || settingsMutation.isPending}
+                      >
+                        Save
+                      </Button>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="mb-1.5 block">Number customers see</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        value={callerNumber ?? settings?.default_caller_number ?? ""}
+                        onChange={(e) => setCallerNumber(e.target.value)}
+                        placeholder="+1 702 628 8148"
+                      />
+                      <Button
+                        variant="outline"
+                        onClick={() =>
+                          settingsMutation.mutate({
+                            default_caller_number: (callerNumber ?? "").trim() || null,
+                          })
+                        }
+                        disabled={callerNumber === null || settingsMutation.isPending}
+                      >
+                        Save
+                      </Button>
+                    </div>
+                  </div>
                 </div>
                 <div>
                   <Label className="mb-1.5 block">Real-time update address</Label>
