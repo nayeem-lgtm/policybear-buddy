@@ -1192,6 +1192,7 @@ export type Database = {
         Row: {
           active: boolean
           created_at: string
+          extension: string | null
           id: string
           last_seen_at: string | null
           provider: string
@@ -1207,6 +1208,7 @@ export type Database = {
         Insert: {
           active?: boolean
           created_at?: string
+          extension?: string | null
           id?: string
           last_seen_at?: string | null
           provider: string
@@ -1222,6 +1224,7 @@ export type Database = {
         Update: {
           active?: boolean
           created_at?: string
+          extension?: string | null
           id?: string
           last_seen_at?: string | null
           provider?: string
@@ -1540,7 +1543,10 @@ export type Database = {
         Row: {
           connector_button_id: string | null
           created_at: string
+          default_caller_id: string | null
+          default_caller_number: string | null
           default_campaign_id: string | null
+          default_queue_id: string | null
           dial_enabled: boolean
           id: string
           notes: string | null
@@ -1555,7 +1561,10 @@ export type Database = {
         Insert: {
           connector_button_id?: string | null
           created_at?: string
+          default_caller_id?: string | null
+          default_caller_number?: string | null
           default_campaign_id?: string | null
+          default_queue_id?: string | null
           dial_enabled?: boolean
           id?: string
           notes?: string | null
@@ -1570,7 +1579,10 @@ export type Database = {
         Update: {
           connector_button_id?: string | null
           created_at?: string
+          default_caller_id?: string | null
+          default_caller_number?: string | null
           default_campaign_id?: string | null
+          default_queue_id?: string | null
           dial_enabled?: boolean
           id?: string
           notes?: string | null
