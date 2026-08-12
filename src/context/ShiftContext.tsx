@@ -11,11 +11,23 @@ import {
 import { useServerFn } from "@tanstack/react-start";
 
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import type { PresenceStatus } from "@/lib/mock-data";
 import type { CrmStatus } from "@/lib/calltools-shared";
 import { syncMyStatus } from "@/lib/calltools-desk.functions";
 
 /** CRM presence -> the status CallTools understands. */
+/**
+ * The shift server functions require a bearer token. A cached CRM user can
+ * outlive the Supabase session (expired token, sign-out in another tab), and
+ * calling them without one throws "No authorization header provided", so every
+ * call site checks for a live token first.
+ */
+async function hasLiveSession() {
+  const { data } = await supabase.auth.getSession();
+  return Boolean(data.session?.access_token);
+}
+
 const CALLTOOLS_STATUS: Partial<Record<PresenceStatus, CrmStatus>> = {
   Available: "Available",
   "On Call": "On Call",
@@ -211,7 +223,7 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshSession = useCallback(async () => {
-    if (!user) return;
+    if (!user || !(await hasLiveSession())) return;
     try {
       const day = (await loadDay()) as ShiftDay;
       applyDay(day);
@@ -229,6 +241,7 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
     }
     let active = true;
     void (async () => {
+      if (!(await hasLiveSession())) return;
       setSyncing(true);
       try {
         await startSession({ data: {} });
@@ -249,7 +262,9 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user) return;
     const id = setInterval(() => {
-      void heartbeat().catch(() => undefined);
+      void (async () => {
+        if (await hasLiveSession()) await heartbeat();
+      })().catch(() => undefined);
     }, 60_000);
     return () => clearInterval(id);
   }, [user, heartbeat]);
@@ -317,6 +332,7 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
             : null;
 
       void (async () => {
+        if (!(await hasLiveSession())) return;
         setSyncing(true);
         try {
           // Re-open today's record when the agent signs back in after signing out.
