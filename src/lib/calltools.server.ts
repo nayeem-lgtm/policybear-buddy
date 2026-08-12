@@ -477,15 +477,19 @@ export async function dialNumber(input: {
   if (!link) throw new CallToolsError("Link your CallTools agent before dialing");
 
   const phone = normalizeE164(input.phone) ?? input.phone;
+  const campaign = input.campaignId ?? settings.default_campaign_id;
+  const queue = input.queueId ?? settings.default_queue_id;
+  const callerId = input.callerId ?? settings.default_caller_id;
+
   const payload: Record<string, unknown> = {
     connector_button: settings.connector_button_id,
     app_user: link.provider_agent_id,
     phone_number: phone,
     auto_call_triggered: true,
     ...(input.providerContactId ? { contact: input.providerContactId } : {}),
-    ...(input.campaignId ?? settings.default_campaign_id
-      ? { campaign: input.campaignId ?? settings.default_campaign_id }
-      : {}),
+    ...(campaign ? { campaign } : {}),
+    ...(queue ? { queue } : {}),
+    ...(callerId ? { caller_id: callerId } : {}),
   };
 
   const result = await enqueueWrite({
