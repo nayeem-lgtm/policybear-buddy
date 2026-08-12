@@ -181,6 +181,9 @@ export interface TelephonySettings {
   webhooks_enabled: boolean;
   connector_button_id: string | null;
   default_campaign_id: string | null;
+  default_queue_id: string | null;
+  default_caller_id: string | null;
+  default_caller_number: string | null;
   webhook_token: string;
   notes: string | null;
   updated_at: string;
