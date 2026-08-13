@@ -1655,6 +1655,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_read_attachment: {
+        Args: { _path: string; _user_id: string }
+        Returns: boolean
+      }
+      can_view_post: {
+        Args: { _post_id: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1662,6 +1670,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_sales_access: { Args: { _user_id: string }; Returns: boolean }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_call_participant: {
         Args: { _call_id: string; _user_id: string }
