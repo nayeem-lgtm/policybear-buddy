@@ -1,6 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+/** Stale-session maintenance runs with elevated privileges (staff cannot call it directly). */
+async function closeStaleSessions() {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  await supabaseAdmin.rpc("shift_close_stale_sessions", { _max_hours: 14 });
+}
 import {
   bucketColumnFor,
   overrunColumnFor,

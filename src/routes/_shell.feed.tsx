@@ -57,7 +57,7 @@ type Post = Database["public"]["Tables"]["posts"]["Row"];
 type Comment = Database["public"]["Tables"]["post_comments"]["Row"];
 type Like = Database["public"]["Tables"]["post_likes"]["Row"];
 type Attachment = Database["public"]["Tables"]["post_attachments"]["Row"];
-type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+type Profile = Omit<Database["public"]["Tables"]["profiles"]["Row"], "email" | "phone">;
 
 const CHANNELS = ["general", "sales", "hr", "quality", "wins"] as const;
 const ANNOUNCE_ROLES = ["CEO", "Administrator", "HR", "Operations"];
