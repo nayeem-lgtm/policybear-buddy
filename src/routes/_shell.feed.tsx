@@ -57,7 +57,7 @@ type Post = Database["public"]["Tables"]["posts"]["Row"];
 type Comment = Database["public"]["Tables"]["post_comments"]["Row"];
 type Like = Database["public"]["Tables"]["post_likes"]["Row"];
 type Attachment = Database["public"]["Tables"]["post_attachments"]["Row"];
-type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+type Profile = Omit<Database["public"]["Tables"]["profiles"]["Row"], "email" | "phone">;
 
 const CHANNELS = ["general", "sales", "hr", "quality", "wins"] as const;
 const ANNOUNCE_ROLES = ["CEO", "Administrator", "HR", "Operations"];
@@ -115,7 +115,10 @@ function FeedPage() {
     queryKey: ["profiles", authorIds],
     queryFn: async () => {
       if (authorIds.length === 0) return [] as Profile[];
-      const { data, error } = await supabase.from("profiles").select("*").in("id", authorIds);
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, name, department, title, team, avatar_initials, avatar_url, presence, landing, created_at, updated_at")
+        .in("id", authorIds);
       if (error) throw error;
       return (data ?? []) as Profile[];
     },

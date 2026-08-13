@@ -5,7 +5,7 @@ export type ConversationKind = "dm" | "group" | "channel";
 export interface StaffProfile {
   id: string;
   name: string;
-  email: string;
+  email?: string;
   department: string;
   title: string;
   team: string;
@@ -60,7 +60,7 @@ export interface ConversationView extends ConversationRecord {
 export async function fetchStaff(): Promise<StaffProfile[]> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id,name,email,department,title,team,avatar_initials,avatar_url,presence")
+    .select("id,name,department,title,team,avatar_initials,avatar_url,presence")
     .order("name");
   if (error) throw error;
   return (data ?? []) as StaffProfile[];
