@@ -1,12 +1,11 @@
 import { useState } from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { findSectionForPath, navSections } from "@/lib/navigation";
 import {
   Bell,
-  Building2,
   ChevronDown,
   CircleUser,
   Clock,
-  HelpCircle,
   LogOut,
   Plus,
   Search,
@@ -45,6 +44,14 @@ const quickCreate = [
 ];
 
 export function TopHeader() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const sectionId = findSectionForPath(pathname);
+  const section = navSections.find((s) => s.id === sectionId) ?? navSections[0]!;
+  const current = section.groups
+    .flatMap((g) => g.items)
+    .filter((i) => pathname === i.url || pathname.startsWith(i.url + "/"))
+    .sort((a, b) => b.url.length - a.url.length)[0];
+
   const unread = notifications.filter((n) => !n.read).length;
   const [q, setQ] = useState("");
   const { user, signOut, can } = useAuth();
@@ -62,6 +69,16 @@ export function TopHeader() {
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center gap-3 border-b border-border bg-card/85 px-3 backdrop-blur md:px-4">
       <SidebarTrigger className="shrink-0" />
+
+      <div className="hidden shrink-0 items-center gap-1.5 text-sm lg:flex">
+        <span className="text-muted-foreground">{section.label}</span>
+        {current && (
+          <>
+            <span className="text-muted-foreground/50">/</span>
+            <span className="font-medium text-foreground">{current.title}</span>
+          </>
+        )}
+      </div>
 
       <form
         className="relative hidden min-w-0 flex-1 md:block"
@@ -99,14 +116,6 @@ export function TopHeader() {
 
         <Separator orientation="vertical" className="mx-1 hidden h-6 lg:block" />
 
-        <div className="hidden items-center gap-1.5 text-xs text-muted-foreground xl:flex">
-          <Building2 className="size-3.5" />
-          Policy Bear
-          <Separator orientation="vertical" className="mx-1 h-4" />
-          <Clock className="size-3.5" />
-          America/Los_Angeles
-        </div>
-
         <Button asChild variant="ghost" size="icon" className="relative">
           <Link to="/notifications" aria-label="Notifications">
             <Bell className="size-4" />
@@ -119,10 +128,6 @@ export function TopHeader() {
               </Badge>
             )}
           </Link>
-        </Button>
-
-        <Button variant="ghost" size="icon" aria-label="Help">
-          <HelpCircle className="size-4" />
         </Button>
 
         <DropdownMenu>
