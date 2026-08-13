@@ -1,2 +1,0 @@
-CREATE UNIQUE INDEX IF NOT EXISTS contacts_phone_unique ON public.contacts (phone) WHERE phone IS NOT NULL;
-CREATE UNIQUE INDEX IF NOT EXISTS sms_threads_contact_phone_unique ON public.sms_threads (contact_phone);
