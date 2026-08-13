@@ -115,7 +115,10 @@ function FeedPage() {
     queryKey: ["profiles", authorIds],
     queryFn: async () => {
       if (authorIds.length === 0) return [] as Profile[];
-      const { data, error } = await supabase.from("profiles").select("*").in("id", authorIds);
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, name, department, title, team, avatar_initials, avatar_url, presence, landing, created_at, updated_at")
+        .in("id", authorIds);
       if (error) throw error;
       return (data ?? []) as Profile[];
     },

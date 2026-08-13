@@ -67,7 +67,11 @@ function pickRole(roles: string[]): Role {
 
 async function loadSessionUser(userId: string, email: string): Promise<SessionUser | null> {
   const [{ data: profile }, { data: roles }] = await Promise.all([
-    supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
+    supabase
+      .from("profiles")
+      .select("id, name, department, title, team, avatar_initials, avatar_url, presence, landing")
+      .eq("id", userId)
+      .maybeSingle(),
     supabase.from("user_roles").select("role").eq("user_id", userId),
   ]);
 
@@ -77,7 +81,7 @@ async function loadSessionUser(userId: string, email: string): Promise<SessionUs
   return {
     id: userId,
     name: profile?.name || fallback?.name || email,
-    email: profile?.email || email,
+    email,
     role: roles && roles.length > 0 ? role : (fallback?.role ?? "Agent"),
     department: (profile?.department as Department) ?? fallback?.department ?? "Sales Floor",
     title: profile?.title || fallback?.title || "",

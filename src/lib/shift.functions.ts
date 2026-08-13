@@ -184,7 +184,7 @@ export const getMyShiftDay = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<ShiftDay> => {
     const { supabase, userId } = context;
-    await supabase.rpc("shift_close_stale_sessions", { _max_hours: 14 });
+    await closeStaleSessions();
 
     const { data: session } = await supabase
       .from("shift_sessions")
@@ -223,7 +223,7 @@ export const getAttendanceRegister = createServerFn({ method: "GET" })
   .inputValidator((input: { from?: string; to?: string } | undefined) => input ?? {})
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    await supabase.rpc("shift_close_stale_sessions", { _max_hours: 14 });
+    await closeStaleSessions();
 
     const to = data.to ?? pacificDate();
     const fromDefault = new Date();
@@ -237,7 +237,7 @@ export const getAttendanceRegister = createServerFn({ method: "GET" })
         .gte("work_date", from)
         .lte("work_date", to)
         .order("work_date", { ascending: false }),
-      supabase.from("profiles").select("id, name, email, team, department, title, avatar_initials"),
+      supabase.from("profiles").select("id, name, team, department, title, avatar_initials"),
     ]);
 
     return {
