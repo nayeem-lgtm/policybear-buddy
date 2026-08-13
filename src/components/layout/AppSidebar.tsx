@@ -45,7 +45,7 @@ export function AppSidebar() {
         <nav className={cn("grid gap-1", collapsed ? "grid-cols-1" : "grid-cols-2")}>
           {sections.map((section) => {
             const isActive = section.id === active?.id;
-            const target = section.groups[0].items[0].url;
+            const target = section.groups[0]?.items[0]?.url ?? section.home;
             return (
               <Link
                 key={section.id}
