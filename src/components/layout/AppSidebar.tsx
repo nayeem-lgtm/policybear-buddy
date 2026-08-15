@@ -52,11 +52,11 @@ export function AppSidebar() {
                 to={target}
                 title={section.label}
                 className={cn(
-                  "flex items-center gap-2 rounded-lg px-2 py-2 text-xs font-medium transition-colors",
+                  "flex items-center gap-2 rounded-xl px-2.5 py-2 text-xs font-medium transition-all duration-200",
                   collapsed && "justify-center px-0",
                   isActive
-                    ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                    : "bg-sidebar-accent/40 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                    ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-brand"
+                    : "bg-sidebar-accent/35 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
                 )}
               >
                 <section.icon className="size-4 shrink-0" />

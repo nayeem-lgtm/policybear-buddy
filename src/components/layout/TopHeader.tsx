@@ -67,7 +67,7 @@ export function TopHeader() {
   if (!user) return null;
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 items-center gap-3 border-b border-border bg-card/85 px-3 backdrop-blur md:px-4">
+    <header className="sticky top-0 z-40 flex h-16 items-center gap-3 border-b border-border/70 bg-card/80 px-3 backdrop-blur-xl md:px-6">
       <SidebarTrigger className="shrink-0" />
 
       <div className="hidden shrink-0 items-center gap-1.5 text-sm lg:flex">
@@ -89,7 +89,7 @@ export function TopHeader() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search customers, calls, policies, employees…"
-          className="h-9 max-w-lg pl-9"
+          className="h-9 max-w-lg rounded-full bg-muted/60 pl-9"
         />
       </form>
 
