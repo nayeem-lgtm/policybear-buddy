@@ -89,7 +89,7 @@ export function TopHeader() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search customers, calls, policies, employees…"
-          className="h-9 max-w-lg pl-9"
+          className="h-9 max-w-lg rounded-full bg-muted/60 pl-9"
         />
       </form>
 
