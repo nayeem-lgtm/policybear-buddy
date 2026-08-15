@@ -21,7 +21,7 @@ export function StatCard({
   className?: string;
 }) {
   const toneRing: Record<string, string> = {
-    default: "",
+    default: "before:bg-border",
     brand: "before:bg-brand",
     success: "before:bg-success",
     warning: "before:bg-warning",
@@ -29,22 +29,42 @@ export function StatCard({
     info: "before:bg-brand-cyan",
   };
 
+  const iconTone: Record<string, string> = {
+    default: "bg-muted text-muted-foreground",
+    brand: "bg-brand/10 text-brand",
+    success: "bg-success/12 text-success",
+    warning: "bg-warning/25 text-brand-tan",
+    danger: "bg-destructive/12 text-destructive",
+    info: "bg-brand-cyan/25 text-brand-teal",
+  };
+
   return (
     <Card
       className={cn(
-        "relative gap-0 overflow-hidden p-4 shadow-card",
-        "before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:content-['']",
+        "relative gap-0 overflow-hidden rounded-2xl border-border/70 p-5 shadow-card transition-shadow duration-200 hover:shadow-raised",
+        "before:absolute before:inset-y-0 before:left-0 before:w-1 before:content-['']",
         toneRing[tone],
         className,
       )}
     >
       <div className="flex items-start justify-between gap-2">
-        <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+        <p className="text-[0.7rem] font-semibold tracking-[0.1em] text-muted-foreground uppercase">
           {label}
         </p>
-        {icon && <span className="text-muted-foreground">{icon}</span>}
+        {icon && (
+          <span
+            className={cn(
+              "flex size-8 items-center justify-center rounded-xl",
+              iconTone[tone],
+            )}
+          >
+            {icon}
+          </span>
+        )}
       </div>
-      <div className="tabular mt-2 text-2xl font-semibold text-foreground">{value}</div>
+      <div className="tabular mt-3 font-display text-[1.75rem] leading-none font-semibold text-foreground">
+        {value}
+      </div>
       <div className="mt-1 flex items-center gap-2">
         {delta && (
           <span
