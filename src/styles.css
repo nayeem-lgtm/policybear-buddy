@@ -90,9 +90,10 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  --shadow-card: 0 1px 2px 0 oklch(0.227 0.086 281 / 0.06), 0 1px 3px 0 oklch(0.227 0.086 281 / 0.04);
-  --shadow-raised: 0 8px 24px -12px oklch(0.227 0.086 281 / 0.28);
-  --shadow-brand: 0 10px 30px -12px oklch(0.512 0.253 264.5 / 0.45);
+  --shadow-card:
+    0 1px 2px 0 oklch(0.35 0.05 70 / 0.05), 0 6px 18px -12px oklch(0.35 0.05 70 / 0.28);
+  --shadow-raised: 0 12px 32px -16px oklch(0.35 0.06 70 / 0.35);
+  --shadow-brand: 0 14px 34px -14px oklch(0.512 0.253 264.5 / 0.4);
 }
 
 :root {
