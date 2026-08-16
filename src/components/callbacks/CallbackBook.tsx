@@ -55,7 +55,14 @@ import { cn } from "@/lib/utils";
 
 type CallbackRow = Database["public"]["Tables"]["callbacks"]["Row"];
 
-const OPEN_STATUSES: readonly string[] = ["Pending", "Scheduled", "Calling", "No Answer", "Busy", "Failed"];
+const OPEN_STATUSES: readonly string[] = [
+  "Pending",
+  "Scheduled",
+  "Calling",
+  "No Answer",
+  "Busy",
+  "Failed",
+];
 const HOURS = Array.from({ length: 14 }, (_, i) => 7 + i); // 07:00 → 20:00
 
 function startOfWeek(d: Date): Date {
@@ -68,7 +75,9 @@ function startOfWeek(d: Date): Date {
 
 function sameDay(a: Date, b: Date): boolean {
   return (
-    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
   );
 }
 
@@ -91,6 +100,36 @@ function isOverdue(row: CallbackRow, now: Date): boolean {
     Boolean(row.scheduled_at) &&
     new Date(row.scheduled_at as string).getTime() < now.getTime()
   );
+}
+
+type Urgency = "Urgent" | "High" | "Normal" | "Low";
+
+const URGENCY_TONE: Record<Urgency, string> = {
+  Urgent: "border-destructive/40 bg-destructive/12 text-destructive",
+  High: "border-warning/45 bg-warning/18 text-brand-tan",
+  Normal: "border-brand/35 bg-brand/10 text-brand",
+  Low: "border-border bg-muted text-muted-foreground",
+};
+
+/** Urgency is derived from how close (or past) the booked slot is. */
+function urgencyOf(row: CallbackRow, now: Date): Urgency {
+  if (!OPEN_STATUSES.includes(row.status)) return "Low";
+  if (!row.scheduled_at) return "Normal";
+  const diff = (new Date(row.scheduled_at).getTime() - now.getTime()) / 60000;
+  if (diff < 0) return "Urgent";
+  if (diff <= 60) return "High";
+  if (diff <= 60 * 24) return "Normal";
+  return "Low";
+}
+
+function initialsOf(row: CallbackRow): string {
+  const name = (row.contact_name ?? "").trim();
+  if (!name) return "#";
+  return name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() ?? "")
+    .join("");
 }
 
 function timeText(iso: string | null): string {
@@ -136,7 +175,11 @@ export function CallbackBook({ initialView = "queue" }: { initialView?: "queue" 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return rows.filter((r) => {
-      if (status === "open" ? !OPEN_STATUSES.includes(r.status) : status !== "all" && r.status !== status)
+      if (
+        status === "open"
+          ? !OPEN_STATUSES.includes(r.status)
+          : status !== "all" && r.status !== status
+      )
         return false;
       if (agent === "mine" ? r.assigned_to !== me : agent === "unassigned" ? r.assigned_to : false)
         return false;
@@ -181,8 +224,12 @@ export function CallbackBook({ initialView = "queue" }: { initialView?: "queue" 
   };
 
   const statusMutation = useMutation({
-    mutationFn: (input: { id: string; status?: CallbackStatus; assignToMe?: boolean }) =>
-      patch({ data: input }),
+    mutationFn: (input: {
+      id: string;
+      status?: CallbackStatus;
+      assignToMe?: boolean;
+      assignTo?: string | null;
+    }) => patch({ data: input }),
     onSuccess: () => invalidate(),
     onError: (e: Error) => toast.error(e.message),
   });
@@ -199,7 +246,9 @@ export function CallbackBook({ initialView = "queue" }: { initialView?: "queue" 
         },
       }),
     onSuccess: (_r, row) => {
-      toast.success(`Calling ${row.contact_name ?? formatPhone(row.phone_e164)} — open the agent desk`);
+      toast.success(
+        `Calling ${row.contact_name ?? formatPhone(row.phone_e164)} — open the agent desk`,
+      );
       invalidate();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -207,13 +256,14 @@ export function CallbackBook({ initialView = "queue" }: { initialView?: "queue" 
 
   /* --------------------------------------------------------------- calendar data */
   const weekStart = startOfWeek(anchor);
-  const calDays = calMode === "week"
-    ? Array.from({ length: 7 }, (_, i) => {
-        const d = new Date(weekStart);
-        d.setDate(d.getDate() + i);
-        return d;
-      })
-    : [new Date(anchor)];
+  const calDays =
+    calMode === "week"
+      ? Array.from({ length: 7 }, (_, i) => {
+          const d = new Date(weekStart);
+          d.setDate(d.getDate() + i);
+          return d;
+        })
+      : [new Date(anchor)];
 
   const unscheduled = filtered.filter((r) => !r.scheduled_at);
 
@@ -242,11 +292,36 @@ export function CallbackBook({ initialView = "queue" }: { initialView?: "queue" 
       />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <StatCard label="Open" value={stats.open} icon={<ListChecks className="size-4" />} tone="brand" />
-        <StatCard label="Overdue" value={stats.overdue} icon={<AlarmClock className="size-4" />} tone="danger" />
-        <StatCard label="Due today" value={stats.today} icon={<Clock className="size-4" />} tone="warning" />
-        <StatCard label="Assigned to me" value={stats.mine} icon={<UserPlus className="size-4" />} tone="info" />
-        <StatCard label="Completed today" value={stats.completed} icon={<CheckCircle2 className="size-4" />} tone="success" />
+        <StatCard
+          label="Open"
+          value={stats.open}
+          icon={<ListChecks className="size-4" />}
+          tone="brand"
+        />
+        <StatCard
+          label="Overdue"
+          value={stats.overdue}
+          icon={<AlarmClock className="size-4" />}
+          tone="danger"
+        />
+        <StatCard
+          label="Due today"
+          value={stats.today}
+          icon={<Clock className="size-4" />}
+          tone="warning"
+        />
+        <StatCard
+          label="Assigned to me"
+          value={stats.mine}
+          icon={<UserPlus className="size-4" />}
+          tone="info"
+        />
+        <StatCard
+          label="Completed today"
+          value={stats.completed}
+          icon={<CheckCircle2 className="size-4" />}
+          tone="success"
+        />
       </div>
 
       <Card className="gap-0 rounded-3xl p-0 shadow-card">
@@ -323,79 +398,228 @@ export function CallbackBook({ initialView = "queue" }: { initialView?: "queue" 
 
         {/* ------------------------------------------------------------- queue view */}
         {view === "queue" ? (
-          <div className="divide-y divide-border/60">
-            {sorted.length === 0 ? (
-              <p className="p-10 text-center text-sm text-muted-foreground">
-                {isPending ? "Loading the callback book…" : "No callbacks match these filters."}
-              </p>
-            ) : (
-              sorted.map((r) => {
-                const overdue = isOverdue(r, now);
-                return (
-                  <div
-                    key={r.id}
-                    className={cn(
-                      "flex flex-wrap items-center gap-3 p-4 transition-colors hover:bg-accent/50",
-                      overdue && "bg-destructive/[0.04]",
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "flex size-10 shrink-0 items-center justify-center rounded-2xl text-xs font-semibold",
-                        overdue ? "bg-destructive/12 text-destructive" : "bg-brand/10 text-brand",
-                      )}
-                    >
-                      {timeText(r.scheduled_at).replace(/\s?[AP]M/i, "")}
-                    </span>
-
-                    <button className="min-w-0 flex-1 text-left" onClick={() => setSelected(r)}>
-                      <p className="truncate font-medium text-foreground">
-                        {r.contact_name || formatPhone(r.phone_e164)}
-                      </p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {formatPhone(r.phone_e164)} · {r.reason} · {agentName(r.assigned_to)}
-                      </p>
-                    </button>
-
-                    <span
-                      className={cn(
-                        "shrink-0 text-xs font-medium",
-                        overdue ? "text-destructive" : "text-muted-foreground",
-                      )}
-                    >
-                      {dueLabel(r, now)}
-                    </span>
-
-                    <Badge
-                      variant="secondary"
-                      className={cn("shrink-0", CALLBACK_STATUS_TONE[r.status as CallbackStatus])}
-                    >
-                      {r.status}
-                    </Badge>
-
-                    <div className="flex shrink-0 items-center gap-1.5">
-                      <Button
-                        size="sm"
-                        disabled={dialMutation.isPending}
-                        onClick={() => dialMutation.mutate(r)}
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[1180px] border-collapse text-sm">
+              <thead>
+                <tr className="bg-surface/70 text-[0.68rem] font-semibold tracking-[0.09em] text-muted-foreground uppercase">
+                  <th className="px-4 py-3 text-left">Customer</th>
+                  <th className="px-3 py-3 text-left">Urgency</th>
+                  <th className="px-3 py-3 text-left">Reason</th>
+                  <th className="px-3 py-3 text-left">Scheduled</th>
+                  <th className="px-3 py-3 text-left">Due</th>
+                  <th className="px-3 py-3 text-left">Assigned agent</th>
+                  <th className="px-3 py-3 text-left">Source</th>
+                  <th className="px-3 py-3 text-center">Attempts</th>
+                  <th className="px-3 py-3 text-left">Status</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {sorted.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className="p-10 text-center text-sm text-muted-foreground">
+                      {isPending
+                        ? "Loading the callback book…"
+                        : "No callbacks match these filters."}
+                    </td>
+                  </tr>
+                ) : (
+                  sorted.map((r) => {
+                    const overdue = isOverdue(r, now);
+                    const urgency = urgencyOf(r, now);
+                    return (
+                      <tr
+                        key={r.id}
+                        className={cn(
+                          "group transition-colors hover:bg-accent/40",
+                          overdue && "bg-destructive/[0.035]",
+                        )}
                       >
-                        <PhoneCall className="mr-1.5 size-3.5" /> Call
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => setReschedule(r)}>
-                        <CalendarDays className="mr-1.5 size-3.5" /> Reschedule
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => statusMutation.mutate({ id: r.id, status: "Completed" })}
-                      >
-                        <CheckCircle2 className="mr-1.5 size-3.5" /> Done
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })
-            )}
+                        <td className="px-4 py-3">
+                          <button
+                            className="flex items-center gap-3 text-left"
+                            onClick={() => setSelected(r)}
+                          >
+                            <span
+                              className={cn(
+                                "grid size-9 shrink-0 place-items-center rounded-xl text-[0.7rem] font-semibold",
+                                overdue
+                                  ? "bg-destructive/12 text-destructive"
+                                  : "bg-brand/10 text-brand",
+                              )}
+                            >
+                              {initialsOf(r)}
+                            </span>
+                            <span className="min-w-0">
+                              <span className="block truncate font-medium text-foreground group-hover:text-brand">
+                                {r.contact_name || formatPhone(r.phone_e164)}
+                              </span>
+                              <span className="block truncate text-xs text-muted-foreground">
+                                {formatPhone(r.phone_e164)}
+                              </span>
+                            </span>
+                          </button>
+                        </td>
+
+                        <td className="px-3 py-3">
+                          <Badge
+                            variant="secondary"
+                            className={cn("rounded-full", URGENCY_TONE[urgency])}
+                          >
+                            {urgency}
+                          </Badge>
+                        </td>
+
+                        <td className="max-w-[15rem] px-3 py-3">
+                          <span className="block truncate font-medium text-foreground">
+                            {r.reason}
+                          </span>
+                          {r.detail || r.notes ? (
+                            <span className="block truncate text-xs text-muted-foreground">
+                              {r.detail || r.notes}
+                            </span>
+                          ) : null}
+                        </td>
+
+                        <td className="px-3 py-3 whitespace-nowrap">
+                          {r.scheduled_at ? (
+                            <>
+                              <span className="block text-foreground">
+                                {new Date(r.scheduled_at).toLocaleDateString([], {
+                                  month: "short",
+                                  day: "numeric",
+                                })}{" "}
+                                {timeText(r.scheduled_at)}
+                              </span>
+                              <span className="block text-xs text-muted-foreground">
+                                Booked{" "}
+                                {new Date(r.requested_at).toLocaleDateString([], {
+                                  month: "short",
+                                  day: "numeric",
+                                })}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-muted-foreground">Unscheduled</span>
+                          )}
+                        </td>
+
+                        <td className="px-3 py-3 whitespace-nowrap">
+                          <span
+                            className={cn(
+                              "font-medium",
+                              overdue
+                                ? "text-destructive"
+                                : urgency === "High"
+                                  ? "text-brand"
+                                  : "text-muted-foreground",
+                            )}
+                          >
+                            {dueLabel(r, now)}
+                          </span>
+                        </td>
+
+                        <td className="px-3 py-3">
+                          <Select
+                            value={r.assigned_to ?? "unassigned"}
+                            onValueChange={(v) =>
+                              statusMutation.mutate({
+                                id: r.id,
+                                assignTo: v === "unassigned" ? null : v,
+                              })
+                            }
+                          >
+                            <SelectTrigger className="h-8 w-40">
+                              <SelectValue placeholder="Unassigned" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="unassigned">Unassigned</SelectItem>
+                              {agents.map((a) => (
+                                <SelectItem key={a.id} value={a.id}>
+                                  {a.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </td>
+
+                        <td className="px-3 py-3 whitespace-nowrap">
+                          <Badge variant="outline" className="rounded-full text-xs capitalize">
+                            {r.source}
+                          </Badge>
+                        </td>
+
+                        <td className="px-3 py-3 text-center whitespace-nowrap">
+                          <span className="font-medium tabular-nums">{r.attempts}</span>
+                          {r.last_attempt_at ? (
+                            <span className="block text-xs text-muted-foreground">
+                              last {timeText(r.last_attempt_at)}
+                            </span>
+                          ) : null}
+                        </td>
+
+                        <td className="px-3 py-3">
+                          <Badge
+                            variant="secondary"
+                            className={cn(
+                              "rounded-full",
+                              CALLBACK_STATUS_TONE[r.status as CallbackStatus],
+                            )}
+                          >
+                            {r.status}
+                          </Badge>
+                          {r.outcome ? (
+                            <span className="mt-1 block text-xs text-muted-foreground">
+                              {r.outcome}
+                            </span>
+                          ) : null}
+                        </td>
+
+                        <td className="px-4 py-3">
+                          <div className="flex justify-end gap-1.5">
+                            <Button
+                              size="sm"
+                              disabled={dialMutation.isPending}
+                              onClick={() => dialMutation.mutate(r)}
+                            >
+                              <PhoneCall className="mr-1.5 size-3.5" /> Call
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => setReschedule(r)}>
+                              <CalendarDays className="mr-1.5 size-3.5" /> Reschedule
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() =>
+                                statusMutation.mutate({ id: r.id, status: "Completed" })
+                              }
+                            >
+                              <CheckCircle2 className="mr-1.5 size-3.5" /> Done
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+            {sorted.length ? (
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 px-4 py-3 text-xs text-muted-foreground">
+                <span>
+                  Showing {sorted.length} of {rows.length} callbacks
+                </span>
+                <span className="flex items-center gap-3">
+                  <span className="flex items-center gap-1.5">
+                    <span className="size-2 rounded-full bg-destructive" /> Overdue
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="size-2 rounded-full bg-brand" /> Due soon
+                  </span>
+                  <span>Click a customer for the full callback record</span>
+                </span>
+              </div>
+            ) : null}
           </div>
         ) : (
           /* ---------------------------------------------------------- calendar view */
@@ -446,7 +670,8 @@ export function CallbackBook({ initialView = "queue" }: { initialView?: "queue" 
                               )}
                             >
                               <span className="block truncate font-medium">
-                                {timeText(r.scheduled_at)} · {r.contact_name || formatPhone(r.phone_e164)}
+                                {timeText(r.scheduled_at)} ·{" "}
+                                {r.contact_name || formatPhone(r.phone_e164)}
                               </span>
                               <span className="block truncate opacity-80">{r.reason}</span>
                             </button>
@@ -523,6 +748,32 @@ export function CallbackBook({ initialView = "queue" }: { initialView?: "queue" 
                   <div className="flex justify-between gap-3">
                     <dt className="text-muted-foreground">Owner</dt>
                     <dd className="text-right font-medium">{agentName(selected.assigned_to)}</dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted-foreground">Urgency</dt>
+                    <dd className="text-right font-medium">{urgencyOf(selected, now)}</dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted-foreground">Requested</dt>
+                    <dd className="text-right font-medium">
+                      {new Date(selected.requested_at).toLocaleString()}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted-foreground">Last attempt</dt>
+                    <dd className="text-right font-medium">
+                      {selected.last_attempt_at
+                        ? new Date(selected.last_attempt_at).toLocaleString()
+                        : "No attempts yet"}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted-foreground">Outcome</dt>
+                    <dd className="text-right font-medium">{selected.outcome || "—"}</dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted-foreground">Booked by</dt>
+                    <dd className="text-right font-medium">{agentName(selected.created_by)}</dd>
                   </div>
                 </dl>
 
