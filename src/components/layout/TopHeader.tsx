@@ -165,11 +165,6 @@ export function TopHeader() {
                 <Clock className="size-4" /> My shift
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to="/training">
-                <ShieldCheck className="size-4" /> My training
-              </Link>
-            </DropdownMenuItem>
             {can("/admin/rules") && (
             <DropdownMenuItem asChild>
               <Link to="/admin/rules">
