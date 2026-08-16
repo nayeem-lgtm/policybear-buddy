@@ -337,6 +337,101 @@ function QAPage() {
     });
   }, [search, phone, fPublisher, fAgent, fReviewer, fOutcome, fStatus]);
 
+  const charts = useMemo(() => {
+    const days = ["Aug 11", "Aug 12", "Aug 13", "Aug 14", "Aug 15", "Aug 16", "Aug 17"];
+    const buckets = days.map((day, i) => {
+      const rows = filtered.filter((_, idx) => idx % days.length === i);
+      const reviews = rows.length;
+      const avg = reviews ? Math.round(rows.reduce((s, r) => s + r.score, 0) / reviews) : 0;
+      const passed = rows.filter((r) => r.score >= 80).length;
+      const invalid = rows.filter((r) => r.outcome === "Invalid").length;
+      return { day, reviews, avg, pass: reviews ? Math.round((passed / reviews) * 100) : 0, invalid };
+    });
+    const totalReviews = filtered.length;
+    const avgScore = totalReviews
+      ? Math.round(filtered.reduce((s, r) => s + r.score, 0) / totalReviews)
+      : 0;
+    const passRate = totalReviews
+      ? Math.round((filtered.filter((r) => r.score >= 80).length / totalReviews) * 100)
+      : 0;
+    const invalidCount = filtered.filter((r) => r.outcome === "Invalid").length;
+    const delta = (arr: number[]) => {
+      const first = arr[0] || 1;
+      const last = arr[arr.length - 1] || 0;
+      return Math.max(-99.9, Math.min(99.9, ((last - first) / first) * 100));
+    };
+    return {
+      buckets,
+      totalReviews,
+      avgScore,
+      passRate,
+      invalidCount,
+      dReviews: delta(buckets.map((b) => b.reviews)),
+      dAvg: delta(buckets.map((b) => b.avg)),
+      dPass: delta(buckets.map((b) => b.pass)),
+      dInvalid: -delta(buckets.map((b) => b.invalid)),
+    };
+  }, [filtered]);
+
+  const columns: Column<QARow>[] = [
+    {
+      key: "timestamp",
+      header: "Timestamp",
+      cell: (r) => <span className="tabular font-medium text-foreground">{r.timestamp}</span>,
+    },
+    { key: "phone", header: "Inbound Phone", cell: (r) => <span className="tabular">{r.phone}</span> },
+    { key: "status", header: "Status", cell: (r) => <CallStatusCell status={r.callStatus} /> },
+    { key: "validSale", header: "Valid Sale", cell: (r) => <ValidSaleCell v={r.validSale} /> },
+    { key: "publisher", header: "Publisher", cell: (r) => r.publisher },
+    { key: "campaign", header: "Campaign", cell: (r) => r.campaign },
+    { key: "buyer", header: "Buyer", cell: (r) => <span className="tabular">{r.buyer}</span> },
+    { key: "target", header: "Target", cell: (r) => r.target },
+    { key: "conversion", header: "Conversion", cell: (r) => <YesNo value={r.outcome === "Valid"} /> },
+    { key: "score", header: "QC Score", cell: (r) => <ScorePill score={r.score} /> },
+    {
+      key: "critical",
+      header: "QC Critical",
+      cell: (r) =>
+        r.outcome === "Pending" ? (
+          <span className="text-muted-foreground">Not Scored</span>
+        ) : (
+          <Badge
+            variant="outline"
+            className={
+              r.score >= 80
+                ? "border-success/25 bg-success/12 text-success"
+                : r.score >= 65
+                  ? "border-warning/45 bg-warning/20 text-brand-tan"
+                  : "border-destructive/25 bg-destructive/12 text-destructive"
+            }
+          >
+            {r.score >= 80 ? "Good" : r.score >= 65 ? "Bad" : "POOR"}
+          </Badge>
+        ),
+    },
+    { key: "revenue", header: "Revenue", align: "right", cell: (r) => money(r.revenue) },
+    { key: "payout", header: "Payout", align: "right", cell: (r) => money(r.payout) },
+    { key: "answer", header: "Answer", align: "right", cell: (r) => <span className="tabular">{r.answer}</span> },
+    { key: "recording", header: "Recording", cell: (r) => <YesNo value={r.recording} /> },
+    { key: "transcript", header: "Transcript", cell: (r) => <YesNo value={r.transcript} /> },
+    { key: "summary", header: "Summary", cell: (r) => <YesNo value={r.summary} /> },
+    { key: "endCallSource", header: "End Call Source", cell: (r) => <span className="text-muted-foreground">{r.endCallSource}</span> },
+    { key: "duration", header: "Duration", cell: (r) => <span className="tabular">{r.duration}</span> },
+    { key: "duplicate", header: "Duplicate", align: "center", cell: (r) => <BoolMark value={r.duplicate} /> },
+    { key: "fake", header: "Fake Customer", align: "center", cell: (r) => <BoolMark value={r.fakeCustomer} /> },
+    { key: "flag", header: "Flag", cell: () => <Dash /> },
+    { key: "auditedBy", header: "Audited By", cell: (r) => (r.auditedBy === "-" ? <Dash /> : r.auditedBy) },
+    { key: "comment", header: "Comment", cell: (r) => (r.comment ? <span className="text-muted-foreground">{r.comment}</span> : <Dash />) },
+    { key: "rtb", header: "RTBBidID", cell: (r) => <span className="tabular text-muted-foreground">{r.rtbBidId}</span> },
+  ];
+
+  const filterSelects: { label: string; value: string; set: (v: string) => void; options: string[] }[] = [
+    { label: "Publishers", value: fPublisher, set: setFPublisher, options: unique(qaRows, (r) => r.publisher) },
+    { label: "Status", value: fStatus, set: setFStatus, options: unique(qaRows, (r) => r.callStatus) },
+    { label: "Agents", value: fAgent, set: setFAgent, options: unique(qaRows, (r) => r.agent) },
+    { label: "Reviewers", value: fReviewer, set: setFReviewer, options: unique(qaRows, (r) => r.reviewer) },
+    { label: "Outcome", value: fOutcome, set: setFOutcome, options: unique(qaRows, (r) => r.outcome) },
+  ];
 
   return (
     <div className="space-y-5">
