@@ -159,12 +159,6 @@ function ReportingPage() {
         />
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Incoming Calls" value={totals.incoming} hint={`${totals.connects} connected`} icon={<PhoneCall className="size-4" />} tone="brand" />
-        <StatCard label="Converted" value={totals.converted} hint={fmtPct(t.conversionPct)} icon={<Target className="size-4" />} tone="info" />
-        <StatCard label="Revenue" value={fmtMoney(totals.revenue)} hint={`${fmtMoney(totals.payout)} payout`} icon={<DollarSign className="size-4" />} tone="success" />
-        <StatCard label="Profit" value={fmtMoney(totals.profit)} hint={`${fmtPct(t.marginPct)} margin`} icon={<BarChart3 className="size-4" />} tone={totals.profit >= 0 ? "success" : "warning"} />
-      </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card px-4 py-3 shadow-card">
         <div className="inline-flex items-center gap-1 rounded-full bg-surface/70 p-1">
