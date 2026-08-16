@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { PageHeader } from "@/components/crm/PageHeader";
 import { AgentWorkspace } from "@/components/telephony/AgentWorkspace";
+import { RealtimeDialer } from "@/components/telephony/RealtimeDialer";
 
 export const Route = createFileRoute("/_shell/agent-desk")({
   head: () => ({
@@ -32,7 +33,10 @@ function AgentDeskPage() {
         title="Agent desk"
         description="Everything you need for a call in one place. Your status, dialing, outcomes and callbacks stay in step with CallTools automatically."
       />
-      <AgentWorkspace />
+      <div className="space-y-6">
+        <RealtimeDialer />
+        <AgentWorkspace />
+      </div>
     </div>
   );
 }

@@ -206,6 +206,7 @@ export const navSections: NavSection[] = [
           { title: "Users & Roles", url: "/admin/users", icon: UserCog },
           { title: "Business Rules", url: "/admin/rules", icon: SlidersHorizontal },
           { title: "Integrations", url: "/admin/integrations", icon: Plug },
+          { title: "Phone System", url: "/admin/phone-system", icon: PhoneCall },
           { title: "Telephony Sync", url: "/admin/telephony", icon: Repeat },
           { title: "CallTools Control", url: "/admin/calltools", icon: Headphones },
           { title: "Import Center", url: "/admin/imports", icon: Database },
