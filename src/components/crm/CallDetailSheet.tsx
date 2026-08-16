@@ -225,6 +225,8 @@ export function CallDetailSheet({
   const [flag, setFlag] = useState<string | null>(null);
   const [comment, setComment] = useState("");
   const [reviewer, setReviewer] = useState<string>("");
+  const [agentHealth, setAgentHealth] = useState<number>(call?.score ?? 0);
+  const [agentComment, setAgentComment] = useState<string>("");
 
   if (!call) return null;
   const scored = call.outcome !== "Pending";
@@ -521,6 +523,137 @@ export function CallDetailSheet({
                   })}
                 </div>
               </Card>
+
+              <Card className="gap-3 p-4 shadow-card">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="flex size-8 items-center justify-center rounded-lg bg-brand/12 text-brand">
+                      <ShieldQuestion className="size-4" />
+                    </span>
+                    <p className="font-display text-sm font-semibold text-foreground">
+                      Agent QA Health
+                    </p>
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className={`${
+                      agentHealth >= 80
+                        ? "border-success/30 bg-success/10 text-success"
+                        : agentHealth >= 50
+                          ? "border-warning/40 bg-warning/15 text-brand-tan"
+                          : "border-destructive/30 bg-destructive/10 text-destructive"
+                    }`}
+                  >
+                    {agentHealth}%
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                      QA Health Score (%)
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={agentHealth}
+                        onChange={(e) => setAgentHealth(Number(e.target.value))}
+                        className="h-2 flex-1 cursor-pointer appearance-none rounded-full bg-muted accent-brand"
+                        aria-label="Agent QA health percentage"
+                      />
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        value={agentHealth}
+                        onChange={(e) =>
+                          setAgentHealth(Math.min(100, Math.max(0, Number(e.target.value) || 0)))
+                        }
+                        className="w-16 rounded-md border border-border bg-background px-2 py-1 text-center text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-brand/40"
+                        aria-label="Agent QA health value"
+                      />
+                    </div>
+                  </div>
+                  <ScoreRing value={agentHealth} />
+                </div>
+                <div className="flex items-center gap-2 border-t border-dashed border-border/70 pt-2 text-xs text-muted-foreground">
+                  <span
+                    className={`size-2 rounded-full ${
+                      agentHealth >= 80
+                        ? "bg-success"
+                        : agentHealth >= 50
+                          ? "bg-warning"
+                          : "bg-destructive"
+                    }`}
+                  />
+                  {agentHealth >= 80
+                    ? "Healthy — agent is meeting QA standards."
+                    : agentHealth >= 50
+                      ? "Needs improvement — review coaching opportunities."
+                      : "Critical — immediate coaching required."}
+                </div>
+              </Card>
+
+              <Card className="gap-2 p-4 shadow-card">
+                <div className="flex items-center gap-2">
+                  <span className="flex size-8 items-center justify-center rounded-lg bg-brand/12 text-brand">
+                    <MessageSquare className="size-4" />
+                  </span>
+                  <p className="font-display text-sm font-semibold text-foreground">
+                    Agent Call Handling Comments
+                  </p>
+                </div>
+                <Textarea
+                  value={agentComment}
+                  onChange={(e) => setAgentComment(e.target.value)}
+                  placeholder="Add feedback on the agent's call handling — greeting, tone, disclosure, objection handling, closing…"
+                  className="min-h-24"
+                />
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {[
+                    "Greeting followed",
+                    "Disclosure read",
+                    "Identity verified",
+                    "Objection handled",
+                    "Proper closing",
+                    "Tone professional",
+                  ].map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() =>
+                        setAgentComment((prev) =>
+                          prev.includes(tag)
+                            ? prev.replace(`${tag}, `, "").replace(`${tag}`, "").trim()
+                            : (prev ? `${prev}, ${tag}` : tag),
+                        )
+                      }
+                      className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${
+                        agentComment.includes(tag)
+                          ? "border-brand/30 bg-brand/12 text-brand"
+                          : "border-border bg-muted/40 text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-2 flex gap-2">
+                  <Button variant="outline" size="sm" className="gap-1.5">
+                    <Pencil className="size-3.5" /> Save Comment
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setAgentComment("")}
+                    className="ml-auto"
+                  >
+                    Clear
+                  </Button>
+                </div>
+              </Card>
+
               <Card className="gap-2 p-4 shadow-card">
                 <p className="text-sm font-semibold text-foreground">Assign reviewer</p>
                 <Select value={reviewer || call.reviewer} onValueChange={setReviewer}>
