@@ -80,7 +80,11 @@ import {
   updateCallback,
   wrapCall,
 } from "@/lib/dialer.functions";
+import { checkDncNumber, getDncCenter } from "@/lib/dnc.functions";
+import { DNC_ACTION_LABEL, DNC_ACTION_TONE } from "@/lib/dnc-shared";
+import { AddToDncDialog } from "@/components/compliance/AddToDncDialog";
 import { cn } from "@/lib/utils";
+
 
 const KEYPAD: { key: string; sub: string }[] = [
   { key: "1", sub: "" },
