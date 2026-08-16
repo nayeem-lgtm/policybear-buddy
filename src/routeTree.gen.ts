@@ -58,6 +58,7 @@ import { Route as ShellAdminCalltoolsRouteImport } from './routes/_shell.admin.c
 import { Route as ShellAdminHealthRouteImport } from './routes/_shell.admin.health'
 import { Route as ShellAdminImportsRouteImport } from './routes/_shell.admin.imports'
 import { Route as ShellAdminIntegrationsRouteImport } from './routes/_shell.admin.integrations'
+import { Route as ShellAdminPhoneSystemRouteImport } from './routes/_shell.admin.phone-system'
 import { Route as ShellAdminRulesRouteImport } from './routes/_shell.admin.rules'
 import { Route as ShellAdminTelephonyRouteImport } from './routes/_shell.admin.telephony'
 import { Route as ShellAdminUsersRouteImport } from './routes/_shell.admin.users'
@@ -317,6 +318,11 @@ const ShellAdminIntegrationsRoute = ShellAdminIntegrationsRouteImport.update({
   path: '/admin/integrations',
   getParentRoute: () => ShellRoute,
 } as any)
+const ShellAdminPhoneSystemRoute = ShellAdminPhoneSystemRouteImport.update({
+  id: '/admin/phone-system',
+  path: '/admin/phone-system',
+  getParentRoute: () => ShellRoute,
+} as any)
 const ShellAdminRulesRoute = ShellAdminRulesRouteImport.update({
   id: '/admin/rules',
   path: '/admin/rules',
@@ -434,6 +440,7 @@ export interface FileRoutesByFullPath {
   '/admin/health': typeof ShellAdminHealthRoute
   '/admin/imports': typeof ShellAdminImportsRoute
   '/admin/integrations': typeof ShellAdminIntegrationsRoute
+  '/admin/phone-system': typeof ShellAdminPhoneSystemRoute
   '/admin/rules': typeof ShellAdminRulesRoute
   '/admin/telephony': typeof ShellAdminTelephonyRoute
   '/admin/users': typeof ShellAdminUsersRoute
@@ -497,6 +504,7 @@ export interface FileRoutesByTo {
   '/admin/health': typeof ShellAdminHealthRoute
   '/admin/imports': typeof ShellAdminImportsRoute
   '/admin/integrations': typeof ShellAdminIntegrationsRoute
+  '/admin/phone-system': typeof ShellAdminPhoneSystemRoute
   '/admin/rules': typeof ShellAdminRulesRoute
   '/admin/telephony': typeof ShellAdminTelephonyRoute
   '/admin/users': typeof ShellAdminUsersRoute
@@ -562,6 +570,7 @@ export interface FileRoutesById {
   '/_shell/admin/health': typeof ShellAdminHealthRoute
   '/_shell/admin/imports': typeof ShellAdminImportsRoute
   '/_shell/admin/integrations': typeof ShellAdminIntegrationsRoute
+  '/_shell/admin/phone-system': typeof ShellAdminPhoneSystemRoute
   '/_shell/admin/rules': typeof ShellAdminRulesRoute
   '/_shell/admin/telephony': typeof ShellAdminTelephonyRoute
   '/_shell/admin/users': typeof ShellAdminUsersRoute
@@ -627,6 +636,7 @@ export interface FileRouteTypes {
     | '/admin/health'
     | '/admin/imports'
     | '/admin/integrations'
+    | '/admin/phone-system'
     | '/admin/rules'
     | '/admin/telephony'
     | '/admin/users'
@@ -690,6 +700,7 @@ export interface FileRouteTypes {
     | '/admin/health'
     | '/admin/imports'
     | '/admin/integrations'
+    | '/admin/phone-system'
     | '/admin/rules'
     | '/admin/telephony'
     | '/admin/users'
@@ -754,6 +765,7 @@ export interface FileRouteTypes {
     | '/_shell/admin/health'
     | '/_shell/admin/imports'
     | '/_shell/admin/integrations'
+    | '/_shell/admin/phone-system'
     | '/_shell/admin/rules'
     | '/_shell/admin/telephony'
     | '/_shell/admin/users'
@@ -1122,6 +1134,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellAdminIntegrationsRouteImport
       parentRoute: typeof ShellRoute
     }
+    '/_shell/admin/phone-system': {
+      id: '/_shell/admin/phone-system'
+      path: '/admin/phone-system'
+      fullPath: '/admin/phone-system'
+      preLoaderRoute: typeof ShellAdminPhoneSystemRouteImport
+      parentRoute: typeof ShellRoute
+    }
     '/_shell/admin/rules': {
       id: '/_shell/admin/rules'
       path: '/admin/rules'
@@ -1288,6 +1307,7 @@ interface ShellRouteChildren {
   ShellAdminHealthRoute: typeof ShellAdminHealthRoute
   ShellAdminImportsRoute: typeof ShellAdminImportsRoute
   ShellAdminIntegrationsRoute: typeof ShellAdminIntegrationsRoute
+  ShellAdminPhoneSystemRoute: typeof ShellAdminPhoneSystemRoute
   ShellAdminRulesRoute: typeof ShellAdminRulesRoute
   ShellAdminTelephonyRoute: typeof ShellAdminTelephonyRoute
   ShellAdminUsersRoute: typeof ShellAdminUsersRoute
@@ -1346,6 +1366,7 @@ const ShellRouteChildren: ShellRouteChildren = {
   ShellAdminHealthRoute: ShellAdminHealthRoute,
   ShellAdminImportsRoute: ShellAdminImportsRoute,
   ShellAdminIntegrationsRoute: ShellAdminIntegrationsRoute,
+  ShellAdminPhoneSystemRoute: ShellAdminPhoneSystemRoute,
   ShellAdminRulesRoute: ShellAdminRulesRoute,
   ShellAdminTelephonyRoute: ShellAdminTelephonyRoute,
   ShellAdminUsersRoute: ShellAdminUsersRoute,
