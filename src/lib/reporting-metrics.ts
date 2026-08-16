@@ -5,7 +5,16 @@ import {
   trafficCalls,
   trafficByDay,
   type CpsRow,
+  type SaleRecord,
 } from "@/lib/company-data";
+
+/** Distinct publisher names that appear across CPS and traffic data. */
+export function publisherOptions(): string[] {
+  const set = new Set<string>();
+  for (const c of publisherCps) set.add(c.name);
+  for (const t of trafficCalls) if (t.publisher) set.add(t.publisher);
+  return [...set].sort((a, b) => a.localeCompare(b));
+}
 
 export type ReportDimension = "publisher" | "campaign" | "day";
 
