@@ -123,8 +123,10 @@ function ReportingPage() {
   const [dimension, setDimension] = useState<ReportDimension>("publisher");
   const [dateSel, setDateSel] = useState<DateSelection>({ preset: "7d" });
   const [search, setSearch] = useState("");
+  const [publisher, setPublisher] = useState<string>("all");
 
-  const rows = useMemo(() => buildReport(dimension), [dimension]);
+  const publishers = useMemo(() => publisherOptions(), []);
+  const rows = useMemo(() => buildReport(dimension, publisher === "all" ? undefined : publisher), [dimension, publisher]);
   const filtered = useMemo(
     () => rows.filter((r) => r.name.toLowerCase().includes(search.trim().toLowerCase())),
     [rows, search],
