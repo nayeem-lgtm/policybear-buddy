@@ -236,13 +236,17 @@ function AttendancePage() {
   });
 
   const totals = filtered.reduce(
-    (acc, r) => ({
-      worked: acc.worked + r.worked,
-      breaks: acc.breaks + r.break_seconds,
-      lunch: acc.lunch + r.lunch_seconds,
-      overrun: acc.overrun + r.break_overrun_seconds + r.lunch_overrun_seconds,
-    }),
-    { worked: 0, breaks: 0, lunch: 0, overrun: 0 },
+    (acc, r) => {
+      const overtime = Math.max(0, r.worked - STANDARD_DAY_SECONDS);
+      return {
+        worked: acc.worked + r.worked,
+        breaks: acc.breaks + r.break_seconds,
+        lunch: acc.lunch + r.lunch_seconds,
+        overrun: acc.overrun + r.break_overrun_seconds + r.lunch_overrun_seconds,
+        overtime: acc.overtime + overtime,
+      };
+    },
+    { worked: 0, breaks: 0, lunch: 0, overrun: 0, overtime: 0 },
   );
 
   const people = new Set(filtered.map((r) => r.user_id)).size;
