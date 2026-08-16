@@ -197,13 +197,13 @@ function MetricTile({
 /* ---------- page ---------- */
 
 function AttendancePage() {
-  const [rangeIndex, setRangeIndex] = useState(1);
-  const range = RANGES[rangeIndex]!;
+  const [selection, setSelection] = useState<DateSelection>({ preset: "7d" });
+  const { from, to } = rangeFromSelection(selection);
   const load = useServerFn(getAttendanceRegister);
 
   const query = useQuery({
-    queryKey: ["attendance-register", range.days],
-    queryFn: () => load({ data: { from: shiftDate(range.days), to: pacificDate() } }),
+    queryKey: ["attendance-register", from, to],
+    queryFn: () => load({ data: { from, to } }),
     refetchInterval: 60_000,
   });
 
