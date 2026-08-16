@@ -39,7 +39,7 @@ import {
 
 } from "lucide-react";
 
-export const Route = createFileRoute("/_shell/qa")({
+export const Route = createFileRoute("/_shell/qa/")({
   head: () => ({
     meta: [
       { title: "QA Review Queue — Policy Bear CRM" },
