@@ -1,9 +1,8 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { BarChart3, DollarSign, PhoneCall, Search, Target } from "lucide-react";
+import { Search } from "lucide-react";
 
 import { PageHeader } from "@/components/crm/PageHeader";
-import { StatCard } from "@/components/crm/StatCard";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -132,7 +131,6 @@ function ReportingPage() {
     [rows, search],
   );
   const totals = useMemo(() => totalRow(filtered), [filtered]);
-  const t = derive(totals);
 
   return (
     <div className="space-y-6">
@@ -159,12 +157,6 @@ function ReportingPage() {
         />
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Incoming Calls" value={totals.incoming} hint={`${totals.connects} connected`} icon={<PhoneCall className="size-4" />} tone="brand" />
-        <StatCard label="Converted" value={totals.converted} hint={fmtPct(t.conversionPct)} icon={<Target className="size-4" />} tone="info" />
-        <StatCard label="Revenue" value={fmtMoney(totals.revenue)} hint={`${fmtMoney(totals.payout)} payout`} icon={<DollarSign className="size-4" />} tone="success" />
-        <StatCard label="Profit" value={fmtMoney(totals.profit)} hint={`${fmtPct(t.marginPct)} margin`} icon={<BarChart3 className="size-4" />} tone={totals.profit >= 0 ? "success" : "warning"} />
-      </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card px-4 py-3 shadow-card">
         <div className="inline-flex items-center gap-1 rounded-full bg-surface/70 p-1">
