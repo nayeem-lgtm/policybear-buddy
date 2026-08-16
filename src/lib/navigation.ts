@@ -106,8 +106,8 @@ export const navSections: NavSection[] = [
           { title: "Agent Desk", url: "/agent-desk", icon: Headphones, description: "Take and handle calls" },
           { title: "My Work", url: "/my-work", icon: ClipboardList, description: "Everything assigned to you" },
           { title: "Customers", url: "/customers", icon: Contact, description: "Customer records" },
-          { title: "Callbacks", url: "/callbacks", icon: PhoneForwarded, description: "Callback queue" },
-          { title: "Callback Calendar", url: "/callbacks/calendar", icon: CalendarDays, description: "Scheduled callbacks" },
+          { title: "Callbacks", url: "/callbacks", icon: PhoneForwarded, description: "Callback queue and calendar in one book" },
+
           { title: "DNC & Compliance", url: "/dnc", icon: ShieldOff, description: "Do-Not-Call list, add numbers and audit log" },
         ],
       },

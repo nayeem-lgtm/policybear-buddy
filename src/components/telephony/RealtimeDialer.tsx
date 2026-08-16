@@ -84,7 +84,6 @@ import { formatPhone } from "@/lib/phone";
 import {
   claimNextLead,
   controlCall,
-  createCallback,
   getDialerDesk,
   simulateInboundCall,
   startCall,
@@ -93,6 +92,7 @@ import {
 } from "@/lib/dialer.functions";
 import { checkDncNumber, getDncCenter } from "@/lib/dnc.functions";
 import { DNC_ACTION_LABEL, DNC_ACTION_TONE } from "@/lib/dnc-shared";
+import { CallbackDialog } from "@/components/callbacks/CallbackDialog";
 import { AddToDncDialog } from "@/components/compliance/AddToDncDialog";
 import { cn } from "@/lib/utils";
 import { playChirp, playDtmf, playRing } from "@/lib/dialer-tones";
@@ -153,7 +153,6 @@ export function RealtimeDialer() {
   const dial = useServerFn(startCall);
   const control = useServerFn(controlCall);
   const wrap = useServerFn(wrapCall);
-  const bookCallback = useServerFn(createCallback);
   const patchCallback = useServerFn(updateCallback);
   const simulate = useServerFn(simulateInboundCall);
   const nextLead = useServerFn(claimNextLead);
@@ -183,7 +182,6 @@ export function RealtimeDialer() {
   const [callbackAt, setCallbackAt] = useState("");
   const [transferTo, setTransferTo] = useState("");
   const [showInCallPad, setShowInCallPad] = useState(false);
-  const [cb, setCb] = useState({ phone: "", contactName: "", reason: "Requested callback", scheduledAt: "" });
   const [cbFilter, setCbFilter] = useState<"open" | CallbackStatus>("open");
   const [sim, setSim] = useState({ phone: "", numberId: "auto" });
   const [campaignId, setCampaignId] = useState("");
@@ -196,6 +194,12 @@ export function RealtimeDialer() {
     phone: "",
     name: null,
   });
+  const [cbOpen, setCbOpen] = useState(false);
+  const [cbTarget, setCbTarget] = useState<{ phone: string; name: string | null }>({
+    phone: "",
+    name: null,
+  });
+
 
   /* premium desk options: audio, speed dial, live notes, auto-flow */
   const [sound, setSound] = useState(true);
@@ -252,6 +256,12 @@ export function RealtimeDialer() {
     setDncOpen(true);
   };
 
+  const openCallback = (phone: string | null | undefined, name?: string | null) => {
+    setCbTarget({ phone: phone ?? "", name: name ?? null });
+    setCbOpen(true);
+  };
+
+
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["dialer-desk"] });
 
 
@@ -298,24 +308,6 @@ export function RealtimeDialer() {
       setNotes("");
       setCallbackAt("");
       setLiveNotes("");
-      refresh();
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const callbackMutation = useMutation({
-    mutationFn: () =>
-      bookCallback({
-        data: {
-          phone: cb.phone,
-          reason: cb.reason,
-          ...(cb.contactName ? { contactName: cb.contactName } : {}),
-          ...(cb.scheduledAt ? { scheduledAt: cb.scheduledAt } : {}),
-        },
-      }),
-    onSuccess: () => {
-      toast.success("Callback booked");
-      setCb({ phone: "", contactName: "", reason: "Requested callback", scheduledAt: "" });
       refresh();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -705,11 +697,20 @@ export function RealtimeDialer() {
                     <Button
                       size="sm"
                       variant="ghost"
+                      className="h-8 gap-1 text-xs"
+                      onClick={() => openCallback(active.phone_e164, active.contact_name)}
+                    >
+                      <CalendarClock className="size-3.5" /> Set callback
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
                       className="h-8 gap-1 text-xs text-destructive"
                       onClick={() => openDnc(active.phone_e164, active.contact_name)}
                     >
                       <Ban className="size-3.5" /> DNC
                     </Button>
+
                   </div>
                 </div>
               </div>
@@ -1036,13 +1037,19 @@ export function RealtimeDialer() {
                 )}
               </Button>
 
-              <Button
-                variant="outline"
-                className="w-full text-destructive"
-                onClick={() => openDnc(digits)}
-              >
-                <Ban className="mr-2 size-4" /> Add any number to DNC
-              </Button>
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" onClick={() => openCallback(digits)}>
+                  <CalendarClock className="mr-2 size-4" /> Set callback
+                </Button>
+                <Button
+                  variant="outline"
+                  className="text-destructive"
+                  onClick={() => openDnc(digits)}
+                >
+                  <Ban className="mr-2 size-4" /> Add to DNC
+                </Button>
+              </div>
+
 
               {speedDial.length ? (
                 <div>
@@ -1212,37 +1219,24 @@ export function RealtimeDialer() {
 
             {/* ------------------------------------------------------------ callbacks */}
             <TabsContent value="callbacks" className="m-0 p-4">
-              <div className="grid gap-2 sm:grid-cols-4">
-                <Input
-                  placeholder="Phone"
-                  value={cb.phone}
-                  onChange={(e) => setCb((c) => ({ ...c, phone: e.target.value }))}
-                />
-                <Input
-                  placeholder="Name"
-                  value={cb.contactName}
-                  onChange={(e) => setCb((c) => ({ ...c, contactName: e.target.value }))}
-                />
-                <Input
-                  placeholder="Reason"
-                  value={cb.reason}
-                  onChange={(e) => setCb((c) => ({ ...c, reason: e.target.value }))}
-                />
-                <div className="flex gap-2">
-                  <Input
-                    type="datetime-local"
-                    value={cb.scheduledAt}
-                    onChange={(e) => setCb((c) => ({ ...c, scheduledAt: e.target.value }))}
-                  />
-                  <Button
-                    size="icon"
-                    disabled={cb.phone.length < 7 || callbackMutation.isPending}
-                    onClick={() => callbackMutation.mutate()}
-                  >
-                    <PlusCircle className="size-4" />
-                  </Button>
+              <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border/60 bg-surface/40 p-3">
+                <span className="grid size-9 place-items-center rounded-full bg-brand/12 text-brand">
+                  <CalendarClock className="size-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium">Set a callback for any number</p>
+                  <p className="text-xs text-muted-foreground">
+                    Quick slots, reason presets and notes — it lands straight in the callback book.
+                  </p>
                 </div>
+                <Button size="sm" onClick={() => openCallback(digits || active?.phone_e164 || "", active?.contact_name)}>
+                  <PlusCircle className="mr-1.5 size-4" /> Set callback
+                </Button>
+                <Button asChild size="sm" variant="outline">
+                  <Link to="/callbacks">Callback book</Link>
+                </Button>
               </div>
+
 
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {(["open", ...CALLBACK_STATUSES] as const).map((s) => (
@@ -1557,6 +1551,14 @@ export function RealtimeDialer() {
           </Tabs>
         </Card>
       </div>
+
+      <CallbackDialog
+        open={cbOpen}
+        onOpenChange={setCbOpen}
+        phone={cbTarget.phone}
+        contactName={cbTarget.name}
+        onSaved={refresh}
+      />
 
       <AddToDncDialog
         open={dncOpen}
