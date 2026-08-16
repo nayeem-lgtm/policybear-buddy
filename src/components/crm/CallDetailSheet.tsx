@@ -225,6 +225,8 @@ export function CallDetailSheet({
   const [flag, setFlag] = useState<string | null>(null);
   const [comment, setComment] = useState("");
   const [reviewer, setReviewer] = useState<string>("");
+  const [agentHealth, setAgentHealth] = useState<number>(call?.score ?? 0);
+  const [agentComment, setAgentComment] = useState<string>("");
 
   if (!call) return null;
   const scored = call.outcome !== "Pending";
