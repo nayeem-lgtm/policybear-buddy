@@ -67,7 +67,10 @@ export function formatClock(iso: string | null) {
 }
 
 export function formatHm(totalSeconds: number) {
-  const h = Math.floor(totalSeconds / 3600);
-  const m = Math.floor((totalSeconds % 3600) / 60);
-  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  const total = Math.max(0, Math.floor(totalSeconds));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  if (h > 0) return `${h}h ${m.toString().padStart(2, "0")}m`;
+  if (m > 0) return `${m}m`;
+  return `${total}s`;
 }

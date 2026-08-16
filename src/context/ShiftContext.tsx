@@ -171,6 +171,8 @@ const TONE_FOR_STATUS: Record<string, ShiftEvent["tone"]> = {
 export function ShiftProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [status, setStatusState] = useState<PresenceStatus>("Available");
+  /** Wall-clock anchor for the current status — all elapsed time derives from this. */
+  const [statusStartedAt, setStatusStartedAt] = useState<number>(() => Date.now());
   const [statusSeconds, setStatusSeconds] = useState(0);
   const [demoMode, setDemoMode] = useState(false);
   const [alarmAcknowledgedAt, setAlarmAcknowledgedAt] = useState<number | null>(null);
@@ -194,23 +196,33 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
 
   const tick = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  /**
+   * Elapsed time is always derived from the wall-clock anchor, never accumulated
+   * by counting ticks — background tabs throttle timers and would under-count.
+   */
   useEffect(() => {
-    tick.current = setInterval(() => setStatusSeconds((s) => s + 1), 1000);
+    const sync = () =>
+      setStatusSeconds(Math.max(0, Math.floor((Date.now() - statusStartedAt) / 1000)));
+    sync();
+    tick.current = setInterval(sync, 1000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") sync();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", sync);
     return () => {
       if (tick.current) clearInterval(tick.current);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", sync);
     };
-  }, []);
+  }, [statusStartedAt]);
 
   const applyDay = useCallback((day: ShiftDay) => {
     setSession(day.session);
     if (day.session) {
       setStatusState(day.session.current_status as PresenceStatus);
-      setStatusSeconds(
-        Math.max(
-          0,
-          Math.round((Date.now() - new Date(day.session.current_status_at).getTime()) / 1000),
-        ),
-      );
+      const anchor = new Date(day.session.current_status_at).getTime();
+      setStatusStartedAt(Number.isFinite(anchor) ? Math.min(anchor, Date.now()) : Date.now());
     }
     setEvents(
       day.events.map((e) => ({
@@ -296,6 +308,7 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
   const setStatus = useCallback(
     (next: PresenceStatus, detail?: string) => {
       setStatusState(next);
+      setStatusStartedAt(Date.now());
       setStatusSeconds(0);
       setTestKind(null);
       setAlarmAcknowledgedAt(null);
@@ -342,7 +355,13 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
           const updated = await pushStatus({
             data: { status: next, detail: resolvedDetail, allowanceSeconds: allowance },
           });
-          if (updated) setSession(updated as ShiftSessionRow);
+          if (updated) {
+            const row = updated as ShiftSessionRow;
+            setSession(row);
+            // Re-anchor on the server clock so client/server timing never drifts.
+            const anchor = new Date(row.current_status_at).getTime();
+            if (Number.isFinite(anchor)) setStatusStartedAt(Math.min(anchor, Date.now()));
+          }
           // Mirror presence into CallTools so the dialer never rings an agent on break.
           const ctStatus = CALLTOOLS_STATUS[next];
           if (ctStatus) {
@@ -377,6 +396,7 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
     (kind: "Break" | "Lunch" = "Break") => {
       setTestKind(kind);
       setStatusState(kind);
+      setStatusStartedAt(Date.now());
       setStatusSeconds(0);
       setAlarmAcknowledgedAt(null);
       setAutoCallAnswered(false);
@@ -393,6 +413,7 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
   const stopAlarmTest = useCallback(() => {
     setTestKind(null);
     setStatusState("Available");
+    setStatusStartedAt(Date.now());
     setStatusSeconds(0);
     setAlarmAcknowledgedAt(null);
     setAutoCallAnswered(false);
@@ -472,7 +493,11 @@ export function useShift() {
 }
 
 export function formatDuration(totalSeconds: number) {
-  const m = Math.floor(totalSeconds / 60);
-  const s = totalSeconds % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
+  const total = Math.max(0, Math.floor(totalSeconds));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const mm = m.toString().padStart(2, "0");
+  const ss = s.toString().padStart(2, "0");
+  return h > 0 ? `${h}:${mm}:${ss}` : `${m}:${ss}`;
 }
