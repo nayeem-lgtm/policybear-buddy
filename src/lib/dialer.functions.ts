@@ -363,6 +363,7 @@ export const updateCallback = createServerFn({ method: "POST" })
       patch["scheduled_at"] = data.scheduledAt ? new Date(data.scheduledAt).toISOString() : null;
     }
     if (data.assignToMe) patch["assigned_to"] = userId;
+    else if (data.assignTo !== undefined) patch["assigned_to"] = data.assignTo;
     if (data.notes !== undefined) patch["notes"] = data.notes;
 
     const { data: row, error } = await supabase
