@@ -255,6 +255,28 @@ export const wrapCall = createServerFn({ method: "POST" })
         .eq("id", call.dial_task_id);
     }
 
+    // A "DNC" outcome adds the number to the Do-Not-Call list and audit trail.
+    if (data.disposition === "DNC") {
+      const target = call.phone_e164 ?? call.to_number ?? call.from_number;
+      if (target) {
+        const { addToDnc } = await import("@/lib/dnc.server");
+        await addToDnc(
+          supabase,
+          {
+            phone: target,
+            contactName: call.contact_name,
+            reason: "Consumer request",
+            scope: "internal",
+            source: "agent-wrapup",
+            notes: data.notes ?? null,
+          },
+          { userId },
+        );
+      }
+    }
+
+
+
     if (data.callbackAt) {
       await supabase.from("callbacks").insert({
         phone_e164: call.phone_e164 ?? call.to_number ?? "",
