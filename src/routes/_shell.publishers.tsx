@@ -325,7 +325,7 @@ function PublisherDashboardPage() {
         />
         <RankList
           title="Top Publishers by CPS"
-          description="Cost per sale, highest first"
+          description="Cost per sale, lowest first"
           rows={byCps}
           icon={<Tag className="size-4" />}
           tone="info"
