@@ -196,16 +196,10 @@ export const navSections: NavSection[] = [
         ],
       },
       {
-        label: "People & operations",
+        label: "People & reports",
         items: [
           { title: "Employees", url: "/employees", icon: Users },
           { title: "Complaints & Tips", url: "/complaints", icon: Inbox },
-          { title: "HR Automations", url: "/hr-automations", icon: Workflow },
-          { title: "Automations", url: "/automations", icon: Workflow },
-          { title: "Daily Operations", url: "/operations", icon: Activity },
-          { title: "Live Operations", url: "/live-operations", icon: Radio },
-          { title: "Tasks & Approvals", url: "/tasks", icon: ClipboardCheck },
-          { title: "Incidents", url: "/incidents", icon: Siren },
           { title: "Reports", url: "/reports", icon: BarChart3 },
           { title: "Documents", url: "/documents", icon: FileText },
           { title: "New Application", url: "/sales/new", icon: ClipboardCheck },
