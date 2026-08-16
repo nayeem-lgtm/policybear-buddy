@@ -497,6 +497,21 @@ function AttendancePage() {
               },
             },
             {
+              key: "overtime",
+              header: "Overtime",
+              align: "right",
+              cell: (r) => {
+                const ot = Math.max(0, r.worked - STANDARD_DAY_SECONDS);
+                return ot > 0 ? (
+                  <span className="tabular rounded-full bg-warning/15 px-2 py-0.5 text-xs font-semibold text-brand-tan">
+                    +{formatHm(ot)}
+                  </span>
+                ) : (
+                  <span className="text-xs text-muted-foreground">—</span>
+                );
+              },
+            },
+            {
               key: "status",
               header: "Current",
               cell: (r) => <StatusBadge status={r.current_status} />,
