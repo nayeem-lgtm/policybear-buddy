@@ -1,12 +1,11 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { BarChart3, DollarSign, PhoneCall, Target } from "lucide-react";
+import { BarChart3, DollarSign, PhoneCall, Search, Target } from "lucide-react";
 
 import { PageHeader } from "@/components/crm/PageHeader";
 import { StatCard } from "@/components/crm/StatCard";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   buildReport,
@@ -138,40 +137,47 @@ function ReportingPage() {
         <StatCard label="Profit" value={fmtMoney(totals.profit)} hint={`${fmtPct(t.marginPct)} margin`} icon={<BarChart3 className="size-4" />} tone={totals.profit >= 0 ? "success" : "warning"} />
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="flex rounded-lg border border-border bg-card p-1">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card px-4 py-3 shadow-card">
+        <div className="inline-flex items-center gap-1 rounded-full bg-surface/70 p-1">
           {dimensions.map((d) => (
-            <Button
+            <button
               key={d.id}
-              size="sm"
-              variant={dimension === d.id ? "default" : "ghost"}
-              className="h-8"
+              type="button"
               onClick={() => setDimension(d.id)}
+              className={cn(
+                "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
+                dimension === d.id
+                  ? "bg-brand text-brand-foreground shadow-brand"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground",
+              )}
             >
               {d.label}
-            </Button>
+            </button>
           ))}
         </div>
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search…"
-          className="h-9 w-full sm:w-64"
-        />
+        <div className="relative w-full sm:w-72">
+          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search rows…"
+            className="h-9 rounded-full bg-surface/60 pl-9"
+          />
+        </div>
       </div>
 
       <Card className="gap-0 overflow-hidden p-0 shadow-card">
-        <div className="overflow-x-auto">
+        <div className="max-h-[70vh] overflow-auto">
           <table className="w-max min-w-full border-collapse text-sm">
-            <thead>
-              <tr className="bg-surface/80">
-                <th className="sticky left-0 z-10 bg-surface/95 px-4 py-2.5 text-left text-[0.7rem] font-semibold tracking-wide whitespace-nowrap text-muted-foreground uppercase backdrop-blur">
+            <thead className="sticky top-0 z-20">
+              <tr className="bg-surface">
+                <th className="sticky left-0 z-30 border-b border-border bg-surface px-4 py-3 text-left text-[0.68rem] font-semibold tracking-[0.08em] whitespace-nowrap text-muted-foreground uppercase">
                   {dimension === "day" ? "Date" : dimension === "campaign" ? "Campaign" : "Publisher"}
                 </th>
                 {metrics.map((m) => (
                   <th
                     key={m.key}
-                    className="border-l border-border/60 px-4 py-2.5 text-right text-[0.7rem] font-semibold tracking-wide whitespace-nowrap text-muted-foreground uppercase"
+                    className="border-b border-l border-border/60 px-4 py-3 text-right text-[0.68rem] font-semibold tracking-[0.08em] whitespace-nowrap text-muted-foreground uppercase"
                   >
                     {m.header}
                   </th>
@@ -187,9 +193,15 @@ function ReportingPage() {
                 </tr>
               )}
               {filtered.map((r) => (
-                <tr key={r.key} className="border-t border-border/60 hover:bg-surface/50">
-                  <td className="sticky left-0 z-10 bg-card/95 px-4 py-2.5 font-medium whitespace-nowrap text-foreground backdrop-blur">
-                    {r.name}
+                <tr
+                  key={r.key}
+                  className="group border-t border-border/50 odd:bg-surface/25 hover:bg-brand/[0.06]"
+                >
+                  <td className="sticky left-0 z-10 bg-card px-4 py-2.5 font-medium whitespace-nowrap text-foreground group-odd:bg-[color-mix(in_oklab,var(--surface)_25%,var(--card))] group-hover:bg-[color-mix(in_oklab,var(--brand)_6%,var(--card))]">
+                    <span className="flex items-center gap-2">
+                      <span className="size-1.5 rounded-full bg-brand/40" />
+                      {r.name}
+                    </span>
                   </td>
                   {metrics.map((m) => (
                     <td
@@ -205,8 +217,8 @@ function ReportingPage() {
                 </tr>
               ))}
               {filtered.length > 0 && (
-                <tr className="border-t-2 border-border bg-surface/70 font-semibold">
-                  <td className="sticky left-0 z-10 bg-surface/95 px-4 py-3 whitespace-nowrap text-foreground backdrop-blur">
+                <tr className="border-t-2 border-border bg-surface font-semibold">
+                  <td className="sticky left-0 z-10 bg-surface px-4 py-3 whitespace-nowrap text-foreground">
                     Totals
                   </td>
                   {metrics.map((m) => (
@@ -225,7 +237,7 @@ function ReportingPage() {
             </tbody>
           </table>
         </div>
-        <div className="border-t border-border px-4 py-2.5 text-xs text-muted-foreground">
+        <div className="border-t border-border bg-surface/40 px-4 py-2.5 text-xs text-muted-foreground">
           {filtered.length} rows · scroll sideways for all {metrics.length} metrics
         </div>
       </Card>
