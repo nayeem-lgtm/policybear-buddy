@@ -585,58 +585,12 @@ function QAPage() {
         />
       </Card>
 
-      <Sheet open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-        <SheetContent className="w-full sm:max-w-lg">
-          {selected && (
-            <>
-              <SheetHeader>
-                <SheetTitle>{selected.id} scorecard</SheetTitle>
-                <SheetDescription>{selected.agent} · {selected.callId} · {selected.customer}</SheetDescription>
-              </SheetHeader>
-              <div className="space-y-4 px-4 pb-4">
-                <div className="flex items-center gap-2">
-                  <StatusBadge status={selected.outcome} />
-                  <span className="text-sm text-muted-foreground">Reason: {selected.reason}</span>
-                </div>
-                <Separator />
-                <div>
-                  <p className="mb-2 text-sm font-semibold text-foreground">Scorecard breakdown</p>
-                  <div className="space-y-3">
-                    {scorecardCriteria.map((c, i) => {
-                      const value = Math.min(100, Math.max(30, selected.score - i * 4 + (i % 2 ? 6 : -3)));
-                      return (
-                        <div key={c.label}>
-                          <div className="mb-1 flex justify-between text-xs">
-                            <span className="text-foreground">{c.label}</span>
-                            <span className="text-muted-foreground">{value}% · weight {c.weight}%</span>
-                          </div>
-                          <Progress value={value} />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-                <Separator />
-                <div className="space-y-1.5">
-                  <p className="text-sm font-semibold text-foreground">Assign reviewer</p>
-                  <Select value={reviewer || selected.reviewer} onValueChange={setReviewer}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {employees.filter((e) => e.role === "QC").map((e) => (
-                        <SelectItem key={e.id} value={e.name}>{e.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" className="flex-1 gap-1.5"><X className="size-3.5" /> Fail</Button>
-                  <Button className="flex-1 gap-1.5"><Check className="size-3.5" /> Pass</Button>
-                </div>
-              </div>
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
+      <CallDetailSheet
+        call={selected}
+        onClose={() => setSelected(null)}
+        reviewers={employees.filter((e) => e.role === "QC").map((e) => e.name)}
+      />
+
     </div>
   );
 }
