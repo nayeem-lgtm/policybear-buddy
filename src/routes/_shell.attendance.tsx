@@ -27,7 +27,60 @@ import {
 } from "@/components/ui/select";
 import { getAttendanceRegister } from "@/lib/shift.functions";
 import { formatClock, formatHm, pacificDate, workedSeconds } from "@/lib/shift-shared";
+import { DateRangeTabs, presetLabel, type DateSelection } from "@/components/crm/DateRangeTabs";
 import { cn } from "@/lib/utils";
+
+const STANDARD_DAY_SECONDS = 8 * 3600;
+
+/** Maps a date preset / custom range to Pacific-calendar from–to date strings. */
+function rangeFromSelection(sel: DateSelection): { from: string; to: string } {
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Los_Angeles",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const y = Number(parts.find((p) => p.type === "year")!.value);
+  const m = Number(parts.find((p) => p.type === "month")!.value);
+  const d = Number(parts.find((p) => p.type === "day")!.value);
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  const todayStr = `${y}-${pad(m)}-${pad(d)}`;
+  const dateStr = (yy: number, mm: number, dd: number) => `${yy}-${pad(mm)}-${pad(dd)}`;
+
+  switch (sel.preset) {
+    case "today":
+      return { from: todayStr, to: todayStr };
+    case "yesterday": {
+      const yd = new Date(y, m - 1, d - 1);
+      const s = dateStr(yd.getFullYear(), yd.getMonth() + 1, yd.getDate());
+      return { from: s, to: s };
+    }
+    case "7d": {
+      const start = new Date(y, m - 1, d - 6);
+      return {
+        from: dateStr(start.getFullYear(), start.getMonth() + 1, start.getDate()),
+        to: todayStr,
+      };
+    }
+    case "month":
+      return { from: dateStr(y, m, 1), to: todayStr };
+    case "last-month": {
+      const lm = m - 1;
+      const ly = lm < 1 ? y - 1 : y;
+      const lmm = lm < 1 ? 12 : lm;
+      const lastDay = new Date(ly, lmm, 0).getDate();
+      return { from: dateStr(ly, lmm, 1), to: dateStr(ly, lmm, lastDay) };
+    }
+    case "year":
+      return { from: dateStr(y, 1, 1), to: todayStr };
+    case "custom": {
+      const fmt = (dt?: Date) =>
+        dt ? `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}` : todayStr;
+      return { from: fmt(sel.range?.from), to: fmt(sel.range?.to ?? sel.range?.from) };
+    }
+  }
+}
 
 export const Route = createFileRoute("/_shell/attendance")({
   head: () => ({
