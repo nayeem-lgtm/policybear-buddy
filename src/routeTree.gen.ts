@@ -22,7 +22,6 @@ import { Route as ShellCallbacksRouteImport } from './routes/_shell.callbacks'
 import { Route as ShellCallsRouteImport } from './routes/_shell.calls'
 import { Route as ShellCampaignsRouteImport } from './routes/_shell.campaigns'
 import { Route as ShellChargebacksRouteImport } from './routes/_shell.chargebacks'
-import { Route as ShellCoachingRouteImport } from './routes/_shell.coaching'
 import { Route as ShellCommissionsRouteImport } from './routes/_shell.commissions'
 import { Route as ShellComplaintsRouteImport } from './routes/_shell.complaints'
 import { Route as ShellCustomersRouteImport } from './routes/_shell.customers'
@@ -54,7 +53,6 @@ import { Route as ShellTelephonyAttributionRouteImport } from './routes/_shell.t
 import { Route as ShellTelephonyFloorRouteImport } from './routes/_shell.telephony-floor'
 import { Route as ShellTelephonyMonitorRouteImport } from './routes/_shell.telephony-monitor'
 import { Route as ShellTextingRouteImport } from './routes/_shell.texting'
-import { Route as ShellTrainingRouteImport } from './routes/_shell.training'
 import { Route as ShellAdminAuditRouteImport } from './routes/_shell.admin.audit'
 import { Route as ShellAdminCalltoolsRouteImport } from './routes/_shell.admin.calltools'
 import { Route as ShellAdminHealthRouteImport } from './routes/_shell.admin.health'
@@ -136,11 +134,6 @@ const ShellCampaignsRoute = ShellCampaignsRouteImport.update({
 const ShellChargebacksRoute = ShellChargebacksRouteImport.update({
   id: '/chargebacks',
   path: '/chargebacks',
-  getParentRoute: () => ShellRoute,
-} as any)
-const ShellCoachingRoute = ShellCoachingRouteImport.update({
-  id: '/coaching',
-  path: '/coaching',
   getParentRoute: () => ShellRoute,
 } as any)
 const ShellCommissionsRoute = ShellCommissionsRouteImport.update({
@@ -299,11 +292,6 @@ const ShellTextingRoute = ShellTextingRouteImport.update({
   path: '/texting',
   getParentRoute: () => ShellRoute,
 } as any)
-const ShellTrainingRoute = ShellTrainingRouteImport.update({
-  id: '/training',
-  path: '/training',
-  getParentRoute: () => ShellRoute,
-} as any)
 const ShellAdminAuditRoute = ShellAdminAuditRouteImport.update({
   id: '/admin/audit',
   path: '/admin/audit',
@@ -410,7 +398,6 @@ export interface FileRoutesByFullPath {
   '/calls': typeof ShellCallsRoute
   '/campaigns': typeof ShellCampaignsRoute
   '/chargebacks': typeof ShellChargebacksRoute
-  '/coaching': typeof ShellCoachingRoute
   '/commissions': typeof ShellCommissionsRoute
   '/complaints': typeof ShellComplaintsRoute
   '/customers': typeof ShellCustomersRoute
@@ -442,7 +429,6 @@ export interface FileRoutesByFullPath {
   '/telephony-floor': typeof ShellTelephonyFloorRoute
   '/telephony-monitor': typeof ShellTelephonyMonitorRoute
   '/texting': typeof ShellTextingRoute
-  '/training': typeof ShellTrainingRoute
   '/admin/audit': typeof ShellAdminAuditRoute
   '/admin/calltools': typeof ShellAdminCalltoolsRoute
   '/admin/health': typeof ShellAdminHealthRoute
@@ -475,7 +461,6 @@ export interface FileRoutesByTo {
   '/calls': typeof ShellCallsRoute
   '/campaigns': typeof ShellCampaignsRoute
   '/chargebacks': typeof ShellChargebacksRoute
-  '/coaching': typeof ShellCoachingRoute
   '/commissions': typeof ShellCommissionsRoute
   '/complaints': typeof ShellComplaintsRoute
   '/customers': typeof ShellCustomersRoute
@@ -507,7 +492,6 @@ export interface FileRoutesByTo {
   '/telephony-floor': typeof ShellTelephonyFloorRoute
   '/telephony-monitor': typeof ShellTelephonyMonitorRoute
   '/texting': typeof ShellTextingRoute
-  '/training': typeof ShellTrainingRoute
   '/admin/audit': typeof ShellAdminAuditRoute
   '/admin/calltools': typeof ShellAdminCalltoolsRoute
   '/admin/health': typeof ShellAdminHealthRoute
@@ -542,7 +526,6 @@ export interface FileRoutesById {
   '/_shell/calls': typeof ShellCallsRoute
   '/_shell/campaigns': typeof ShellCampaignsRoute
   '/_shell/chargebacks': typeof ShellChargebacksRoute
-  '/_shell/coaching': typeof ShellCoachingRoute
   '/_shell/commissions': typeof ShellCommissionsRoute
   '/_shell/complaints': typeof ShellComplaintsRoute
   '/_shell/customers': typeof ShellCustomersRoute
@@ -574,7 +557,6 @@ export interface FileRoutesById {
   '/_shell/telephony-floor': typeof ShellTelephonyFloorRoute
   '/_shell/telephony-monitor': typeof ShellTelephonyMonitorRoute
   '/_shell/texting': typeof ShellTextingRoute
-  '/_shell/training': typeof ShellTrainingRoute
   '/_shell/admin/audit': typeof ShellAdminAuditRoute
   '/_shell/admin/calltools': typeof ShellAdminCalltoolsRoute
   '/_shell/admin/health': typeof ShellAdminHealthRoute
@@ -609,7 +591,6 @@ export interface FileRouteTypes {
     | '/calls'
     | '/campaigns'
     | '/chargebacks'
-    | '/coaching'
     | '/commissions'
     | '/complaints'
     | '/customers'
@@ -641,7 +622,6 @@ export interface FileRouteTypes {
     | '/telephony-floor'
     | '/telephony-monitor'
     | '/texting'
-    | '/training'
     | '/admin/audit'
     | '/admin/calltools'
     | '/admin/health'
@@ -674,7 +654,6 @@ export interface FileRouteTypes {
     | '/calls'
     | '/campaigns'
     | '/chargebacks'
-    | '/coaching'
     | '/commissions'
     | '/complaints'
     | '/customers'
@@ -706,7 +685,6 @@ export interface FileRouteTypes {
     | '/telephony-floor'
     | '/telephony-monitor'
     | '/texting'
-    | '/training'
     | '/admin/audit'
     | '/admin/calltools'
     | '/admin/health'
@@ -740,7 +718,6 @@ export interface FileRouteTypes {
     | '/_shell/calls'
     | '/_shell/campaigns'
     | '/_shell/chargebacks'
-    | '/_shell/coaching'
     | '/_shell/commissions'
     | '/_shell/complaints'
     | '/_shell/customers'
@@ -772,7 +749,6 @@ export interface FileRouteTypes {
     | '/_shell/telephony-floor'
     | '/_shell/telephony-monitor'
     | '/_shell/texting'
-    | '/_shell/training'
     | '/_shell/admin/audit'
     | '/_shell/admin/calltools'
     | '/_shell/admin/health'
@@ -892,13 +868,6 @@ declare module '@tanstack/react-router' {
       path: '/chargebacks'
       fullPath: '/chargebacks'
       preLoaderRoute: typeof ShellChargebacksRouteImport
-      parentRoute: typeof ShellRoute
-    }
-    '/_shell/coaching': {
-      id: '/_shell/coaching'
-      path: '/coaching'
-      fullPath: '/coaching'
-      preLoaderRoute: typeof ShellCoachingRouteImport
       parentRoute: typeof ShellRoute
     }
     '/_shell/commissions': {
@@ -1118,13 +1087,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellTextingRouteImport
       parentRoute: typeof ShellRoute
     }
-    '/_shell/training': {
-      id: '/_shell/training'
-      path: '/training'
-      fullPath: '/training'
-      preLoaderRoute: typeof ShellTrainingRouteImport
-      parentRoute: typeof ShellRoute
-    }
     '/_shell/admin/audit': {
       id: '/_shell/admin/audit'
       path: '/admin/audit'
@@ -1290,7 +1252,6 @@ interface ShellRouteChildren {
   ShellCallsRoute: typeof ShellCallsRoute
   ShellCampaignsRoute: typeof ShellCampaignsRoute
   ShellChargebacksRoute: typeof ShellChargebacksRoute
-  ShellCoachingRoute: typeof ShellCoachingRoute
   ShellCommissionsRoute: typeof ShellCommissionsRoute
   ShellComplaintsRoute: typeof ShellComplaintsRoute
   ShellCustomersRoute: typeof ShellCustomersRoute
@@ -1322,7 +1283,6 @@ interface ShellRouteChildren {
   ShellTelephonyFloorRoute: typeof ShellTelephonyFloorRoute
   ShellTelephonyMonitorRoute: typeof ShellTelephonyMonitorRoute
   ShellTextingRoute: typeof ShellTextingRoute
-  ShellTrainingRoute: typeof ShellTrainingRoute
   ShellAdminAuditRoute: typeof ShellAdminAuditRoute
   ShellAdminCalltoolsRoute: typeof ShellAdminCalltoolsRoute
   ShellAdminHealthRoute: typeof ShellAdminHealthRoute
@@ -1350,7 +1310,6 @@ const ShellRouteChildren: ShellRouteChildren = {
   ShellCallsRoute: ShellCallsRoute,
   ShellCampaignsRoute: ShellCampaignsRoute,
   ShellChargebacksRoute: ShellChargebacksRoute,
-  ShellCoachingRoute: ShellCoachingRoute,
   ShellCommissionsRoute: ShellCommissionsRoute,
   ShellComplaintsRoute: ShellComplaintsRoute,
   ShellCustomersRoute: ShellCustomersRoute,
@@ -1382,7 +1341,6 @@ const ShellRouteChildren: ShellRouteChildren = {
   ShellTelephonyFloorRoute: ShellTelephonyFloorRoute,
   ShellTelephonyMonitorRoute: ShellTelephonyMonitorRoute,
   ShellTextingRoute: ShellTextingRoute,
-  ShellTrainingRoute: ShellTrainingRoute,
   ShellAdminAuditRoute: ShellAdminAuditRoute,
   ShellAdminCalltoolsRoute: ShellAdminCalltoolsRoute,
   ShellAdminHealthRoute: ShellAdminHealthRoute,

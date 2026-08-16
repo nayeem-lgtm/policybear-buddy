@@ -10,7 +10,6 @@ import {
   Plus,
   Search,
   Settings,
-  ShieldCheck,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -163,11 +162,6 @@ export function TopHeader() {
             <DropdownMenuItem asChild>
               <Link to="/my-shift">
                 <Clock className="size-4" /> My shift
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to="/training">
-                <ShieldCheck className="size-4" /> My training
               </Link>
             </DropdownMenuItem>
             {can("/admin/rules") && (

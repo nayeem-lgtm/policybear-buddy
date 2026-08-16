@@ -147,7 +147,6 @@ export const ROUTE_ACCESS: { prefix: string; roles: Role[] }[] = [
   { prefix: "/feed", roles: ALL },
   { prefix: "/announcements", roles: ALL },
   { prefix: "/my-shift", roles: ALL },
-  { prefix: "/training", roles: ALL },
   { prefix: "/unauthorized", roles: ALL },
 
   // Attendance & floor control
@@ -186,7 +185,6 @@ export const ROUTE_ACCESS: { prefix: string; roles: Role[] }[] = [
   { prefix: "/employees", roles: ["HR", "Operations"] },
   { prefix: "/leave", roles: ["HR", "Operations"] },
   { prefix: "/complaints", roles: ["HR"] },
-  { prefix: "/coaching", roles: ["HR", "Operations", "QC"] },
   { prefix: "/automations", roles: ["HR", "Operations"] },
 
   // Finance
