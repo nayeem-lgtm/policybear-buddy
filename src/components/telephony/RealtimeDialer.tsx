@@ -1104,6 +1104,79 @@ export function RealtimeDialer() {
                         >
                           <PhoneCall className="size-4" />
                         </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive"
+                          title="Add to Do-Not-Call"
+                          onClick={() => openDnc(c.phone_e164, c.contact_name)}
+                        >
+                          <Ban className="size-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </TabsContent>
+
+            {/* ----------------------------------------------------------- compliance */}
+            <TabsContent value="compliance" className="m-0 space-y-3 p-4">
+              <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border/60 bg-surface/40 p-3">
+                <span className="grid size-9 place-items-center rounded-full bg-destructive/12 text-destructive">
+                  <ShieldOff className="size-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium">
+                    {blocked.data?.totals.active ?? 0} numbers suppressed
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {blocked.data?.totals.blocked ?? 0} dial attempts blocked in the last 7 days
+                  </p>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => openDnc(digits || "")}>
+                  <Ban className="mr-1.5 size-4" /> Add number
+                </Button>
+                <Button asChild size="sm">
+                  <Link to="/dnc">Full DNC center</Link>
+                </Button>
+              </div>
+
+              <ScrollArea className="h-[320px] pr-3">
+                {(blocked.data?.events ?? []).length === 0 ? (
+                  <div className="grid place-items-center gap-2 py-14 text-center">
+                    <span className="grid size-12 place-items-center rounded-2xl bg-success/12 text-success">
+                      <ShieldCheck className="size-5" />
+                    </span>
+                    <p className="text-sm text-muted-foreground">
+                      No blocked dial attempts this week — the floor is staying compliant.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {(blocked.data?.events ?? []).map((ev) => (
+                      <div
+                        key={ev.id}
+                        className="flex flex-wrap items-center gap-3 rounded-2xl border border-border/60 bg-surface/40 p-3"
+                      >
+                        <Badge className={cn("border-0", DNC_ACTION_TONE[ev.action])}>
+                          {DNC_ACTION_LABEL[ev.action] ?? ev.action}
+                        </Badge>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-medium tabular-nums">{formatPhone(ev.phone_e164)}</p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {ev.reason ?? "—"} · {ev.source}
+                            {ev.actor_name ? ` · ${ev.actor_name}` : ""}
+                          </p>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(ev.created_at).toLocaleString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -1113,6 +1186,19 @@ export function RealtimeDialer() {
           </Tabs>
         </Card>
       </div>
+
+      <AddToDncDialog
+        open={dncOpen}
+        onOpenChange={setDncOpen}
+        phone={dncTarget.phone}
+        contactName={dncTarget.name}
+        source="agent-desk"
+        onAdded={() => {
+          refresh();
+          queryClient.invalidateQueries({ queryKey: ["dnc-check"] });
+        }}
+      />
     </div>
   );
 }
+
