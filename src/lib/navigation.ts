@@ -127,6 +127,7 @@ export const navSections: NavSection[] = [
         items: [
           { title: "QA Reviews", url: "/qa", icon: ShieldCheck, description: "Score call recordings" },
           { title: "Reporting", url: "/qa/reporting", icon: BarChart3, description: "Publisher sales reporting" },
+          { title: "Escalations", url: "/qa/escalations", icon: AlertTriangle, description: "Disputes and quality tickets" },
         ],
       },
     ],
