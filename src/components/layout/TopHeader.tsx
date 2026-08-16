@@ -10,7 +10,6 @@ import {
   Plus,
   Search,
   Settings,
-  ShieldCheck,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
