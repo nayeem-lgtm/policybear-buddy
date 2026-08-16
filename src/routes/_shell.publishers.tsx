@@ -223,20 +223,20 @@ function PublisherDashboardPage() {
     [],
   );
 
-  const byCps = useMemo<RankRow[]>(
-    () =>
-      publisherCps
-        .filter((p) => p.cps > 0)
-        .sort((a, b) => b.cps - a.cps)
-        .slice(0, 8)
-        .map((p) => ({
-          name: p.name,
-          value: money(p.cps),
-          sub: `${money(p.payout)} payout`,
-          weight: p.cps,
-        })),
-    [],
-  );
+  const byCps = useMemo<RankRow[]>(() => {
+    const filtered = publisherCps.filter((p) => p.cps > 0);
+    const maxCps = filtered.reduce((m, p) => Math.max(m, p.cps), 0) || 1;
+    return [...filtered]
+      .sort((a, b) => a.cps - b.cps)
+      .slice(0, 8)
+      .map((p) => ({
+        name: p.name,
+        value: money(p.cps),
+        sub: `${money(p.payout)} payout`,
+        // lower CPS is better → invert so the cheapest publisher gets the fullest bar
+        weight: maxCps - p.cps,
+      }));
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -325,7 +325,7 @@ function PublisherDashboardPage() {
         />
         <RankList
           title="Top Publishers by CPS"
-          description="Cost per sale, highest first"
+          description="Cost per sale, lowest first"
           rows={byCps}
           icon={<Tag className="size-4" />}
           tone="info"
