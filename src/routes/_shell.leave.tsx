@@ -53,7 +53,7 @@ export const Route = createFileRoute("/_shell/leave")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: LeavePage;
+  component: LeavePage,
 });
 
 function LeavePage() {
