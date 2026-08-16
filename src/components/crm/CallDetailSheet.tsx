@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { CreateTicketDialog } from "@/components/crm/CreateTicketDialog";
 import {
   Bot,
   Phone,
@@ -223,6 +224,7 @@ export function CallDetailSheet({
   const [tab, setTab] = useState<Tab>("Overview");
   const [disposition, setDisposition] = useState<string | null>(null);
   const [flag, setFlag] = useState<string | null>(null);
+  const [ticketOpen, setTicketOpen] = useState(false);
   const [comment, setComment] = useState("");
   const [reviewer, setReviewer] = useState<string>("");
   const [agentHealth, setAgentHealth] = useState<number>(call?.score ?? 0);
@@ -372,7 +374,14 @@ export function CallDetailSheet({
                       key={d}
                       size="sm"
                       variant={disposition === d ? "default" : "outline"}
-                      onClick={() => setDisposition(disposition === d ? null : d)}
+                      onClick={() => {
+                        if (d === "Escalate") {
+                          setDisposition("Escalate");
+                          setTicketOpen(true);
+                          return;
+                        }
+                        setDisposition(disposition === d ? null : d);
+                      }}
                     >
                       {d}
                     </Button>
@@ -724,6 +733,12 @@ export function CallDetailSheet({
 
         </div>
       </SheetContent>
+      <CreateTicketDialog
+        open={ticketOpen}
+        onOpenChange={setTicketOpen}
+        campaign={call.campaign}
+        callId={call.callId}
+      />
     </Sheet>
   );
 }
