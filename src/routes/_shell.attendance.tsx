@@ -29,6 +29,7 @@ import {
 import { getAttendanceRegister } from "@/lib/shift.functions";
 import { formatClock, formatHm, pacificDate, workedSeconds } from "@/lib/shift-shared";
 import { DateRangeTabs, presetLabel, type DateSelection } from "@/components/crm/DateRangeTabs";
+import { exceptionsForSession, exceptionTone } from "@/lib/attendance-exceptions";
 import { cn } from "@/lib/utils";
 
 const STANDARD_DAY_SECONDS = 8 * 3600;
