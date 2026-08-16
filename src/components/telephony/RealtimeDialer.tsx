@@ -14,11 +14,16 @@ import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowLeftRight,
   Ban,
+  Bell,
+  BellOff,
   CalendarClock,
+  ClipboardPaste,
+  Copy,
   Delete,
   Gauge,
   Grip,
   History,
+  Keyboard,
   Mic,
   MicOff,
   Pause,
@@ -36,10 +41,14 @@ import {
   ShieldOff,
   Signal,
   Star,
+  StickyNote,
   Timer,
+  Trash2,
   Users,
   Volume2,
+  Zap,
 } from "lucide-react";
+
 
 import { toast } from "sonner";
 
@@ -86,7 +95,7 @@ import { checkDncNumber, getDncCenter } from "@/lib/dnc.functions";
 import { DNC_ACTION_LABEL, DNC_ACTION_TONE } from "@/lib/dnc-shared";
 import { AddToDncDialog } from "@/components/compliance/AddToDncDialog";
 import { cn } from "@/lib/utils";
-
+import { playChirp, playDtmf, playRing } from "@/lib/dialer-tones";
 
 const KEYPAD: { key: string; sub: string }[] = [
   { key: "1", sub: "" },
@@ -104,6 +113,27 @@ const KEYPAD: { key: string; sub: string }[] = [
 ];
 
 const QUICK_DISPOSITIONS: Disposition[] = ["Sold", "Interested", "Not Interested", "No Answer", "DNC"];
+
+const SPEED_DIAL_KEY = "pb.dialer.speedDial";
+const WRAP_ALLOWANCE = 45;
+
+const SHORTCUTS: { keys: string; label: string }[] = [
+  { keys: "0-9 * #", label: "Type digits" },
+  { keys: "Enter", label: "Dial / answer" },
+  { keys: "Backspace", label: "Delete digit" },
+  { keys: "M", label: "Mute" },
+  { keys: "H", label: "Hold" },
+  { keys: "Esc", label: "End call" },
+];
+
+/** Is the user typing into a field? Hotkeys must stay out of the way then. */
+function isTypingTarget(el: EventTarget | null) {
+  const node = el as HTMLElement | null;
+  if (!node) return false;
+  const tag = node.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || node.isContentEditable;
+}
+
 
 function secondsSince(iso: string | null | undefined) {
   if (!iso) return 0;
@@ -166,6 +196,32 @@ export function RealtimeDialer() {
     phone: "",
     name: null,
   });
+
+  /* premium desk options: audio, speed dial, live notes, auto-flow */
+  const [sound, setSound] = useState(true);
+  const [autoNext, setAutoNext] = useState(false);
+  const [liveNotes, setLiveNotes] = useState("");
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [speedDial, setSpeedDial] = useState<{ phone: string; name: string }[]>([]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(SPEED_DIAL_KEY);
+      if (raw) setSpeedDial(JSON.parse(raw) as { phone: string; name: string }[]);
+    } catch {
+      /* ignore malformed local data */
+    }
+  }, []);
+
+  const saveSpeedDial = useCallback((next: { phone: string; name: string }[]) => {
+    setSpeedDial(next);
+    try {
+      localStorage.setItem(SPEED_DIAL_KEY, JSON.stringify(next));
+    } catch {
+      /* storage unavailable — keep in memory only */
+    }
+  }, []);
+
 
   /* ------------------------------------------------- live Do-Not-Call pre-check */
   const checkDnc = useServerFn(checkDncNumber);
@@ -241,6 +297,7 @@ export function RealtimeDialer() {
       setDisposition("");
       setNotes("");
       setCallbackAt("");
+      setLiveNotes("");
       refresh();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -330,6 +387,12 @@ export function RealtimeDialer() {
   const stats = data?.stats;
   const connectRate = stats?.calls ? Math.round(((stats.connected ?? 0) / stats.calls) * 100) : 0;
 
+  const wrapLeft = useMemo(() => {
+    if (!inWrap) return WRAP_ALLOWANCE;
+    return Math.max(0, WRAP_ALLOWANCE - secondsSince(active?.ended_at ?? active?.queued_at));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inWrap, active, desk.dataUpdatedAt]);
+
   const callbacks = (data?.callbacks ?? []).filter((c) =>
     cbFilter === "open" ? c.status !== "Completed" && c.status !== "Cancelled" : c.status === cbFilter,
   );
@@ -342,50 +405,221 @@ export function RealtimeDialer() {
   });
 
   const sendTone = (t: string) => {
+    if (sound) playDtmf(t);
     setTones((v) => (v + t).slice(-24));
-    toast.message(`Tone ${t} sent`);
   };
+
+  const pressKey = useCallback(
+    (k: string) => {
+      if (sound) playDtmf(k);
+      setDigits((d) => (d + k).slice(0, 20));
+    },
+    [sound],
+  );
+
+  const dialNow = useCallback(() => {
+    if (digits.replace(/\D/g, "").length < 7 || dncBlocked || dialMutation.isPending) return;
+    dialMutation.mutate({
+      phone: digits,
+      mode: "manual",
+      ...(fromId !== "auto" ? { fromNumberId: fromId } : {}),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [digits, dncBlocked, fromId, dialMutation.isPending]);
+
+  /* ------------------------------------------------------------------ hotkeys */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || isTypingTarget(e.target)) return;
+      const k = e.key;
+      if (active) {
+        if (k === "Escape") {
+          e.preventDefault();
+          controlMutation.mutate({ callId: active.id, action: "hangup" });
+          return;
+        }
+        if (k === "Enter" && active.state === "ringing" && active.direction === "inbound") {
+          e.preventDefault();
+          answerCall(active.id);
+          return;
+        }
+        if (!connected) return;
+        if (k.toLowerCase() === "m") {
+          e.preventDefault();
+          controlMutation.mutate({ callId: active.id, action: active.muted ? "unmute" : "mute" });
+        } else if (k.toLowerCase() === "h") {
+          e.preventDefault();
+          controlMutation.mutate({ callId: active.id, action: active.on_hold ? "resume" : "hold" });
+        } else if (/^[0-9*#]$/.test(k)) {
+          e.preventDefault();
+          sendTone(k);
+        }
+        return;
+      }
+      if (/^[0-9*#]$/.test(k)) {
+        e.preventDefault();
+        pressKey(k);
+      } else if (k === "Backspace") {
+        e.preventDefault();
+        setDigits((d) => d.slice(0, -1));
+      } else if (k === "Enter") {
+        e.preventDefault();
+        const firstWaiting = data?.queue?.[0]?.id;
+        if (firstWaiting && ready) answerCall(firstWaiting);
+        else dialNow();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, connected, ready, dialNow, pressKey, data?.queue?.[0]?.id]);
+
+  /* --------------------------------------------------------- audio cues + flow */
+  const waitingCount = data?.queue?.length ?? 0;
+  useEffect(() => {
+    if (!sound || !ready || active || waitingCount === 0) return undefined;
+    playRing();
+    const id = setInterval(() => playRing(), 4000);
+    return () => clearInterval(id);
+  }, [sound, ready, active, waitingCount]);
+
+  const activeState = active?.state ?? null;
+  useEffect(() => {
+    if (!sound) return;
+    if (activeState === "connected") playChirp(true);
+    if (activeState === "wrap") playChirp(false);
+  }, [activeState, sound]);
+
+  // carry live notes into the wrap-up form the moment the call ends
+  useEffect(() => {
+    if (inWrap && liveNotes) setNotes((n) => (n ? n : liveNotes));
+  }, [inWrap, liveNotes]);
+
+  // keep the power dialer flowing when the agent asks for hands-free pacing
+  useEffect(() => {
+    if (!autoNext || active || !campaignId || lead || leadMutation.isPending) return;
+    leadMutation.mutate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoNext, active, campaignId, lead]);
+
+  const inSpeedDial = (phone: string) => speedDial.some((s) => s.phone === phone);
+  const toggleSpeedDial = (phone: string, name?: string | null) => {
+    if (!phone) return;
+    if (inSpeedDial(phone)) {
+      saveSpeedDial(speedDial.filter((s) => s.phone !== phone));
+      toast.message("Removed from speed dial");
+    } else {
+      saveSpeedDial([{ phone, name: name ?? "" }, ...speedDial].slice(0, 12));
+      toast.success("Saved to speed dial");
+    }
+  };
+
+  const copyNumber = async (value: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success("Number copied");
+    } catch {
+      toast.error("Clipboard unavailable");
+    }
+  };
+
+  const pasteNumber = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      const cleaned = text.replace(/[^\d+*#]/g, "").slice(0, 20);
+      if (!cleaned) {
+        toast.error("No number on the clipboard");
+        return;
+      }
+      setDigits(cleaned);
+    } catch {
+      toast.error("Clipboard unavailable");
+    }
+  };
+
 
   return (
     <div className="space-y-5">
       {/* ------------------------------------------------------------ presence bar */}
-      <Card className="flex flex-wrap items-center gap-4 rounded-3xl border-border/60 bg-gradient-to-r from-brand/12 via-surface to-background p-4 shadow-card">
-        <span
-          className={cn(
-            "grid size-11 place-items-center rounded-2xl",
-            ready ? "bg-success/15 text-success" : "bg-muted text-muted-foreground",
-          )}
-        >
-          <Signal className="size-5" />
-        </span>
-        <div className="min-w-0">
-          <p className="font-display text-base font-semibold text-foreground">
-            {ready ? "Ready for calls" : "Not accepting calls"}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Policy Bear Dialer · {data?.numbers?.length ?? 0} numbers · {data?.campaigns?.length ?? 0}{" "}
-            campaigns
-          </p>
-        </div>
+      <Card className="rounded-3xl border-border/60 bg-gradient-to-r from-brand/12 via-surface to-background p-4 shadow-card">
+        <div className="flex flex-wrap items-center gap-4">
+          <span
+            className={cn(
+              "relative grid size-11 place-items-center rounded-2xl",
+              ready ? "bg-success/15 text-success" : "bg-muted text-muted-foreground",
+            )}
+          >
+            <Signal className="size-5" />
+            {ready ? (
+              <span className="absolute -right-0.5 -top-0.5 size-2.5 animate-pulse rounded-full bg-success ring-2 ring-card" />
+            ) : null}
+          </span>
+          <div className="min-w-0">
+            <p className="font-display text-base font-semibold text-foreground">
+              {ready ? "Ready for calls" : "Not accepting calls"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Policy Bear Dialer · {data?.numbers?.length ?? 0} numbers · {data?.campaigns?.length ?? 0}{" "}
+              campaigns · {speedDial.length} speed dial
+            </p>
+          </div>
 
-        <div className="ml-auto flex flex-wrap items-center gap-5">
-          <label className="flex items-center gap-2 text-sm">
-            <Switch checked={ready} onCheckedChange={setReady} />
-            Ready
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <Switch checked={autoAnswer} onCheckedChange={setAutoAnswer} />
-            Auto-answer
-          </label>
-          <div className="hidden min-w-[160px] sm:block">
-            <div className="mb-1 flex justify-between text-xs text-muted-foreground">
-              <span>Connect rate</span>
-              <span className="tabular-nums">{connectRate}%</span>
+          <div className="ml-auto flex flex-wrap items-center gap-4">
+            <label className="flex items-center gap-2 text-sm">
+              <Switch checked={ready} onCheckedChange={setReady} />
+              Ready
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <Switch checked={autoAnswer} onCheckedChange={setAutoAnswer} />
+              Auto-answer
+            </label>
+            <Button
+              variant="outline"
+              size="icon"
+              className="rounded-xl"
+              title={sound ? "Mute desk audio" : "Enable desk audio"}
+              aria-label={sound ? "Mute desk audio" : "Enable desk audio"}
+              onClick={() => setSound((s) => !s)}
+            >
+              {sound ? <Bell className="size-4" /> : <BellOff className="size-4 text-muted-foreground" />}
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="rounded-xl"
+              title="Keyboard shortcuts"
+              aria-label="Keyboard shortcuts"
+              onClick={() => setShowShortcuts((v) => !v)}
+            >
+              <Keyboard className="size-4" />
+            </Button>
+            <div className="hidden min-w-[160px] sm:block">
+              <div className="mb-1 flex justify-between text-xs text-muted-foreground">
+                <span>Connect rate</span>
+                <span className="tabular-nums">{connectRate}%</span>
+              </div>
+              <Progress value={connectRate} className="h-1.5" />
             </div>
-            <Progress value={connectRate} className="h-1.5" />
           </div>
         </div>
+
+        {showShortcuts ? (
+          <div className="mt-3 flex flex-wrap gap-2 border-t border-border/60 pt-3">
+            {SHORTCUTS.map((s) => (
+              <span
+                key={s.keys}
+                className="flex items-center gap-1.5 rounded-full bg-surface/70 px-2.5 py-1 text-xs text-muted-foreground"
+              >
+                <kbd className="rounded bg-background px-1.5 py-0.5 font-mono text-[0.65rem] text-foreground shadow-sm">
+                  {s.keys}
+                </kbd>
+                {s.label}
+              </span>
+            ))}
+          </div>
+        ) : null}
       </Card>
+
 
       {/* ------------------------------------------------------------ status strip */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -422,7 +656,7 @@ export function RealtimeDialer() {
             <div className="space-y-4">
               <div
                 className={cn(
-                  "rounded-2xl p-5 text-center",
+                  "relative overflow-hidden rounded-2xl p-5 text-center",
                   inWrap
                     ? "bg-warning/15"
                     : active.on_hold
@@ -430,20 +664,77 @@ export function RealtimeDialer() {
                       : "bg-gradient-to-br from-brand/20 to-brand/5",
                 )}
               >
-                <Badge variant="secondary" className="mb-2 capitalize">
-                  {active.direction} · {active.state}
-                  {active.muted ? " · muted" : ""}
-                </Badge>
-                <p className="font-display text-2xl font-semibold">{formatPhone(active.phone_e164)}</p>
-                <p className="text-sm text-muted-foreground">{active.contact_name ?? "Unknown caller"}</p>
-                <p className="mt-2 text-4xl font-semibold tabular-nums">{clock(liveSeconds)}</p>
-                {tones ? (
-                  <p className="mt-1 text-xs tracking-widest text-muted-foreground">DTMF {tones}</p>
+                {connected && !active.on_hold ? (
+                  <span className="absolute left-1/2 top-0 h-24 w-24 -translate-x-1/2 -translate-y-1/2 animate-ping rounded-full bg-brand/20" />
                 ) : null}
+                <div className="relative">
+                  <Badge variant="secondary" className="mb-2 capitalize">
+                    {active.direction} · {active.state}
+                    {active.muted ? " · muted" : ""}
+                  </Badge>
+                  <p className="font-display text-2xl font-semibold">{formatPhone(active.phone_e164)}</p>
+                  <p className="text-sm text-muted-foreground">{active.contact_name ?? "Unknown caller"}</p>
+                  <p className="mt-2 text-4xl font-semibold tabular-nums">{clock(liveSeconds)}</p>
+                  {tones ? (
+                    <p className="mt-1 text-xs tracking-widest text-muted-foreground">DTMF {tones}</p>
+                  ) : null}
+
+                  <div className="mt-3 flex items-center justify-center gap-1.5">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 gap-1 text-xs"
+                      onClick={() => void copyNumber(active.phone_e164 ?? "")}
+                    >
+                      <Copy className="size-3.5" /> Copy
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 gap-1 text-xs"
+                      onClick={() => toggleSpeedDial(active.phone_e164 ?? "", active.contact_name)}
+                    >
+                      <Star
+                        className={cn(
+                          "size-3.5",
+                          inSpeedDial(active.phone_e164 ?? "") && "fill-current text-warning",
+                        )}
+                      />
+                      Speed dial
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 gap-1 text-xs text-destructive"
+                      onClick={() => openDnc(active.phone_e164, active.contact_name)}
+                    >
+                      <Ban className="size-3.5" /> DNC
+                    </Button>
+                  </div>
+                </div>
               </div>
+
+
 
               {inWrap ? (
                 <div className="space-y-3">
+                  <div className="rounded-2xl border border-border/60 bg-surface/50 p-3">
+                    <div className="mb-1.5 flex items-center justify-between text-xs">
+                      <span className="flex items-center gap-1.5 font-medium text-muted-foreground">
+                        <Timer className="size-3.5" /> Wrap-up time
+                      </span>
+                      <span
+                        className={cn(
+                          "font-semibold tabular-nums",
+                          wrapLeft === 0 ? "text-destructive" : "text-foreground",
+                        )}
+                      >
+                        {wrapLeft === 0 ? "Overrun" : `${wrapLeft}s left`}
+                      </span>
+                    </div>
+                    <Progress value={(wrapLeft / WRAP_ALLOWANCE) * 100} className="h-1.5" />
+                  </div>
+
                   <div className="flex flex-wrap gap-1.5">
                     {QUICK_DISPOSITIONS.map((d) => (
                       <Button
@@ -573,6 +864,19 @@ export function RealtimeDialer() {
                     </Button>
                   </div>
 
+                  <div className="rounded-2xl border border-border/60 bg-surface/40 p-3">
+                    <Label className="mb-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <StickyNote className="size-3.5" /> Live notes — carried into the outcome
+                    </Label>
+                    <Textarea
+                      rows={3}
+                      value={liveNotes}
+                      onChange={(e) => setLiveNotes(e.target.value)}
+                      placeholder="Type while you talk: needs, objections, next step…"
+                    />
+                  </div>
+
+
                   <Button
                     variant="destructive"
                     className="h-12 w-full"
@@ -590,21 +894,22 @@ export function RealtimeDialer() {
                   value={digits}
                   onChange={(e) => setDigits(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && digits.length >= 7 && !dncBlocked) {
-                      dialMutation.mutate({
-                        phone: digits,
-                        mode: "manual",
-                        ...(fromId !== "auto" ? { fromNumberId: fromId } : {}),
-                      });
-                    }
+                    if (e.key === "Enter") dialNow();
                   }}
                   placeholder="Enter a number"
                   className="h-12 border-0 bg-transparent text-center text-2xl font-semibold tracking-wider shadow-none focus-visible:ring-0"
                 />
+                {digits ? (
+                  <p className="text-center text-xs text-muted-foreground">{formatPhone(digits)}</p>
+                ) : (
+                  <p className="text-center text-xs text-muted-foreground">
+                    Type on your keyboard — the desk listens for digits
+                  </p>
+                )}
                 {debouncedDigits.replace(/\D/g, "").length >= 7 ? (
                   <p
                     className={cn(
-                      "flex items-center justify-center gap-1.5 text-xs font-medium",
+                      "mt-1 flex items-center justify-center gap-1.5 text-xs font-medium",
                       dncCheck.isFetching
                         ? "text-muted-foreground"
                         : dncBlocked
@@ -625,6 +930,47 @@ export function RealtimeDialer() {
                     )}
                   </p>
                 ) : null}
+
+                <div className="mt-2 flex items-center justify-center gap-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 gap-1 text-xs"
+                    onClick={() => void pasteNumber()}
+                  >
+                    <ClipboardPaste className="size-3.5" /> Paste
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 gap-1 text-xs"
+                    disabled={!digits}
+                    onClick={() => void copyNumber(digits)}
+                  >
+                    <Copy className="size-3.5" /> Copy
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 gap-1 text-xs"
+                    disabled={digits.replace(/\D/g, "").length < 7}
+                    onClick={() => toggleSpeedDial(digits)}
+                  >
+                    <Star
+                      className={cn("size-3.5", inSpeedDial(digits) && "fill-current text-warning")}
+                    />
+                    {inSpeedDial(digits) ? "Saved" : "Save"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 gap-1 text-xs"
+                    disabled={!digits}
+                    onClick={() => setDigits("")}
+                  >
+                    <Trash2 className="size-3.5" /> Clear
+                  </Button>
+                </div>
               </div>
 
               {dncBlocked ? (
@@ -639,14 +985,13 @@ export function RealtimeDialer() {
                 </div>
               ) : null}
 
-
               <div className="grid grid-cols-3 gap-2">
                 {KEYPAD.map((k) => (
                   <Button
                     key={k.key}
                     variant="outline"
-                    className="h-14 flex-col gap-0 rounded-2xl text-lg"
-                    onClick={() => setDigits((d) => d + k.key)}
+                    className="h-14 flex-col gap-0 rounded-2xl text-lg transition-transform active:scale-95"
+                    onClick={() => pressKey(k.key)}
                   >
                     {k.key}
                     {k.sub ? (
@@ -678,13 +1023,7 @@ export function RealtimeDialer() {
               <Button
                 className="h-12 w-full rounded-2xl"
                 disabled={digits.length < 7 || dialMutation.isPending || dncBlocked}
-                onClick={() =>
-                  dialMutation.mutate({
-                    phone: digits,
-                    mode: "manual",
-                    ...(fromId !== "auto" ? { fromNumberId: fromId } : {}),
-                  })
-                }
+                onClick={dialNow}
               >
                 {dncBlocked ? (
                   <>
@@ -704,6 +1043,34 @@ export function RealtimeDialer() {
               >
                 <Ban className="mr-2 size-4" /> Add any number to DNC
               </Button>
+
+              {speedDial.length ? (
+                <div>
+                  <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                    <Zap className="size-3.5" /> Speed dial
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {speedDial.map((s) => (
+                      <span
+                        key={s.phone}
+                        className="group flex items-center gap-1 rounded-full bg-brand/12 py-0.5 pl-2.5 pr-1 text-xs text-brand"
+                      >
+                        <button className="font-medium" onClick={() => setDigits(s.phone)}>
+                          {s.name || formatPhone(s.phone)}
+                        </button>
+                        <button
+                          className="rounded-full p-1 text-muted-foreground hover:text-destructive"
+                          aria-label="Remove from speed dial"
+                          onClick={() => toggleSpeedDial(s.phone)}
+                        >
+                          <Trash2 className="size-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
 
 
               {(data?.today ?? []).length ? (
@@ -1001,7 +1368,12 @@ export function RealtimeDialer() {
                     <PhoneCall className="mr-2 size-4" /> Dial {formatPhone(lead.phone_e164)}
                   </Button>
                 ) : null}
+                <label className="ml-auto flex items-center gap-2 rounded-full border border-border/60 bg-surface/50 px-3 py-1.5 text-xs">
+                  <Switch checked={autoNext} onCheckedChange={setAutoNext} />
+                  Auto-load next lead
+                </label>
               </div>
+
 
               <ScrollArea className="h-[300px] pr-3">
                 {(data?.tasks ?? []).length === 0 ? (
