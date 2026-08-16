@@ -471,27 +471,40 @@ export function CallDetailSheet({
           )}
 
           {tab === "Transcript" && (
-            <Card className="gap-3 p-4 shadow-card">
+            <Card className="gap-4 p-4 shadow-card">
               {call.transcript ? (
-                <div className="space-y-3 text-sm">
-                  {[
-                    ["Agent", `Thanks for calling ${call.campaign.split(" (")[0]}, this is ${call.agent}.`],
-                    ["Caller", "Hi, I need help with a service appointment."],
-                    ["Agent", "Absolutely — can I confirm your name and ZIP code?"],
-                    ["Caller", `${call.customer}, and my area code is ${call.phone.slice(3, 6)}.`],
-                    ["Agent", "Perfect. I've read the required disclosures and booked your slot."],
-                  ].map(([who, line], i) => (
-                    <div key={i} className="flex gap-3">
-                      <span
-                        className={`w-14 shrink-0 text-xs font-semibold ${
-                          who === "Agent" ? "text-brand" : "text-muted-foreground"
-                        }`}
+                <div className="space-y-3">
+                  {buildTranscript(call).map((m, i) => {
+                    const agent = m.who === "Agent";
+                    return (
+                      <div
+                        key={i}
+                        className={`flex ${agent ? "justify-end" : "justify-start"}`}
                       >
-                        {who}
-                      </span>
-                      <span className="text-foreground">{line}</span>
-                    </div>
-                  ))}
+                        <div
+                          className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
+                            agent
+                              ? "rounded-br-sm bg-brand/12 text-foreground"
+                              : "rounded-bl-sm bg-muted text-foreground"
+                          }`}
+                        >
+                          <p
+                            className={`mb-0.5 text-xs font-semibold ${
+                              agent ? "text-success" : "text-brand"
+                            }`}
+                          >
+                            {m.who}
+                          </p>
+                          <p className="leading-relaxed">
+                            {m.text}{" "}
+                            <span className="align-baseline text-[10px] text-muted-foreground">
+                              {m.at}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">
@@ -500,6 +513,7 @@ export function CallDetailSheet({
               )}
             </Card>
           )}
+
         </div>
       </SheetContent>
     </Sheet>
