@@ -1,6 +1,7 @@
 import {
   Activity,
   AlarmClock,
+  AlertTriangle,
   Banknote,
   BarChart3,
   Bell,
