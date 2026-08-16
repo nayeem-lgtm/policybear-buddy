@@ -244,7 +244,8 @@ function QAPage() {
     const delta = (arr: number[]) => {
       const first = arr[0] || 1;
       const last = arr[arr.length - 1] || 0;
-      return ((last - first) / first) * 100;
+      const pct = ((last - first) / first) * 100;
+      return Math.max(-99.9, Math.min(99.9, pct));
     };
     return {
       buckets,
