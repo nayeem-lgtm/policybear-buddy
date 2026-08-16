@@ -14,10 +14,18 @@ import {
   fmtDuration,
   fmtMoney,
   fmtPct,
+  publisherOptions,
   totalRow,
   type ReportDimension,
   type ReportRow,
 } from "@/lib/reporting-metrics";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export const Route = createFileRoute("/_shell/reporting")({
   head: () => ({
@@ -115,8 +123,10 @@ function ReportingPage() {
   const [dimension, setDimension] = useState<ReportDimension>("publisher");
   const [dateSel, setDateSel] = useState<DateSelection>({ preset: "7d" });
   const [search, setSearch] = useState("");
+  const [publisher, setPublisher] = useState<string>("all");
 
-  const rows = useMemo(() => buildReport(dimension), [dimension]);
+  const publishers = useMemo(() => publisherOptions(), []);
+  const rows = useMemo(() => buildReport(dimension, publisher === "all" ? undefined : publisher), [dimension, publisher]);
   const filtered = useMemo(
     () => rows.filter((r) => r.name.toLowerCase().includes(search.trim().toLowerCase())),
     [rows, search],
@@ -135,6 +145,12 @@ function ReportingPage() {
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card px-4 py-3 shadow-card">
         <p className="text-sm text-muted-foreground">
           Showing <span className="font-semibold text-foreground">{presetLabel(dateSel)}</span>
+          {publisher !== "all" && (
+            <>
+              {" · "}
+              <span className="font-semibold text-foreground">{publisher}</span>
+            </>
+          )}
         </p>
         <DateRangeTabs
           value={dateSel}
@@ -168,14 +184,29 @@ function ReportingPage() {
             </button>
           ))}
         </div>
-        <div className="relative w-full sm:w-72">
-          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search rows…"
-            className="h-9 rounded-full bg-surface/60 pl-9"
-          />
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative w-full sm:w-72">
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search rows…"
+              className="h-9 rounded-full bg-surface/60 pl-9"
+            />
+          </div>
+          <Select value={publisher} onValueChange={setPublisher}>
+            <SelectTrigger className="h-9 w-full min-w-[12rem] rounded-full bg-surface/60 sm:w-56">
+              <SelectValue placeholder="All publishers" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All publishers</SelectItem>
+              {publishers.map((p) => (
+                <SelectItem key={p} value={p}>
+                  {p}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

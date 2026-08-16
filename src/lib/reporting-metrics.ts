@@ -5,7 +5,16 @@ import {
   trafficCalls,
   trafficByDay,
   type CpsRow,
+  type SaleRecord,
 } from "@/lib/company-data";
+
+/** Distinct publisher names that appear across CPS and traffic data. */
+export function publisherOptions(): string[] {
+  const set = new Set<string>();
+  for (const c of publisherCps) set.add(c.name);
+  for (const t of trafficCalls) if (t.publisher) set.add(t.publisher);
+  return [...set].sort((a, b) => a.localeCompare(b));
+}
 
 export type ReportDimension = "publisher" | "campaign" | "day";
 
@@ -62,10 +71,14 @@ export function derive(row: ReportRow) {
   };
 }
 
-function fromCps(source: CpsRow[], match: (name: string) => number): ReportRow[] {
+function fromCps(
+  source: CpsRow[],
+  match: (name: string) => number,
+  salesSource: SaleRecord[] = sales,
+): ReportRow[] {
   return source.map((c) => {
     const incoming = Math.max(c.converted, match(c.name));
-    const revenue = sales
+    const revenue = salesSource
       .filter((s) => (s.publisher ?? "") === c.name)
       .reduce((sum, s) => sum + s.premium, 0);
     const rev = revenue || c.revenue;
@@ -90,16 +103,73 @@ function fromCps(source: CpsRow[], match: (name: string) => number): ReportRow[]
   });
 }
 
-export function buildReport(dimension: ReportDimension): ReportRow[] {
+export function buildReport(dimension: ReportDimension, publisherFilter?: string): ReportRow[] {
+  const calls = publisherFilter
+    ? trafficCalls.filter((t) => t.publisher === publisherFilter)
+    : trafficCalls;
+  const salesF = publisherFilter
+    ? sales.filter((s) => (s.publisher ?? "") === publisherFilter)
+    : sales;
+
   if (dimension === "publisher") {
-    return fromCps(publisherCps, (name) => trafficCalls.filter((t) => t.publisher === name).length).sort(
-      (a, b) => b.payout - a.payout,
-    );
+    const source = publisherFilter
+      ? publisherCps.filter((c) => c.name === publisherFilter)
+      : publisherCps;
+    return fromCps(
+      source,
+      (name) => calls.filter((t) => t.publisher === name).length,
+      salesF,
+    ).sort((a, b) => b.payout - a.payout);
   }
   if (dimension === "campaign") {
-    return fromCps(campaignCps, (name) => trafficCalls.filter((t) => t.campaign === name).length).sort(
-      (a, b) => b.payout - a.payout,
-    );
+    const campaignSet = new Set(calls.map((t) => t.campaign).filter(Boolean) as string[]);
+    const source = publisherFilter
+      ? campaignCps.filter((c) => campaignSet.has(c.name))
+      : campaignCps;
+    return fromCps(
+      source,
+      (name) => calls.filter((t) => t.campaign === name).length,
+      salesF,
+    ).sort((a, b) => b.payout - a.payout);
+  }
+  // day
+  if (publisherFilter) {
+    const byDate = new Map<string, number>();
+    for (const t of calls) {
+      const d = t.date ?? "Unknown";
+      byDate.set(d, (byDate.get(d) ?? 0) + 1);
+    }
+    const salesByDate = new Map<string, { count: number; premium: number }>();
+    for (const s of salesF) {
+      const e = salesByDate.get(s.saleDate) ?? { count: 0, premium: 0 };
+      e.count += s.countSale;
+      e.premium += s.premium;
+      salesByDate.set(s.saleDate, e);
+    }
+    return [...byDate.keys()].sort().map((date) => {
+      const c = byDate.get(date)!;
+      const sd = salesByDate.get(date) ?? { count: 0, premium: 0 };
+      const revenue = sd.premium;
+      const payout = c * 24;
+      return {
+        key: date,
+        name: date,
+        incoming: c,
+        live: 0,
+        completed: c,
+        connects: c,
+        failedConnects: 0,
+        payable: c,
+        billable: c,
+        converted: sd.count,
+        duplicate: 0,
+        blocked: 0,
+        revenue,
+        payout,
+        profit: revenue - payout,
+        tcdSeconds: c * 212,
+      };
+    });
   }
   return trafficByDay.map((d) => {
     const revenue = sales.filter((s) => s.saleDate === d.date).reduce((sum, s) => sum + s.premium, 0);
