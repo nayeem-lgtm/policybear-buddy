@@ -1,240 +1,381 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { CalendarDays, CheckCircle2, Clock, Umbrella } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { CalendarDays, CheckCircle2, Clock, Plane, Umbrella, Wallet } from "lucide-react";
+import { toast } from "sonner";
 
-import { PageHeader } from "@/components/crm/PageHeader";
-import { StatCard } from "@/components/crm/StatCard";
-import { FilterBar } from "@/components/crm/FilterBar";
-import { DataTable, type Column } from "@/components/crm/DataTable";
-import { StatusBadge } from "@/components/crm/StatusBadge";
-import { useFilters, unique } from "@/lib/use-filters";
-import { leaveRequests, employees } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { toast } from "sonner";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { DataTable } from "@/components/crm/DataTable";
+import { StatusBadge } from "@/components/crm/StatusBadge";
+import {
+  decideLeaveRequest,
+  getMyLeaveRequests,
+  submitLeaveRequest,
+} from "@/lib/leave.functions";
+import {
+  LEAVE_TYPES,
+  coversDate,
+  formatDateRange,
+  leaveTone,
+  type LeaveType,
+} from "@/lib/leave-shared";
+import { pacificDate } from "@/lib/shift-shared";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_shell/leave")({
   head: () => ({
     meta: [
-      { title: "Leave Center — Policy Bear CRM" },
+      { title: "My Leave — Policy Bear CRM" },
       {
         name: "description",
-        content: "Leave balances, request approvals and the weekly team out-of-office calendar.",
+        content:
+          "Apply for PTO or unpaid leave, track approval status and see your upcoming time off.",
       },
-      { property: "og:title", content: "Leave Center — Policy Bear CRM" },
+      { property: "og:title", content: "My Leave — Policy Bear CRM" },
       {
         property: "og:description",
-        content: "Leave balances, request approvals and the weekly team out-of-office calendar.",
+        content: "Request PTO or unpaid time off and follow every approval in one place.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: LeavePage,
+  component: LeavePage;
 });
 
-type LeaveRequest = (typeof leaveRequests)[number];
-
-const leaveTypes = ["PTO", "Sick", "Unpaid", "Bereavement", "Jury Duty"];
-const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
 function LeavePage() {
-  const [rows, setRows] = useState<LeaveRequest[]>(leaveRequests);
-  const [requestOpen, setRequestOpen] = useState(false);
+  const qc = useQueryClient();
+  const load = useServerFn(getMyLeaveRequests);
+  const submit = useServerFn(submitLeaveRequest);
+  const decide = useServerFn(decideLeaveRequest);
 
-  const statusOptions = useMemo(() => unique(rows, (r) => r.status), [rows]);
-  const typeOptions = useMemo(() => unique(rows, (r) => r.type), [rows]);
+  const query = useQuery({ queryKey: ["my-leave"], queryFn: () => load() });
+  const rows = query.data ?? [];
+  const today = pacificDate();
 
-  const { search, setSearch, values, setValue, reset, filtered } = useFilters(rows, {
-    searchFields: (r) => [r.employee, r.reason],
-    filters: {
-      status: (r) => r.status,
-      type: (r) => r.type,
+  const [open, setOpen] = useState(false);
+  const [type, setType] = useState<LeaveType>("PTO");
+  const [start, setStart] = useState(today);
+  const [end, setEnd] = useState(today);
+  const [reason, setReason] = useState("");
+
+  const dayCount = useMemo(() => {
+    const s = new Date(`${start}T00:00:00Z`).valueOf();
+    const e = new Date(`${end}T00:00:00Z`).valueOf();
+    if (Number.isNaN(s) || Number.isNaN(e) || e < s) return 0;
+    return Math.round((e - s) / 86_400_000) + 1;
+  }, [start, end]);
+
+  const create = useMutation({
+    mutationFn: () =>
+      submit({ data: { leave_type: type, start_date: start, end_date: end, reason } }),
+    onSuccess: () => {
+      toast.success("Leave request submitted for approval.");
+      setOpen(false);
+      setReason("");
+      void qc.invalidateQueries({ queryKey: ["my-leave"] });
+      void qc.invalidateQueries({ queryKey: ["leave-range"] });
     },
+    onError: (e: Error) => toast.error(e.message),
   });
 
-  const pendingCount = rows.filter((r) => r.status === "Pending").length;
-  const approvedCount = rows.filter((r) => r.status === "Approved").length;
-  const avgBalance = Math.round(rows.reduce((s, r) => s + r.balance, 0) / rows.length);
-
-  const balancesByType = leaveTypes.map((type) => {
-    const subset = rows.filter((r) => r.type === type);
-    const balance = subset.length
-      ? Math.round(subset.reduce((s, r) => s + r.balance, 0) / subset.length)
-      : 8;
-    return { type, balance };
+  const cancel = useMutation({
+    mutationFn: (id: string) => decide({ data: { id, status: "Cancelled" } }),
+    onSuccess: () => {
+      toast.success("Request cancelled.");
+      void qc.invalidateQueries({ queryKey: ["my-leave"] });
+      void qc.invalidateQueries({ queryKey: ["leave-range"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 
-  const offThisWeek = employees.slice(0, 7).map((e, i) => ({
-    employee: e.name,
-    day: weekDays[i % weekDays.length],
-  }));
-
-  function updateStatus(id: string, status: "Approved" | "Denied") {
-    setRows((r) => r.map((row) => (row.id === id ? { ...row, status } : row)));
-    toast.success(`Request ${id} ${status.toLowerCase()}.`);
-  }
-
-  const columns: Column<LeaveRequest>[] = [
-    { key: "employee", header: "Employee", cell: (r) => r.employee },
-    { key: "type", header: "Type", cell: (r) => <Badge variant="secondary">{r.type}</Badge> },
-    { key: "dates", header: "Dates", cell: (r) => `${r.startDate} → ${r.endDate}` },
-    { key: "days", header: "Days", cell: (r) => r.days, align: "right" },
-    { key: "balance", header: "Balance", cell: (r) => r.balance, align: "right" },
-    { key: "status", header: "Status", cell: (r) => <StatusBadge status={r.status} /> },
-    {
-      key: "actions",
-      header: "Actions",
-      cell: (r) =>
-        r.status === "Pending" ? (
-          <div className="flex gap-1.5">
-            <Button size="sm" variant="outline" onClick={() => updateStatus(r.id, "Approved")}>
-              Approve
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => updateStatus(r.id, "Denied")}>
-              Reject
-            </Button>
-          </div>
-        ) : (
-          <span className="text-xs text-muted-foreground">{r.approver}</span>
-        ),
-    },
-  ];
+  const pending = rows.filter((r) => r.status === "Pending");
+  const approved = rows.filter((r) => r.status === "Approved");
+  const ptoDays = approved
+    .filter((r) => r.leave_type === "PTO")
+    .reduce((s, r) => s + Number(r.days), 0);
+  const unpaidDays = approved
+    .filter((r) => r.leave_type === "Unpaid")
+    .reduce((s, r) => s + Number(r.days), 0);
+  const onLeaveToday = approved.some((r) => coversDate(r, today));
+  const upcoming = approved
+    .filter((r) => r.end_date >= today)
+    .sort((a, b) => a.start_date.localeCompare(b.start_date));
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        eyebrow="People"
-        title="Leave Center"
-        description="Balances, approvals and who's out this week across every team."
-        actions={
-          <Button onClick={() => setRequestOpen(true)}>
-            <CalendarDays className="size-4" /> Request leave
+      {/* Hero */}
+      <Card className="brand-gradient relative gap-0 overflow-hidden rounded-3xl border-0 p-0 text-brand-foreground shadow-raised">
+        <div className="brand-mesh absolute inset-0 opacity-90" aria-hidden />
+        <div className="relative flex flex-col gap-6 p-6 sm:p-7 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-2">
+            <p className="text-[0.65rem] font-semibold tracking-[0.18em] text-brand-foreground/60 uppercase">
+              My leave
+            </p>
+            <h1 className="font-display text-2xl font-semibold">Time off, simply requested</h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="tabular rounded-full bg-brand-foreground/12 px-2.5 py-1 text-xs font-medium text-brand-foreground/85">
+                {pending.length} awaiting approval
+              </span>
+              <span className="tabular rounded-full bg-brand-foreground/12 px-2.5 py-1 text-xs font-medium text-brand-foreground/85">
+                {approved.length} approved
+              </span>
+              {onLeaveToday && (
+                <span className="rounded-full bg-success/25 px-2.5 py-1 text-xs font-semibold text-brand-foreground">
+                  You are on leave today
+                </span>
+              )}
+            </div>
+            <p className="max-w-lg text-sm text-brand-foreground/70">
+              Choose PTO or unpaid leave, pick your dates and send it for approval. Approved leave
+              shows on the team attendance board automatically.
+            </p>
+          </div>
+
+          <Button
+            size="lg"
+            className="rounded-xl bg-brand-foreground text-brand hover:bg-brand-foreground/90"
+            onClick={() => setOpen(true)}
+          >
+            <CalendarDays className="size-4" /> Apply for leave
           </Button>
-        }
-      />
+        </div>
+      </Card>
 
+      {/* Metrics */}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Pending Requests" value={pendingCount} tone="warning" icon={<Clock className="size-4" />} />
-        <StatCard label="Approved This Month" value={approvedCount} tone="success" icon={<CheckCircle2 className="size-4" />} />
-        <StatCard label="Avg. Balance (days)" value={avgBalance} icon={<Umbrella className="size-4" />} />
-        <StatCard label="Total Requests" value={rows.length} icon={<CalendarDays className="size-4" />} />
+        {[
+          {
+            label: "Pending approval",
+            value: pending.length,
+            hint: "Waiting on your manager",
+            icon: <Clock className="size-4" />,
+            accent: "bg-warning/25 text-brand-tan",
+          },
+          {
+            label: "PTO days taken",
+            value: ptoDays,
+            hint: "Approved paid time off",
+            icon: <Umbrella className="size-4" />,
+            accent: "bg-brand/10 text-brand",
+          },
+          {
+            label: "Unpaid days",
+            value: unpaidDays,
+            hint: "Approved unpaid leave",
+            icon: <Wallet className="size-4" />,
+            accent: "bg-brand-cyan/25 text-brand-teal",
+          },
+          {
+            label: "Upcoming leave",
+            value: upcoming.length,
+            hint: upcoming[0] ? `Next ${upcoming[0].start_date}` : "Nothing booked",
+            icon: <Plane className="size-4" />,
+            accent: "bg-success/15 text-success",
+          },
+        ].map((m) => (
+          <div
+            key={m.label}
+            className="flex items-center gap-3 rounded-2xl border border-border/60 bg-card/70 p-4"
+          >
+            <span
+              className={cn("flex size-9 shrink-0 items-center justify-center rounded-xl", m.accent)}
+            >
+              {m.icon}
+            </span>
+            <div className="min-w-0">
+              <p className="text-[0.65rem] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
+                {m.label}
+              </p>
+              <p className="tabular font-display text-lg font-semibold text-foreground">{m.value}</p>
+              <p className="truncate text-xs text-muted-foreground">{m.hint}</p>
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-5">
-        <Card className="p-4 shadow-card lg:col-span-2">
-          <p className="mb-3 text-sm font-semibold text-foreground">Balances by leave type</p>
-          <div className="space-y-2.5">
-            {balancesByType.map((b) => (
-              <div key={b.type} className="flex items-center gap-3 text-sm">
-                <span className="w-24 shrink-0 text-muted-foreground">{b.type}</span>
-                <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full bg-brand"
-                    style={{ width: `${Math.min(100, (b.balance / 15) * 100)}%` }}
-                  />
-                </div>
-                <span className="tabular w-8 text-right text-xs">{b.balance}d</span>
-              </div>
-            ))}
+      {/* Requests */}
+      <Card className="gap-0 overflow-hidden rounded-3xl p-0 shadow-card">
+        <div className="flex items-center justify-between gap-3 border-b border-border/60 bg-surface/50 p-4">
+          <div>
+            <h2 className="font-display text-base font-semibold text-foreground">My requests</h2>
+            <p className="text-xs text-muted-foreground">
+              Every request you have submitted, newest first.
+            </p>
           </div>
-        </Card>
+          <Button variant="outline" className="rounded-xl" onClick={() => setOpen(true)}>
+            <CalendarDays className="size-4" /> New request
+          </Button>
+        </div>
 
-        <Card className="p-4 shadow-card lg:col-span-3">
-          <p className="mb-3 text-sm font-semibold text-foreground">Out this week</p>
-          <div className="grid grid-cols-7 gap-2">
-            {weekDays.map((d) => (
-              <div key={d} className="rounded-md border border-border p-2 text-center">
-                <p className="text-[0.65rem] font-semibold tracking-wide text-muted-foreground uppercase">{d}</p>
-                <div className="mt-1.5 space-y-1">
-                  {offThisWeek
-                    .filter((o) => o.day === d)
-                    .map((o) => (
-                      <p key={o.employee} className="truncate text-xs text-foreground">
-                        {o.employee.split(" ")[0]}
-                      </p>
-                    ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </div>
+        <DataTable
+          className="rounded-none border-0 shadow-none"
+          columns={[
+            {
+              key: "type",
+              header: "Type",
+              cell: (r) => (
+                <StatusBadge
+                  status={r.leave_type}
+                  tone={r.leave_type === "PTO" ? "brand" : "info"}
+                />
+              ),
+            },
+            {
+              key: "dates",
+              header: "Dates",
+              cell: (r) => (
+                <span className="tabular">{formatDateRange(r.start_date, r.end_date)}</span>
+              ),
+            },
+            {
+              key: "days",
+              header: "Days",
+              align: "right",
+              cell: (r) => <span className="tabular">{Number(r.days)}</span>,
+            },
+            {
+              key: "reason",
+              header: "Reason",
+              cell: (r) => (
+                <span className="text-sm text-muted-foreground">{r.reason || "—"}</span>
+              ),
+            },
+            {
+              key: "status",
+              header: "Status",
+              cell: (r) => <StatusBadge status={r.status} tone={leaveTone(r.status)} />,
+            },
+            {
+              key: "actions",
+              header: "",
+              align: "right",
+              cell: (r) =>
+                r.status === "Pending" ? (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-muted-foreground"
+                    onClick={() => cancel.mutate(r.id)}
+                  >
+                    Cancel
+                  </Button>
+                ) : r.reviewed_at ? (
+                  <span className="text-xs text-muted-foreground">
+                    Reviewed {r.reviewed_at.slice(0, 10)}
+                  </span>
+                ) : null,
+            },
+          ]}
+          rows={rows}
+          empty={
+            query.isLoading
+              ? "Loading your leave requests…"
+              : "No leave requests yet — apply for PTO or unpaid leave to get started."
+          }
+        />
+      </Card>
 
-      <FilterBar
-        search={search}
-        onSearchChange={setSearch}
-        searchPlaceholder="Search by employee or reason…"
-        filters={[
-          { key: "status", label: "Status", options: statusOptions },
-          { key: "type", label: "Type", options: typeOptions },
-        ]}
-        values={values}
-        onChange={setValue}
-        onReset={reset}
-      />
-
-      <DataTable columns={columns} rows={filtered} footer={<span>{filtered.length} of {rows.length} requests</span>} />
-
-      <Dialog open={requestOpen} onOpenChange={setRequestOpen}>
+      {/* Apply dialog */}
+      <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Request leave</DialogTitle>
-            <DialogDescription>Submit a new leave request for approval.</DialogDescription>
+            <DialogTitle>Apply for leave</DialogTitle>
+            <DialogDescription>
+              Pick the leave type and dates. Your manager will see it as a pending approval.
+            </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-3">
+
+          <div className="grid gap-4">
             <div className="grid gap-1.5">
               <Label>Leave type</Label>
-              <Select>
-                <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
-                <SelectContent>
-                  {leaveTypes.map((t) => (
-                    <SelectItem key={t} value={t}>{t}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-2 gap-2">
+                {LEAVE_TYPES.map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setType(t)}
+                    className={cn(
+                      "rounded-xl border p-3 text-left transition-colors",
+                      type === t
+                        ? "border-brand bg-brand/5"
+                        : "border-border/60 hover:border-brand/40",
+                    )}
+                  >
+                    <p className="text-sm font-semibold text-foreground">{t}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t === "PTO" ? "Paid time off" : "Time off without pay"}
+                    </p>
+                  </button>
+                ))}
+              </div>
             </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div className="grid gap-1.5">
-                <Label>Start date</Label>
-                <Input type="date" />
+                <Label htmlFor="leave-start">Start date</Label>
+                <Input
+                  id="leave-start"
+                  type="date"
+                  value={start}
+                  onChange={(e) => {
+                    setStart(e.target.value);
+                    if (end < e.target.value) setEnd(e.target.value);
+                  }}
+                />
               </div>
               <div className="grid gap-1.5">
-                <Label>End date</Label>
-                <Input type="date" />
+                <Label htmlFor="leave-end">End date</Label>
+                <Input
+                  id="leave-end"
+                  type="date"
+                  min={start}
+                  value={end}
+                  onChange={(e) => setEnd(e.target.value)}
+                />
               </div>
             </div>
+
             <div className="grid gap-1.5">
-              <Label>Reason</Label>
-              <Textarea placeholder="Brief reason for the request" />
+              <Label htmlFor="leave-reason">Reason (optional)</Label>
+              <Textarea
+                id="leave-reason"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="Family trip, medical appointment…"
+                rows={3}
+              />
             </div>
+
+            <p className="rounded-xl bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
+              {dayCount > 0
+                ? `${dayCount} day${dayCount > 1 ? "s" : ""} of ${type} leave requested.`
+                : "Select a valid date range."}
+            </p>
           </div>
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRequestOpen(false)}>Cancel</Button>
+            <Button variant="ghost" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
             <Button
-              onClick={() => {
-                setRequestOpen(false);
-                toast.success("Leave request submitted for approval.");
-              }}
+              disabled={dayCount === 0 || create.isPending}
+              onClick={() => create.mutate()}
             >
-              Submit request
+              <CheckCircle2 className="size-4" /> Submit request
             </Button>
           </DialogFooter>
         </DialogContent>
