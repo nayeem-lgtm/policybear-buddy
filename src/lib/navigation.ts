@@ -125,14 +125,10 @@ export const navSections: NavSection[] = [
         ],
       },
       {
-
         label: "Quality & recordings",
         items: [
           { title: "QA Reviews", url: "/qa", icon: ShieldCheck, description: "Score call recordings" },
-          { title: "QA Import", url: "/qa/import", icon: Import, description: "Bulk import for review" },
-          { title: "Disputes", url: "/qa/disputes", icon: LifeBuoy, description: "Challenge a score or call" },
-          { title: "Live Call Monitor", url: "/telephony-monitor", icon: Radio, description: "Listen in live" },
-          { title: "Live Floor", url: "/telephony-floor", icon: Activity, description: "Floor activity right now" },
+          { title: "Reporting", url: "/qa/reporting", icon: BarChart3, description: "Publisher sales reporting" },
         ],
       },
     ],

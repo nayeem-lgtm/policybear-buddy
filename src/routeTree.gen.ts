@@ -68,6 +68,7 @@ import { Route as ShellAdminUsersRouteImport } from './routes/_shell.admin.users
 import { Route as ShellCallbacksCalendarRouteImport } from './routes/_shell.callbacks.calendar'
 import { Route as ShellQaDisputesRouteImport } from './routes/_shell.qa.disputes'
 import { Route as ShellQaImportRouteImport } from './routes/_shell.qa.import'
+import { Route as ShellQaReportingRouteImport } from './routes/_shell.qa.reporting'
 import { Route as ShellSalesNewRouteImport } from './routes/_shell.sales.new'
 import { Route as ApiPublicHooksCalltoolsRouteImport } from './routes/api.public.hooks.calltools'
 import { Route as ApiPublicHooksCalltoolsQueueRouteImport } from './routes/api.public.hooks.calltools-queue'
@@ -369,6 +370,11 @@ const ShellQaImportRoute = ShellQaImportRouteImport.update({
   path: '/import',
   getParentRoute: () => ShellQaRoute,
 } as any)
+const ShellQaReportingRoute = ShellQaReportingRouteImport.update({
+  id: '/reporting',
+  path: '/reporting',
+  getParentRoute: () => ShellQaRoute,
+} as any)
 const ShellSalesNewRoute = ShellSalesNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -451,6 +457,7 @@ export interface FileRoutesByFullPath {
   '/callbacks/calendar': typeof ShellCallbacksCalendarRoute
   '/qa/disputes': typeof ShellQaDisputesRoute
   '/qa/import': typeof ShellQaImportRoute
+  '/qa/reporting': typeof ShellQaReportingRoute
   '/sales/new': typeof ShellSalesNewRoute
   '/api/public/hooks/calltools': typeof ApiPublicHooksCalltoolsRoute
   '/api/public/hooks/calltools-queue': typeof ApiPublicHooksCalltoolsQueueRoute
@@ -515,6 +522,7 @@ export interface FileRoutesByTo {
   '/callbacks/calendar': typeof ShellCallbacksCalendarRoute
   '/qa/disputes': typeof ShellQaDisputesRoute
   '/qa/import': typeof ShellQaImportRoute
+  '/qa/reporting': typeof ShellQaReportingRoute
   '/sales/new': typeof ShellSalesNewRoute
   '/api/public/hooks/calltools': typeof ApiPublicHooksCalltoolsRoute
   '/api/public/hooks/calltools-queue': typeof ApiPublicHooksCalltoolsQueueRoute
@@ -581,6 +589,7 @@ export interface FileRoutesById {
   '/_shell/callbacks/calendar': typeof ShellCallbacksCalendarRoute
   '/_shell/qa/disputes': typeof ShellQaDisputesRoute
   '/_shell/qa/import': typeof ShellQaImportRoute
+  '/_shell/qa/reporting': typeof ShellQaReportingRoute
   '/_shell/sales/new': typeof ShellSalesNewRoute
   '/api/public/hooks/calltools': typeof ApiPublicHooksCalltoolsRoute
   '/api/public/hooks/calltools-queue': typeof ApiPublicHooksCalltoolsQueueRoute
@@ -647,6 +656,7 @@ export interface FileRouteTypes {
     | '/callbacks/calendar'
     | '/qa/disputes'
     | '/qa/import'
+    | '/qa/reporting'
     | '/sales/new'
     | '/api/public/hooks/calltools'
     | '/api/public/hooks/calltools-queue'
@@ -711,6 +721,7 @@ export interface FileRouteTypes {
     | '/callbacks/calendar'
     | '/qa/disputes'
     | '/qa/import'
+    | '/qa/reporting'
     | '/sales/new'
     | '/api/public/hooks/calltools'
     | '/api/public/hooks/calltools-queue'
@@ -776,6 +787,7 @@ export interface FileRouteTypes {
     | '/_shell/callbacks/calendar'
     | '/_shell/qa/disputes'
     | '/_shell/qa/import'
+    | '/_shell/qa/reporting'
     | '/_shell/sales/new'
     | '/api/public/hooks/calltools'
     | '/api/public/hooks/calltools-queue'
@@ -1205,6 +1217,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellQaImportRouteImport
       parentRoute: typeof ShellQaRoute
     }
+    '/_shell/qa/reporting': {
+      id: '/_shell/qa/reporting'
+      path: '/reporting'
+      fullPath: '/qa/reporting'
+      preLoaderRoute: typeof ShellQaReportingRouteImport
+      parentRoute: typeof ShellQaRoute
+    }
     '/_shell/sales/new': {
       id: '/_shell/sales/new'
       path: '/new'
@@ -1251,11 +1270,13 @@ const ShellCallbacksRouteWithChildren = ShellCallbacksRoute._addFileChildren(
 interface ShellQaRouteChildren {
   ShellQaDisputesRoute: typeof ShellQaDisputesRoute
   ShellQaImportRoute: typeof ShellQaImportRoute
+  ShellQaReportingRoute: typeof ShellQaReportingRoute
 }
 
 const ShellQaRouteChildren: ShellQaRouteChildren = {
   ShellQaDisputesRoute: ShellQaDisputesRoute,
   ShellQaImportRoute: ShellQaImportRoute,
+  ShellQaReportingRoute: ShellQaReportingRoute,
 }
 
 const ShellQaRouteWithChildren =
