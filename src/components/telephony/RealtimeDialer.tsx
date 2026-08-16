@@ -717,6 +717,23 @@ export function RealtimeDialer() {
 
               {inWrap ? (
                 <div className="space-y-3">
+                  <div className="rounded-2xl border border-border/60 bg-surface/50 p-3">
+                    <div className="mb-1.5 flex items-center justify-between text-xs">
+                      <span className="flex items-center gap-1.5 font-medium text-muted-foreground">
+                        <Timer className="size-3.5" /> Wrap-up time
+                      </span>
+                      <span
+                        className={cn(
+                          "font-semibold tabular-nums",
+                          wrapLeft === 0 ? "text-destructive" : "text-foreground",
+                        )}
+                      >
+                        {wrapLeft === 0 ? "Overrun" : `${wrapLeft}s left`}
+                      </span>
+                    </div>
+                    <Progress value={(wrapLeft / WRAP_ALLOWANCE) * 100} className="h-1.5" />
+                  </div>
+
                   <div className="flex flex-wrap gap-1.5">
                     {QUICK_DISPOSITIONS.map((d) => (
                       <Button
