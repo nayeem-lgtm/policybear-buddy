@@ -171,6 +171,8 @@ const TONE_FOR_STATUS: Record<string, ShiftEvent["tone"]> = {
 export function ShiftProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [status, setStatusState] = useState<PresenceStatus>("Available");
+  /** Wall-clock anchor for the current status — all elapsed time derives from this. */
+  const [statusStartedAt, setStatusStartedAt] = useState<number>(() => Date.now());
   const [statusSeconds, setStatusSeconds] = useState(0);
   const [demoMode, setDemoMode] = useState(false);
   const [alarmAcknowledgedAt, setAlarmAcknowledgedAt] = useState<number | null>(null);
