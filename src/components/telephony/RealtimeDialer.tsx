@@ -863,6 +863,19 @@ export function RealtimeDialer() {
                     </Button>
                   </div>
 
+                  <div className="rounded-2xl border border-border/60 bg-surface/40 p-3">
+                    <Label className="mb-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <StickyNote className="size-3.5" /> Live notes — carried into the outcome
+                    </Label>
+                    <Textarea
+                      rows={3}
+                      value={liveNotes}
+                      onChange={(e) => setLiveNotes(e.target.value)}
+                      placeholder="Type while you talk: needs, objections, next step…"
+                    />
+                  </div>
+
+
                   <Button
                     variant="destructive"
                     className="h-12 w-full"
