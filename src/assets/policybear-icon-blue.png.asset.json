@@ -1,11 +1,11 @@
 {
-  "version": 1,
   "asset_id": "eaffb749-3efc-416e-8c86-3542c357be19",
-  "project_id": "d49fc307-576c-409c-b906-11b573268927",
-  "url": "/__l5e/assets-v1/eaffb749-3efc-416e-8c86-3542c357be19/policybear-icon-blue.png",
-  "r2_key": "a/v1/d49fc307-576c-409c-b906-11b573268927/eaffb749-3efc-416e-8c86-3542c357be19/policybear-icon-blue.png",
-  "original_filename": "policybear-icon-blue.png",
-  "size": 17170,
   "content_type": "image/png",
-  "created_at": "2026-08-13T17:04:47Z"
+  "created_at": "2026-08-13T17:04:47Z",
+  "original_filename": "policybear-icon-blue.png",
+  "project_id": "bf70456d-97c8-4295-bbab-585a21f37a61",
+  "r2_key": "a/v1/bf70456d-97c8-4295-bbab-585a21f37a61/eaffb749-3efc-416e-8c86-3542c357be19/policybear-icon-blue.png",
+  "size": 17170,
+  "url": "/__l5e/assets-v1/eaffb749-3efc-416e-8c86-3542c357be19/policybear-icon-blue.png",
+  "version": 1
 }
