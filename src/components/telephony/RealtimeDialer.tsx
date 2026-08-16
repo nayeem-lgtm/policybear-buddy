@@ -29,12 +29,16 @@ import {
   PlusCircle,
   Rocket,
   Search,
+  ShieldAlert,
+  ShieldCheck,
+  ShieldOff,
   Signal,
   Star,
   Timer,
   Users,
   Volume2,
 } from "lucide-react";
+
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
