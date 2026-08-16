@@ -522,38 +522,40 @@ function QAPage() {
       </Collapsible>
 
       <Collapsible title="Charts" icon={<LineChartIcon className="size-4 text-brand" />}>
-        <div className="grid gap-4 xl:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <MetricChart
-            title="Reviews"
-            value={`${charts.totalReviews}`}
-            delta={charts.dReviews}
-            data={charts.buckets.map((b) => ({ day: b.day, v: b.reviews }))}
+            title="Calls"
+            value={`${charts.totalCalls}`}
+            delta={charts.dCalls}
+            data={charts.buckets.map((b) => ({ day: b.day, v: b.calls }))}
             color="var(--brand)"
           />
           <MetricChart
-            title="Average score"
-            value={`${charts.avgScore}%`}
-            delta={charts.dAvg}
-            data={charts.buckets.map((b) => ({ day: b.day, v: b.avg }))}
+            title="CPS"
+            value={`$${charts.cps.toFixed(2)}`}
+            delta={charts.dCps}
+            data={charts.buckets.map((b) => ({ day: b.day, v: b.cps }))}
             color="var(--brand-teal)"
-            suffix="%"
+            prefix="$"
           />
           <MetricChart
-            title="Pass rate"
-            value={`${charts.passRate}%`}
-            delta={charts.dPass}
-            data={charts.buckets.map((b) => ({ day: b.day, v: b.pass }))}
+            title="Agent Health"
+            value={`${charts.agentHealth}%`}
+            delta={charts.dHealth}
+            data={charts.buckets.map((b) => ({ day: b.day, v: b.health }))}
             color="var(--success)"
             suffix="%"
           />
           <MetricChart
-            title="Invalid calls"
-            value={`${charts.invalidCount}`}
-            delta={charts.dInvalid}
-            data={charts.buckets.map((b) => ({ day: b.day, v: b.invalid }))}
-            color="var(--destructive)"
+            title="Conversion rate"
+            value={`${charts.convRate}%`}
+            delta={charts.dConv}
+            data={charts.buckets.map((b) => ({ day: b.day, v: b.conv }))}
+            color="var(--warning)"
+            suffix="%"
           />
         </div>
+
       </Collapsible>
 
       <Card className="gap-0 p-0 shadow-card">
