@@ -43,7 +43,6 @@ import { Route as ShellNotificationsRouteImport } from './routes/_shell.notifica
 import { Route as ShellOperationsRouteImport } from './routes/_shell.operations'
 import { Route as ShellPayrollRouteImport } from './routes/_shell.payroll'
 import { Route as ShellPublishersRouteImport } from './routes/_shell.publishers'
-import { Route as ShellQaRouteImport } from './routes/_shell.qa'
 import { Route as ShellQuotesRouteImport } from './routes/_shell.quotes'
 import { Route as ShellReportingRouteImport } from './routes/_shell.reporting'
 import { Route as ShellReportsRouteImport } from './routes/_shell.reports'
@@ -66,6 +65,7 @@ import { Route as ShellAdminRulesRouteImport } from './routes/_shell.admin.rules
 import { Route as ShellAdminTelephonyRouteImport } from './routes/_shell.admin.telephony'
 import { Route as ShellAdminUsersRouteImport } from './routes/_shell.admin.users'
 import { Route as ShellCallbacksCalendarRouteImport } from './routes/_shell.callbacks.calendar'
+import { Route as ShellQaIndexRouteImport } from './routes/_shell.qa.index'
 import { Route as ShellQaDisputesRouteImport } from './routes/_shell.qa.disputes'
 import { Route as ShellQaImportRouteImport } from './routes/_shell.qa.import'
 import { Route as ShellQaReportingRouteImport } from './routes/_shell.qa.reporting'
@@ -244,11 +244,6 @@ const ShellPublishersRoute = ShellPublishersRouteImport.update({
   path: '/publishers',
   getParentRoute: () => ShellRoute,
 } as any)
-const ShellQaRoute = ShellQaRouteImport.update({
-  id: '/qa',
-  path: '/qa',
-  getParentRoute: () => ShellRoute,
-} as any)
 const ShellQuotesRoute = ShellQuotesRouteImport.update({
   id: '/quotes',
   path: '/quotes',
@@ -360,20 +355,25 @@ const ShellCallbacksCalendarRoute = ShellCallbacksCalendarRouteImport.update({
   path: '/calendar',
   getParentRoute: () => ShellCallbacksRoute,
 } as any)
+const ShellQaIndexRoute = ShellQaIndexRouteImport.update({
+  id: '/qa/',
+  path: '/qa/',
+  getParentRoute: () => ShellRoute,
+} as any)
 const ShellQaDisputesRoute = ShellQaDisputesRouteImport.update({
-  id: '/disputes',
-  path: '/disputes',
-  getParentRoute: () => ShellQaRoute,
+  id: '/qa/disputes',
+  path: '/qa/disputes',
+  getParentRoute: () => ShellRoute,
 } as any)
 const ShellQaImportRoute = ShellQaImportRouteImport.update({
-  id: '/import',
-  path: '/import',
-  getParentRoute: () => ShellQaRoute,
+  id: '/qa/import',
+  path: '/qa/import',
+  getParentRoute: () => ShellRoute,
 } as any)
 const ShellQaReportingRoute = ShellQaReportingRouteImport.update({
-  id: '/reporting',
-  path: '/reporting',
-  getParentRoute: () => ShellQaRoute,
+  id: '/qa/reporting',
+  path: '/qa/reporting',
+  getParentRoute: () => ShellRoute,
 } as any)
 const ShellSalesNewRoute = ShellSalesNewRouteImport.update({
   id: '/new',
@@ -432,7 +432,6 @@ export interface FileRoutesByFullPath {
   '/operations': typeof ShellOperationsRoute
   '/payroll': typeof ShellPayrollRoute
   '/publishers': typeof ShellPublishersRoute
-  '/qa': typeof ShellQaRouteWithChildren
   '/quotes': typeof ShellQuotesRoute
   '/reporting': typeof ShellReportingRoute
   '/reports': typeof ShellReportsRoute
@@ -459,6 +458,7 @@ export interface FileRoutesByFullPath {
   '/qa/import': typeof ShellQaImportRoute
   '/qa/reporting': typeof ShellQaReportingRoute
   '/sales/new': typeof ShellSalesNewRoute
+  '/qa/': typeof ShellQaIndexRoute
   '/api/public/hooks/calltools': typeof ApiPublicHooksCalltoolsRoute
   '/api/public/hooks/calltools-queue': typeof ApiPublicHooksCalltoolsQueueRoute
   '/api/public/hooks/telephony-sync': typeof ApiPublicHooksTelephonySyncRoute
@@ -497,7 +497,6 @@ export interface FileRoutesByTo {
   '/operations': typeof ShellOperationsRoute
   '/payroll': typeof ShellPayrollRoute
   '/publishers': typeof ShellPublishersRoute
-  '/qa': typeof ShellQaRouteWithChildren
   '/quotes': typeof ShellQuotesRoute
   '/reporting': typeof ShellReportingRoute
   '/reports': typeof ShellReportsRoute
@@ -524,6 +523,7 @@ export interface FileRoutesByTo {
   '/qa/import': typeof ShellQaImportRoute
   '/qa/reporting': typeof ShellQaReportingRoute
   '/sales/new': typeof ShellSalesNewRoute
+  '/qa': typeof ShellQaIndexRoute
   '/api/public/hooks/calltools': typeof ApiPublicHooksCalltoolsRoute
   '/api/public/hooks/calltools-queue': typeof ApiPublicHooksCalltoolsQueueRoute
   '/api/public/hooks/telephony-sync': typeof ApiPublicHooksTelephonySyncRoute
@@ -564,7 +564,6 @@ export interface FileRoutesById {
   '/_shell/operations': typeof ShellOperationsRoute
   '/_shell/payroll': typeof ShellPayrollRoute
   '/_shell/publishers': typeof ShellPublishersRoute
-  '/_shell/qa': typeof ShellQaRouteWithChildren
   '/_shell/quotes': typeof ShellQuotesRoute
   '/_shell/reporting': typeof ShellReportingRoute
   '/_shell/reports': typeof ShellReportsRoute
@@ -591,6 +590,7 @@ export interface FileRoutesById {
   '/_shell/qa/import': typeof ShellQaImportRoute
   '/_shell/qa/reporting': typeof ShellQaReportingRoute
   '/_shell/sales/new': typeof ShellSalesNewRoute
+  '/_shell/qa/': typeof ShellQaIndexRoute
   '/api/public/hooks/calltools': typeof ApiPublicHooksCalltoolsRoute
   '/api/public/hooks/calltools-queue': typeof ApiPublicHooksCalltoolsQueueRoute
   '/api/public/hooks/telephony-sync': typeof ApiPublicHooksTelephonySyncRoute
@@ -631,7 +631,6 @@ export interface FileRouteTypes {
     | '/operations'
     | '/payroll'
     | '/publishers'
-    | '/qa'
     | '/quotes'
     | '/reporting'
     | '/reports'
@@ -658,6 +657,7 @@ export interface FileRouteTypes {
     | '/qa/import'
     | '/qa/reporting'
     | '/sales/new'
+    | '/qa/'
     | '/api/public/hooks/calltools'
     | '/api/public/hooks/calltools-queue'
     | '/api/public/hooks/telephony-sync'
@@ -696,7 +696,6 @@ export interface FileRouteTypes {
     | '/operations'
     | '/payroll'
     | '/publishers'
-    | '/qa'
     | '/quotes'
     | '/reporting'
     | '/reports'
@@ -723,6 +722,7 @@ export interface FileRouteTypes {
     | '/qa/import'
     | '/qa/reporting'
     | '/sales/new'
+    | '/qa'
     | '/api/public/hooks/calltools'
     | '/api/public/hooks/calltools-queue'
     | '/api/public/hooks/telephony-sync'
@@ -762,7 +762,6 @@ export interface FileRouteTypes {
     | '/_shell/operations'
     | '/_shell/payroll'
     | '/_shell/publishers'
-    | '/_shell/qa'
     | '/_shell/quotes'
     | '/_shell/reporting'
     | '/_shell/reports'
@@ -789,6 +788,7 @@ export interface FileRouteTypes {
     | '/_shell/qa/import'
     | '/_shell/qa/reporting'
     | '/_shell/sales/new'
+    | '/_shell/qa/'
     | '/api/public/hooks/calltools'
     | '/api/public/hooks/calltools-queue'
     | '/api/public/hooks/telephony-sync'
@@ -1042,13 +1042,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellPublishersRouteImport
       parentRoute: typeof ShellRoute
     }
-    '/_shell/qa': {
-      id: '/_shell/qa'
-      path: '/qa'
-      fullPath: '/qa'
-      preLoaderRoute: typeof ShellQaRouteImport
-      parentRoute: typeof ShellRoute
-    }
     '/_shell/quotes': {
       id: '/_shell/quotes'
       path: '/quotes'
@@ -1203,26 +1196,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellCallbacksCalendarRouteImport
       parentRoute: typeof ShellCallbacksRoute
     }
+    '/_shell/qa/': {
+      id: '/_shell/qa/'
+      path: '/qa'
+      fullPath: '/qa/'
+      preLoaderRoute: typeof ShellQaIndexRouteImport
+      parentRoute: typeof ShellRoute
+    }
     '/_shell/qa/disputes': {
       id: '/_shell/qa/disputes'
-      path: '/disputes'
+      path: '/qa/disputes'
       fullPath: '/qa/disputes'
       preLoaderRoute: typeof ShellQaDisputesRouteImport
-      parentRoute: typeof ShellQaRoute
+      parentRoute: typeof ShellRoute
     }
     '/_shell/qa/import': {
       id: '/_shell/qa/import'
-      path: '/import'
+      path: '/qa/import'
       fullPath: '/qa/import'
       preLoaderRoute: typeof ShellQaImportRouteImport
-      parentRoute: typeof ShellQaRoute
+      parentRoute: typeof ShellRoute
     }
     '/_shell/qa/reporting': {
       id: '/_shell/qa/reporting'
-      path: '/reporting'
+      path: '/qa/reporting'
       fullPath: '/qa/reporting'
       preLoaderRoute: typeof ShellQaReportingRouteImport
-      parentRoute: typeof ShellQaRoute
+      parentRoute: typeof ShellRoute
     }
     '/_shell/sales/new': {
       id: '/_shell/sales/new'
@@ -1266,21 +1266,6 @@ const ShellCallbacksRouteChildren: ShellCallbacksRouteChildren = {
 const ShellCallbacksRouteWithChildren = ShellCallbacksRoute._addFileChildren(
   ShellCallbacksRouteChildren,
 )
-
-interface ShellQaRouteChildren {
-  ShellQaDisputesRoute: typeof ShellQaDisputesRoute
-  ShellQaImportRoute: typeof ShellQaImportRoute
-  ShellQaReportingRoute: typeof ShellQaReportingRoute
-}
-
-const ShellQaRouteChildren: ShellQaRouteChildren = {
-  ShellQaDisputesRoute: ShellQaDisputesRoute,
-  ShellQaImportRoute: ShellQaImportRoute,
-  ShellQaReportingRoute: ShellQaReportingRoute,
-}
-
-const ShellQaRouteWithChildren =
-  ShellQaRoute._addFileChildren(ShellQaRouteChildren)
 
 interface ShellSalesRouteChildren {
   ShellSalesNewRoute: typeof ShellSalesNewRoute
@@ -1327,7 +1312,6 @@ interface ShellRouteChildren {
   ShellOperationsRoute: typeof ShellOperationsRoute
   ShellPayrollRoute: typeof ShellPayrollRoute
   ShellPublishersRoute: typeof ShellPublishersRoute
-  ShellQaRoute: typeof ShellQaRouteWithChildren
   ShellQuotesRoute: typeof ShellQuotesRoute
   ShellReportingRoute: typeof ShellReportingRoute
   ShellReportsRoute: typeof ShellReportsRoute
@@ -1349,6 +1333,10 @@ interface ShellRouteChildren {
   ShellAdminRulesRoute: typeof ShellAdminRulesRoute
   ShellAdminTelephonyRoute: typeof ShellAdminTelephonyRoute
   ShellAdminUsersRoute: typeof ShellAdminUsersRoute
+  ShellQaDisputesRoute: typeof ShellQaDisputesRoute
+  ShellQaImportRoute: typeof ShellQaImportRoute
+  ShellQaReportingRoute: typeof ShellQaReportingRoute
+  ShellQaIndexRoute: typeof ShellQaIndexRoute
 }
 
 const ShellRouteChildren: ShellRouteChildren = {
@@ -1384,7 +1372,6 @@ const ShellRouteChildren: ShellRouteChildren = {
   ShellOperationsRoute: ShellOperationsRoute,
   ShellPayrollRoute: ShellPayrollRoute,
   ShellPublishersRoute: ShellPublishersRoute,
-  ShellQaRoute: ShellQaRouteWithChildren,
   ShellQuotesRoute: ShellQuotesRoute,
   ShellReportingRoute: ShellReportingRoute,
   ShellReportsRoute: ShellReportsRoute,
@@ -1406,6 +1393,10 @@ const ShellRouteChildren: ShellRouteChildren = {
   ShellAdminRulesRoute: ShellAdminRulesRoute,
   ShellAdminTelephonyRoute: ShellAdminTelephonyRoute,
   ShellAdminUsersRoute: ShellAdminUsersRoute,
+  ShellQaDisputesRoute: ShellQaDisputesRoute,
+  ShellQaImportRoute: ShellQaImportRoute,
+  ShellQaReportingRoute: ShellQaReportingRoute,
+  ShellQaIndexRoute: ShellQaIndexRoute,
 }
 
 const ShellRouteWithChildren = ShellRoute._addFileChildren(ShellRouteChildren)
