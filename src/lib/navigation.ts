@@ -1,7 +1,6 @@
 import {
   Activity,
   AlarmClock,
-  BadgeDollarSign,
   Banknote,
   BarChart3,
   Bell,
@@ -20,7 +19,6 @@ import {
   Gauge,
   GraduationCap,
   Headphones,
-  HeartHandshake,
   Home,
   Import,
   Inbox,
