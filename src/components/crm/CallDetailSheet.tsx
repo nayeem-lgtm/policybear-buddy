@@ -731,6 +731,12 @@ export function CallDetailSheet({
 
         </div>
       </SheetContent>
+      <CreateTicketDialog
+        open={ticketOpen}
+        onOpenChange={setTicketOpen}
+        campaign={call.campaign}
+        callId={call.callId}
+      />
     </Sheet>
   );
 }
