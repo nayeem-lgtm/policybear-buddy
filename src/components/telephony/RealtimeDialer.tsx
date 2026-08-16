@@ -894,21 +894,22 @@ export function RealtimeDialer() {
                   value={digits}
                   onChange={(e) => setDigits(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && digits.length >= 7 && !dncBlocked) {
-                      dialMutation.mutate({
-                        phone: digits,
-                        mode: "manual",
-                        ...(fromId !== "auto" ? { fromNumberId: fromId } : {}),
-                      });
-                    }
+                    if (e.key === "Enter") dialNow();
                   }}
                   placeholder="Enter a number"
                   className="h-12 border-0 bg-transparent text-center text-2xl font-semibold tracking-wider shadow-none focus-visible:ring-0"
                 />
+                {digits ? (
+                  <p className="text-center text-xs text-muted-foreground">{formatPhone(digits)}</p>
+                ) : (
+                  <p className="text-center text-xs text-muted-foreground">
+                    Type on your keyboard — the desk listens for digits
+                  </p>
+                )}
                 {debouncedDigits.replace(/\D/g, "").length >= 7 ? (
                   <p
                     className={cn(
-                      "flex items-center justify-center gap-1.5 text-xs font-medium",
+                      "mt-1 flex items-center justify-center gap-1.5 text-xs font-medium",
                       dncCheck.isFetching
                         ? "text-muted-foreground"
                         : dncBlocked
@@ -929,6 +930,47 @@ export function RealtimeDialer() {
                     )}
                   </p>
                 ) : null}
+
+                <div className="mt-2 flex items-center justify-center gap-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 gap-1 text-xs"
+                    onClick={() => void pasteNumber()}
+                  >
+                    <ClipboardPaste className="size-3.5" /> Paste
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 gap-1 text-xs"
+                    disabled={!digits}
+                    onClick={() => void copyNumber(digits)}
+                  >
+                    <Copy className="size-3.5" /> Copy
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 gap-1 text-xs"
+                    disabled={digits.replace(/\D/g, "").length < 7}
+                    onClick={() => toggleSpeedDial(digits)}
+                  >
+                    <Star
+                      className={cn("size-3.5", inSpeedDial(digits) && "fill-current text-warning")}
+                    />
+                    {inSpeedDial(digits) ? "Saved" : "Save"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 gap-1 text-xs"
+                    disabled={!digits}
+                    onClick={() => setDigits("")}
+                  >
+                    <Trash2 className="size-3.5" /> Clear
+                  </Button>
+                </div>
               </div>
 
               {dncBlocked ? (
@@ -943,14 +985,13 @@ export function RealtimeDialer() {
                 </div>
               ) : null}
 
-
               <div className="grid grid-cols-3 gap-2">
                 {KEYPAD.map((k) => (
                   <Button
                     key={k.key}
                     variant="outline"
-                    className="h-14 flex-col gap-0 rounded-2xl text-lg"
-                    onClick={() => setDigits((d) => d + k.key)}
+                    className="h-14 flex-col gap-0 rounded-2xl text-lg transition-transform active:scale-95"
+                    onClick={() => pressKey(k.key)}
                   >
                     {k.key}
                     {k.sub ? (
@@ -982,13 +1023,7 @@ export function RealtimeDialer() {
               <Button
                 className="h-12 w-full rounded-2xl"
                 disabled={digits.length < 7 || dialMutation.isPending || dncBlocked}
-                onClick={() =>
-                  dialMutation.mutate({
-                    phone: digits,
-                    mode: "manual",
-                    ...(fromId !== "auto" ? { fromNumberId: fromId } : {}),
-                  })
-                }
+                onClick={dialNow}
               >
                 {dncBlocked ? (
                   <>
@@ -1008,6 +1043,34 @@ export function RealtimeDialer() {
               >
                 <Ban className="mr-2 size-4" /> Add any number to DNC
               </Button>
+
+              {speedDial.length ? (
+                <div>
+                  <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                    <Zap className="size-3.5" /> Speed dial
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {speedDial.map((s) => (
+                      <span
+                        key={s.phone}
+                        className="group flex items-center gap-1 rounded-full bg-brand/12 py-0.5 pl-2.5 pr-1 text-xs text-brand"
+                      >
+                        <button className="font-medium" onClick={() => setDigits(s.phone)}>
+                          {s.name || formatPhone(s.phone)}
+                        </button>
+                        <button
+                          className="rounded-full p-1 text-muted-foreground hover:text-destructive"
+                          aria-label="Remove from speed dial"
+                          onClick={() => toggleSpeedDial(s.phone)}
+                        >
+                          <Trash2 className="size-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
 
 
               {(data?.today ?? []).length ? (
