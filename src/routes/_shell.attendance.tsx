@@ -652,6 +652,124 @@ function AttendancePage() {
           }
         />
       </Card>
+
+      {/* Leave */}
+      <div className="grid gap-4 xl:grid-cols-2">
+        <Card className="gap-0 overflow-hidden rounded-3xl p-0 shadow-card">
+          <div className="flex items-center justify-between gap-3 border-b border-border/60 bg-surface/50 p-4">
+            <div className="flex items-start gap-3">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-warning/25 text-brand-tan">
+                <Clock3 className="size-4" />
+              </span>
+              <div>
+                <h2 className="font-display text-base font-semibold text-foreground">
+                  Leave — pending approval
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  Requests submitted by employees for this date range.
+                </p>
+              </div>
+            </div>
+            <span className="tabular rounded-full bg-warning/25 px-2.5 py-1 text-xs font-semibold text-brand-tan">
+              {pendingLeave.length}
+            </span>
+          </div>
+
+          <div className="divide-y divide-border/60">
+            {pendingLeave.length === 0 && (
+              <p className="p-6 text-center text-sm text-muted-foreground">
+                {leaveQuery.isLoading ? "Loading leave requests…" : "No pending leave requests."}
+              </p>
+            )}
+            {pendingLeave.map((l) => (
+              <div key={l.id} className="flex flex-wrap items-center gap-3 p-4">
+                <Avatar className="size-9 ring-1 ring-border/60">
+                  <AvatarFallback className="bg-brand/10 text-[0.65rem] font-semibold text-brand">
+                    {l.initials}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium text-foreground">{l.name}</p>
+                  <p className="tabular truncate text-xs text-muted-foreground">
+                    {l.leave_type} · {formatDateRange(l.start_date, l.end_date)} ·{" "}
+                    {Number(l.days)}d{l.reason ? ` · ${l.reason}` : ""}
+                  </p>
+                </div>
+                <div className="flex gap-1.5">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-xl"
+                    disabled={review.isPending}
+                    onClick={() => review.mutate({ id: l.id, status: "Approved" })}
+                  >
+                    Approve
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="rounded-xl text-muted-foreground"
+                    disabled={review.isPending}
+                    onClick={() => review.mutate({ id: l.id, status: "Denied" })}
+                  >
+                    Deny
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="gap-0 overflow-hidden rounded-3xl p-0 shadow-card">
+          <div className="flex items-center justify-between gap-3 border-b border-border/60 bg-surface/50 p-4">
+            <div className="flex items-start gap-3">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-success/15 text-success">
+                <CalendarDays className="size-4" />
+              </span>
+              <div>
+                <h2 className="font-display text-base font-semibold text-foreground">On leave</h2>
+                <p className="text-xs text-muted-foreground">
+                  Approved time off in this range · {onLeaveToday.length} out today.
+                </p>
+              </div>
+            </div>
+            <span className="tabular rounded-full bg-success/15 px-2.5 py-1 text-xs font-semibold text-success">
+              {onLeave.length}
+            </span>
+          </div>
+
+          <div className="divide-y divide-border/60">
+            {onLeave.length === 0 && (
+              <p className="p-6 text-center text-sm text-muted-foreground">
+                {leaveQuery.isLoading ? "Loading approved leave…" : "Nobody is on approved leave."}
+              </p>
+            )}
+            {onLeave.map((l) => {
+              const outNow = coversDate(l, today);
+              return (
+                <div key={l.id} className="flex items-center gap-3 p-4">
+                  <Avatar className="size-9 ring-1 ring-border/60">
+                    <AvatarFallback className="bg-success/12 text-[0.65rem] font-semibold text-success">
+                      {l.initials}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-foreground">{l.name}</p>
+                    <p className="tabular truncate text-xs text-muted-foreground">
+                      {l.leave_type} · {formatDateRange(l.start_date, l.end_date)} ·{" "}
+                      {Number(l.days)}d
+                    </p>
+                  </div>
+                  <StatusBadge
+                    status={outNow ? "On Leave Today" : "Scheduled"}
+                    tone={outNow ? "success" : leaveTone(l.status)}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }
