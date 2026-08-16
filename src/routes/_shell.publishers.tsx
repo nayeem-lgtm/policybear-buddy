@@ -1,12 +1,23 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Radio, PhoneCall, DollarSign, Timer, PhoneForwarded } from "lucide-react";
+import {
+  Radio,
+  PhoneCall,
+  DollarSign,
+  Timer,
+  PhoneForwarded,
+  BarChart3,
+  Trophy,
+  Coins,
+  Tag,
+} from "lucide-react";
 
 import { PageHeader } from "@/components/crm/PageHeader";
 import { StatCard } from "@/components/crm/StatCard";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { publisherCps, trafficCalls, money, type CpsRow } from "@/lib/company-data";
 import { fmtDuration } from "@/lib/reporting-metrics";
+import { cn } from "@/lib/utils";
 import { DateRangeTabs, presetLabel, type DateSelection } from "@/components/crm/DateRangeTabs";
 
 export const Route = createFileRoute("/_shell/publishers")({
@@ -40,45 +51,103 @@ interface RankRow {
   weight: number;
 }
 
+const rankTone = {
+  brand: { bar: "from-brand to-brand-cyan", chip: "bg-brand/10 text-brand" },
+  success: { bar: "from-success to-brand-cyan", chip: "bg-success/12 text-success" },
+  warning: { bar: "from-brand-yellow to-brand-orange", chip: "bg-warning/25 text-brand-tan" },
+  info: { bar: "from-brand-teal to-brand-cyan", chip: "bg-brand-cyan/25 text-brand-teal" },
+} as const;
+
+type RankTone = keyof typeof rankTone;
+
+function initials(name: string) {
+  return name
+    .replace(/\(.*?\)/g, "")
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
 function RankList({
   title,
   description,
   rows,
+  icon,
+  tone = "brand",
 }: {
   title: string;
   description: string;
   rows: RankRow[];
+  icon: ReactNode;
+  tone?: RankTone;
 }) {
   const max = rows.reduce((m, r) => Math.max(m, r.weight), 0) || 1;
+  const total = rows.reduce((m, r) => m + r.weight, 0) || 1;
+  const palette = rankTone[tone];
+
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base">{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
+    <Card className="gap-0 overflow-hidden rounded-2xl border-border/70 p-0 shadow-card transition-shadow hover:shadow-raised">
+      <CardHeader className="flex-row items-start gap-3 space-y-0 border-b border-border/60 bg-surface/50 px-5 py-4">
+        <span
+          className={cn(
+            "flex size-9 shrink-0 items-center justify-center rounded-xl",
+            palette.chip,
+          )}
+        >
+          {icon}
+        </span>
+        <div className="min-w-0">
+          <CardTitle className="font-display text-base leading-tight">{title}</CardTitle>
+          <CardDescription className="mt-0.5 text-xs">{description}</CardDescription>
+        </div>
       </CardHeader>
-      <CardContent className="space-y-2.5">
-        {rows.length === 0 && <p className="text-sm text-muted-foreground">No data yet.</p>}
+      <CardContent className="divide-y divide-border/50 p-0">
+        {rows.length === 0 && (
+          <p className="px-5 py-6 text-sm text-muted-foreground">No data yet.</p>
+        )}
         {rows.map((row, i) => (
-          <div key={row.name} className="space-y-1.5">
-            <div className="flex items-baseline justify-between gap-3 text-sm">
-              <span className="flex min-w-0 items-baseline gap-2">
-                <span className="w-5 shrink-0 text-xs font-semibold text-muted-foreground">
-                  {i + 1}.
+          <div
+            key={row.name}
+            className="group flex items-center gap-3 px-5 py-3 transition-colors hover:bg-surface/60"
+          >
+            <span
+              className={cn(
+                "flex size-8 shrink-0 items-center justify-center rounded-full text-[0.7rem] font-semibold",
+                i === 0 ? palette.chip : "bg-muted text-muted-foreground",
+              )}
+            >
+              {initials(row.name) || i + 1}
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="truncate text-sm font-medium text-foreground">
+                  <span className="mr-1.5 text-xs text-muted-foreground tabular">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  {row.name}
                 </span>
-                <span className="truncate font-medium text-foreground">{row.name}</span>
-              </span>
-              <span className="shrink-0 text-right">
-                <span className="font-semibold text-foreground">{row.value}</span>
-                {row.sub && (
-                  <span className="ml-2 text-xs text-muted-foreground">{row.sub}</span>
-                )}
-              </span>
-            </div>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-accent">
-              <div
-                className="h-full rounded-full bg-brand"
-                style={{ width: `${Math.max(4, (row.weight / max) * 100)}%` }}
-              />
+                <span className="shrink-0 text-right whitespace-nowrap">
+                  <span className="tabular text-sm font-semibold text-foreground">
+                    {row.value}
+                  </span>
+                  {row.sub && (
+                    <span className="ml-2 text-xs text-muted-foreground">{row.sub}</span>
+                  )}
+                </span>
+              </div>
+              <div className="mt-2 flex items-center gap-2">
+                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-accent/70">
+                  <div
+                    className={cn("h-full rounded-full bg-gradient-to-r", palette.bar)}
+                    style={{ width: `${Math.max(4, (row.weight / max) * 100)}%` }}
+                  />
+                </div>
+                <span className="w-10 shrink-0 text-right text-[0.7rem] tabular text-muted-foreground">
+                  {((row.weight / total) * 100).toFixed(0)}%
+                </span>
+              </div>
             </div>
           </div>
         ))}
@@ -177,11 +246,13 @@ function PublisherDashboardPage() {
         description="Call volume, connections and cost per sale across every publisher sending you traffic."
       />
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card px-4 py-3 shadow-card">
         <p className="text-sm text-muted-foreground">
-          Showing <span className="font-medium text-foreground">{presetLabel(dateSel)}</span>
+          Showing{" "}
+          <span className="font-semibold text-foreground">{presetLabel(dateSel)}</span> across all
+          publishers
         </p>
-        <DateRangeTabs value={dateSel} onChange={setDateSel} />
+        <DateRangeTabs value={dateSel} onChange={setDateSel} className="border-0 bg-surface/70 shadow-none" />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
@@ -235,21 +306,29 @@ function PublisherDashboardPage() {
           title="Top Publishers by Call Quantity"
           description="Who sends the most calls"
           rows={byQuantity}
+          icon={<BarChart3 className="size-4" />}
+          tone="brand"
         />
         <RankList
           title="Top Publishers by Sales"
           description="Most valid sales produced"
           rows={bySales}
+          icon={<Trophy className="size-4" />}
+          tone="success"
         />
         <RankList
           title="Top Publishers by Highest Sales Value"
           description="Highest to lowest revenue"
           rows={byRevenue}
+          icon={<Coins className="size-4" />}
+          tone="warning"
         />
         <RankList
           title="Top Publishers by CPS"
           description="Cost per sale, highest first"
           rows={byCps}
+          icon={<Tag className="size-4" />}
+          tone="info"
         />
       </div>
     </div>
