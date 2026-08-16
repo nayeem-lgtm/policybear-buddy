@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { PageHeader } from "@/components/crm/PageHeader";
-import { AgentWorkspace } from "@/components/telephony/AgentWorkspace";
 import { RealtimeDialer } from "@/components/telephony/RealtimeDialer";
 
 export const Route = createFileRoute("/_shell/agent-desk")({
@@ -11,12 +10,12 @@ export const Route = createFileRoute("/_shell/agent-desk")({
       {
         name: "description",
         content:
-          "Dial, set your status, wrap up calls and work your callbacks — all connected to CallTools from inside Policy Bear.",
+          "Dial out, answer queued calls, control live calls and log outcomes with the built-in Policy Bear dialer.",
       },
       { property: "og:title", content: "Agent Desk — Policy Bear CRM" },
       {
         property: "og:description",
-        content: "One screen for dialing, presence, live calls and call outcomes, synced with CallTools.",
+        content: "One screen for dialing, the inbound queue, live call controls, callbacks and outcomes.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -31,12 +30,9 @@ function AgentDeskPage() {
       <PageHeader
         eyebrow="Sales floor"
         title="Agent desk"
-        description="Everything you need for a call in one place. Your status, dialing, outcomes and callbacks stay in step with CallTools automatically."
+        description="Everything you need for a call in one place. Dial out, take queued calls, handle live audio controls and log every outcome without leaving Policy Bear."
       />
-      <div className="space-y-6">
-        <RealtimeDialer />
-        <AgentWorkspace />
-      </div>
+      <RealtimeDialer />
     </div>
   );
 }
