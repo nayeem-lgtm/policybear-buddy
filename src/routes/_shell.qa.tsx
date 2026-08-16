@@ -140,6 +140,7 @@ function MetricChart({
   data,
   color,
   suffix,
+  prefix,
 }: {
   title: string;
   value: string;
@@ -147,7 +148,9 @@ function MetricChart({
   data: { day: string; v: number }[];
   color: string;
   suffix?: string;
+  prefix?: string;
 }) {
+
   const up = delta >= 0;
   return (
     <Card className="gap-2 p-4 shadow-card">
