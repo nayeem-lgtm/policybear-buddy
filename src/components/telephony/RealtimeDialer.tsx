@@ -95,7 +95,7 @@ import { checkDncNumber, getDncCenter } from "@/lib/dnc.functions";
 import { DNC_ACTION_LABEL, DNC_ACTION_TONE } from "@/lib/dnc-shared";
 import { AddToDncDialog } from "@/components/compliance/AddToDncDialog";
 import { cn } from "@/lib/utils";
-
+import { playChirp, playDtmf, playRing } from "@/lib/dialer-tones";
 
 const KEYPAD: { key: string; sub: string }[] = [
   { key: "1", sub: "" },
@@ -113,6 +113,27 @@ const KEYPAD: { key: string; sub: string }[] = [
 ];
 
 const QUICK_DISPOSITIONS: Disposition[] = ["Sold", "Interested", "Not Interested", "No Answer", "DNC"];
+
+const SPEED_DIAL_KEY = "pb.dialer.speedDial";
+const WRAP_ALLOWANCE = 45;
+
+const SHORTCUTS: { keys: string; label: string }[] = [
+  { keys: "0-9 * #", label: "Type digits" },
+  { keys: "Enter", label: "Dial / answer" },
+  { keys: "Backspace", label: "Delete digit" },
+  { keys: "M", label: "Mute" },
+  { keys: "H", label: "Hold" },
+  { keys: "Esc", label: "End call" },
+];
+
+/** Is the user typing into a field? Hotkeys must stay out of the way then. */
+function isTypingTarget(el: EventTarget | null) {
+  const node = el as HTMLElement | null;
+  if (!node) return false;
+  const tag = node.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || node.isContentEditable;
+}
+
 
 function secondsSince(iso: string | null | undefined) {
   if (!iso) return 0;
