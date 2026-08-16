@@ -92,7 +92,9 @@ export function DateRangeTabs({
           <Calendar
             mode="range"
             selected={value.range}
-            onSelect={(range) => onChange({ preset: "custom", range })}
+            onSelect={(range) =>
+              onChange(range ? { preset: "custom", range } : { preset: "custom" })
+            }
             numberOfMonths={2}
             className={cn("p-3 pointer-events-auto")}
           />
