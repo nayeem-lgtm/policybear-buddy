@@ -655,7 +655,7 @@ export function RealtimeDialer() {
             <div className="space-y-4">
               <div
                 className={cn(
-                  "rounded-2xl p-5 text-center",
+                  "relative overflow-hidden rounded-2xl p-5 text-center",
                   inWrap
                     ? "bg-warning/15"
                     : active.on_hold
@@ -663,17 +663,57 @@ export function RealtimeDialer() {
                       : "bg-gradient-to-br from-brand/20 to-brand/5",
                 )}
               >
-                <Badge variant="secondary" className="mb-2 capitalize">
-                  {active.direction} · {active.state}
-                  {active.muted ? " · muted" : ""}
-                </Badge>
-                <p className="font-display text-2xl font-semibold">{formatPhone(active.phone_e164)}</p>
-                <p className="text-sm text-muted-foreground">{active.contact_name ?? "Unknown caller"}</p>
-                <p className="mt-2 text-4xl font-semibold tabular-nums">{clock(liveSeconds)}</p>
-                {tones ? (
-                  <p className="mt-1 text-xs tracking-widest text-muted-foreground">DTMF {tones}</p>
+                {connected && !active.on_hold ? (
+                  <span className="absolute left-1/2 top-0 h-24 w-24 -translate-x-1/2 -translate-y-1/2 animate-ping rounded-full bg-brand/20" />
                 ) : null}
+                <div className="relative">
+                  <Badge variant="secondary" className="mb-2 capitalize">
+                    {active.direction} · {active.state}
+                    {active.muted ? " · muted" : ""}
+                  </Badge>
+                  <p className="font-display text-2xl font-semibold">{formatPhone(active.phone_e164)}</p>
+                  <p className="text-sm text-muted-foreground">{active.contact_name ?? "Unknown caller"}</p>
+                  <p className="mt-2 text-4xl font-semibold tabular-nums">{clock(liveSeconds)}</p>
+                  {tones ? (
+                    <p className="mt-1 text-xs tracking-widest text-muted-foreground">DTMF {tones}</p>
+                  ) : null}
+
+                  <div className="mt-3 flex items-center justify-center gap-1.5">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 gap-1 text-xs"
+                      onClick={() => void copyNumber(active.phone_e164 ?? "")}
+                    >
+                      <Copy className="size-3.5" /> Copy
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 gap-1 text-xs"
+                      onClick={() => toggleSpeedDial(active.phone_e164 ?? "", active.contact_name)}
+                    >
+                      <Star
+                        className={cn(
+                          "size-3.5",
+                          inSpeedDial(active.phone_e164 ?? "") && "fill-current text-warning",
+                        )}
+                      />
+                      Speed dial
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 gap-1 text-xs text-destructive"
+                      onClick={() => openDnc(active.phone_e164, active.contact_name)}
+                    >
+                      <Ban className="size-3.5" /> DNC
+                    </Button>
+                  </div>
+                </div>
               </div>
+
+
 
               {inWrap ? (
                 <div className="space-y-3">
