@@ -223,6 +223,7 @@ export function CallDetailSheet({
   const [tab, setTab] = useState<Tab>("Overview");
   const [disposition, setDisposition] = useState<string | null>(null);
   const [flag, setFlag] = useState<string | null>(null);
+  const [ticketOpen, setTicketOpen] = useState(false);
   const [comment, setComment] = useState("");
   const [reviewer, setReviewer] = useState<string>("");
   const [agentHealth, setAgentHealth] = useState<number>(call?.score ?? 0);
