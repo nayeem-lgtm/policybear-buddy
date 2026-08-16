@@ -258,6 +258,12 @@ export function RealtimeDialer() {
     setDncOpen(true);
   };
 
+  const openCallback = (phone: string | null | undefined, name?: string | null) => {
+    setCbTarget({ phone: phone ?? "", name: name ?? null });
+    setCbOpen(true);
+  };
+
+
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["dialer-desk"] });
 
 
