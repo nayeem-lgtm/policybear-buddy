@@ -372,7 +372,14 @@ export function CallDetailSheet({
                       key={d}
                       size="sm"
                       variant={disposition === d ? "default" : "outline"}
-                      onClick={() => setDisposition(disposition === d ? null : d)}
+                      onClick={() => {
+                        if (d === "Escalate") {
+                          setDisposition("Escalate");
+                          setTicketOpen(true);
+                          return;
+                        }
+                        setDisposition(disposition === d ? null : d);
+                      }}
                     >
                       {d}
                     </Button>
