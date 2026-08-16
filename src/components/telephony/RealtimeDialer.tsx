@@ -93,6 +93,7 @@ import {
 } from "@/lib/dialer.functions";
 import { checkDncNumber, getDncCenter } from "@/lib/dnc.functions";
 import { DNC_ACTION_LABEL, DNC_ACTION_TONE } from "@/lib/dnc-shared";
+import { CallbackDialog } from "@/components/callbacks/CallbackDialog";
 import { AddToDncDialog } from "@/components/compliance/AddToDncDialog";
 import { cn } from "@/lib/utils";
 import { playChirp, playDtmf, playRing } from "@/lib/dialer-tones";
@@ -1571,6 +1572,14 @@ export function RealtimeDialer() {
           </Tabs>
         </Card>
       </div>
+
+      <CallbackDialog
+        open={cbOpen}
+        onOpenChange={setCbOpen}
+        phone={cbTarget.phone}
+        contactName={cbTarget.name}
+        onSaved={refresh}
+      />
 
       <AddToDncDialog
         open={dncOpen}
