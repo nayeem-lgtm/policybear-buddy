@@ -386,6 +386,12 @@ export function RealtimeDialer() {
   const stats = data?.stats;
   const connectRate = stats?.calls ? Math.round(((stats.connected ?? 0) / stats.calls) * 100) : 0;
 
+  const wrapLeft = useMemo(() => {
+    if (!inWrap) return WRAP_ALLOWANCE;
+    return Math.max(0, WRAP_ALLOWANCE - secondsSince(active?.ended_at ?? active?.queued_at));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inWrap, active, desk.dataUpdatedAt]);
+
   const callbacks = (data?.callbacks ?? []).filter((c) =>
     cbFilter === "open" ? c.status !== "Completed" && c.status !== "Cancelled" : c.status === cbFilter,
   );
@@ -398,9 +404,135 @@ export function RealtimeDialer() {
   });
 
   const sendTone = (t: string) => {
+    if (sound) playDtmf(t);
     setTones((v) => (v + t).slice(-24));
-    toast.message(`Tone ${t} sent`);
   };
+
+  const pressKey = useCallback(
+    (k: string) => {
+      if (sound) playDtmf(k);
+      setDigits((d) => (d + k).slice(0, 20));
+    },
+    [sound],
+  );
+
+  const dialNow = useCallback(() => {
+    if (digits.replace(/\D/g, "").length < 7 || dncBlocked || dialMutation.isPending) return;
+    dialMutation.mutate({
+      phone: digits,
+      mode: "manual",
+      ...(fromId !== "auto" ? { fromNumberId: fromId } : {}),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [digits, dncBlocked, fromId, dialMutation.isPending]);
+
+  /* ------------------------------------------------------------------ hotkeys */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || isTypingTarget(e.target)) return;
+      const k = e.key;
+      if (active) {
+        if (k === "Escape") {
+          e.preventDefault();
+          controlMutation.mutate({ callId: active.id, action: "hangup" });
+          return;
+        }
+        if (k === "Enter" && active.state === "ringing" && active.direction === "inbound") {
+          e.preventDefault();
+          answerCall(active.id);
+          return;
+        }
+        if (!connected) return;
+        if (k.toLowerCase() === "m") {
+          e.preventDefault();
+          controlMutation.mutate({ callId: active.id, action: active.muted ? "unmute" : "mute" });
+        } else if (k.toLowerCase() === "h") {
+          e.preventDefault();
+          controlMutation.mutate({ callId: active.id, action: active.on_hold ? "resume" : "hold" });
+        } else if (/^[0-9*#]$/.test(k)) {
+          e.preventDefault();
+          sendTone(k);
+        }
+        return;
+      }
+      if (/^[0-9*#]$/.test(k)) {
+        e.preventDefault();
+        pressKey(k);
+      } else if (k === "Backspace") {
+        e.preventDefault();
+        setDigits((d) => d.slice(0, -1));
+      } else if (k === "Enter") {
+        e.preventDefault();
+        const firstWaiting = data?.queue?.[0]?.id;
+        if (firstWaiting && ready) answerCall(firstWaiting);
+        else dialNow();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, connected, ready, dialNow, pressKey, data?.queue?.[0]?.id]);
+
+  /* --------------------------------------------------------- audio cues + flow */
+  const waitingCount = data?.queue?.length ?? 0;
+  useEffect(() => {
+    if (!sound || !ready || active || waitingCount === 0) return;
+    playRing();
+    const id = setInterval(() => playRing(), 4000);
+    return () => clearInterval(id);
+  }, [sound, ready, active, waitingCount]);
+
+  const activeState = active?.state ?? null;
+  useEffect(() => {
+    if (!sound) return;
+    if (activeState === "connected") playChirp(true);
+    if (activeState === "wrap") playChirp(false);
+  }, [activeState, sound]);
+
+  // carry live notes into the wrap-up form the moment the call ends
+  useEffect(() => {
+    if (inWrap && liveNotes) setNotes((n) => (n ? n : liveNotes));
+  }, [inWrap, liveNotes]);
+
+  // keep the power dialer flowing when the agent asks for hands-free pacing
+  useEffect(() => {
+    if (!autoNext || active || !campaignId || lead || leadMutation.isPending) return;
+    leadMutation.mutate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoNext, active, campaignId, lead]);
+
+  const inSpeedDial = (phone: string) => speedDial.some((s) => s.phone === phone);
+  const toggleSpeedDial = (phone: string, name?: string | null) => {
+    if (!phone) return;
+    if (inSpeedDial(phone)) {
+      saveSpeedDial(speedDial.filter((s) => s.phone !== phone));
+      toast.message("Removed from speed dial");
+    } else {
+      saveSpeedDial([{ phone, name: name ?? "" }, ...speedDial].slice(0, 12));
+      toast.success("Saved to speed dial");
+    }
+  };
+
+  const copyNumber = async (value: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success("Number copied");
+    } catch {
+      toast.error("Clipboard unavailable");
+    }
+  };
+
+  const pasteNumber = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      const cleaned = text.replace(/[^\d+*#]/g, "").slice(0, 20);
+      if (!cleaned) return toast.error("No number on the clipboard");
+      setDigits(cleaned);
+    } catch {
+      toast.error("Clipboard unavailable");
+    }
+  };
+
 
   return (
     <div className="space-y-5">
