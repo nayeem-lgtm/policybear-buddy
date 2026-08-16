@@ -67,6 +67,7 @@ import { Route as ShellAdminUsersRouteImport } from './routes/_shell.admin.users
 import { Route as ShellCallbacksCalendarRouteImport } from './routes/_shell.callbacks.calendar'
 import { Route as ShellQaIndexRouteImport } from './routes/_shell.qa.index'
 import { Route as ShellQaDisputesRouteImport } from './routes/_shell.qa.disputes'
+import { Route as ShellQaEscalationsRouteImport } from './routes/_shell.qa.escalations'
 import { Route as ShellQaImportRouteImport } from './routes/_shell.qa.import'
 import { Route as ShellQaReportingRouteImport } from './routes/_shell.qa.reporting'
 import { Route as ShellSalesNewRouteImport } from './routes/_shell.sales.new'
@@ -365,6 +366,11 @@ const ShellQaDisputesRoute = ShellQaDisputesRouteImport.update({
   path: '/qa/disputes',
   getParentRoute: () => ShellRoute,
 } as any)
+const ShellQaEscalationsRoute = ShellQaEscalationsRouteImport.update({
+  id: '/qa/escalations',
+  path: '/qa/escalations',
+  getParentRoute: () => ShellRoute,
+} as any)
 const ShellQaImportRoute = ShellQaImportRouteImport.update({
   id: '/qa/import',
   path: '/qa/import',
@@ -455,6 +461,7 @@ export interface FileRoutesByFullPath {
   '/admin/users': typeof ShellAdminUsersRoute
   '/callbacks/calendar': typeof ShellCallbacksCalendarRoute
   '/qa/disputes': typeof ShellQaDisputesRoute
+  '/qa/escalations': typeof ShellQaEscalationsRoute
   '/qa/import': typeof ShellQaImportRoute
   '/qa/reporting': typeof ShellQaReportingRoute
   '/sales/new': typeof ShellSalesNewRoute
@@ -520,6 +527,7 @@ export interface FileRoutesByTo {
   '/admin/users': typeof ShellAdminUsersRoute
   '/callbacks/calendar': typeof ShellCallbacksCalendarRoute
   '/qa/disputes': typeof ShellQaDisputesRoute
+  '/qa/escalations': typeof ShellQaEscalationsRoute
   '/qa/import': typeof ShellQaImportRoute
   '/qa/reporting': typeof ShellQaReportingRoute
   '/sales/new': typeof ShellSalesNewRoute
@@ -587,6 +595,7 @@ export interface FileRoutesById {
   '/_shell/admin/users': typeof ShellAdminUsersRoute
   '/_shell/callbacks/calendar': typeof ShellCallbacksCalendarRoute
   '/_shell/qa/disputes': typeof ShellQaDisputesRoute
+  '/_shell/qa/escalations': typeof ShellQaEscalationsRoute
   '/_shell/qa/import': typeof ShellQaImportRoute
   '/_shell/qa/reporting': typeof ShellQaReportingRoute
   '/_shell/sales/new': typeof ShellSalesNewRoute
@@ -654,6 +663,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/callbacks/calendar'
     | '/qa/disputes'
+    | '/qa/escalations'
     | '/qa/import'
     | '/qa/reporting'
     | '/sales/new'
@@ -719,6 +729,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/callbacks/calendar'
     | '/qa/disputes'
+    | '/qa/escalations'
     | '/qa/import'
     | '/qa/reporting'
     | '/sales/new'
@@ -785,6 +796,7 @@ export interface FileRouteTypes {
     | '/_shell/admin/users'
     | '/_shell/callbacks/calendar'
     | '/_shell/qa/disputes'
+    | '/_shell/qa/escalations'
     | '/_shell/qa/import'
     | '/_shell/qa/reporting'
     | '/_shell/sales/new'
@@ -1210,6 +1222,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellQaDisputesRouteImport
       parentRoute: typeof ShellRoute
     }
+    '/_shell/qa/escalations': {
+      id: '/_shell/qa/escalations'
+      path: '/qa/escalations'
+      fullPath: '/qa/escalations'
+      preLoaderRoute: typeof ShellQaEscalationsRouteImport
+      parentRoute: typeof ShellRoute
+    }
     '/_shell/qa/import': {
       id: '/_shell/qa/import'
       path: '/qa/import'
@@ -1334,6 +1353,7 @@ interface ShellRouteChildren {
   ShellAdminTelephonyRoute: typeof ShellAdminTelephonyRoute
   ShellAdminUsersRoute: typeof ShellAdminUsersRoute
   ShellQaDisputesRoute: typeof ShellQaDisputesRoute
+  ShellQaEscalationsRoute: typeof ShellQaEscalationsRoute
   ShellQaImportRoute: typeof ShellQaImportRoute
   ShellQaReportingRoute: typeof ShellQaReportingRoute
   ShellQaIndexRoute: typeof ShellQaIndexRoute
@@ -1394,6 +1414,7 @@ const ShellRouteChildren: ShellRouteChildren = {
   ShellAdminTelephonyRoute: ShellAdminTelephonyRoute,
   ShellAdminUsersRoute: ShellAdminUsersRoute,
   ShellQaDisputesRoute: ShellQaDisputesRoute,
+  ShellQaEscalationsRoute: ShellQaEscalationsRoute,
   ShellQaImportRoute: ShellQaImportRoute,
   ShellQaReportingRoute: ShellQaReportingRoute,
   ShellQaIndexRoute: ShellQaIndexRoute,
