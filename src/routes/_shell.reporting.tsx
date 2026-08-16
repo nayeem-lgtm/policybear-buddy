@@ -178,14 +178,29 @@ function ReportingPage() {
             </button>
           ))}
         </div>
-        <div className="relative w-full sm:w-72">
-          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search rows…"
-            className="h-9 rounded-full bg-surface/60 pl-9"
-          />
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative w-full sm:w-72">
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search rows…"
+              className="h-9 rounded-full bg-surface/60 pl-9"
+            />
+          </div>
+          <Select value={publisher} onValueChange={setPublisher}>
+            <SelectTrigger className="h-9 w-full min-w-[12rem] rounded-full bg-surface/60 sm:w-56">
+              <SelectValue placeholder="All publishers" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All publishers</SelectItem>
+              {publishers.map((p) => (
+                <SelectItem key={p} value={p}>
+                  {p}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
