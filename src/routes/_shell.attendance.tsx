@@ -315,11 +315,11 @@ function AttendancePage() {
       </Card>
 
       {/* Metrics */}
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <MetricTile
           label="Shift records"
           value={filtered.length}
-          hint={`${range.label} · ${people} employees`}
+          hint={`${presetLabel(selection)} · ${people} employees`}
           icon={<CalendarDays className="size-4" />}
           accent="brand"
         />
@@ -343,6 +343,13 @@ function AttendancePage() {
           hint={`${compliancePct}% of shifts inside allowance`}
           icon={<UtensilsCrossed className="size-4" />}
           accent={totals.overrun > 0 ? "danger" : "success"}
+        />
+        <MetricTile
+          label="Overtime"
+          value={formatHm(totals.overtime)}
+          hint="Worked past an 8h day"
+          icon={<TimerReset className="size-4" />}
+          accent={totals.overtime > 0 ? "warning" : "default"}
         />
       </div>
 
