@@ -103,18 +103,6 @@ export const Route = createFileRoute("/_shell/attendance")({
   component: AttendancePage,
 });
 
-const RANGES = [
-  { label: "Today", days: 0 },
-  { label: "Last 7 days", days: 6 },
-  { label: "Last 30 days", days: 29 },
-];
-
-function shiftDate(days: number) {
-  const d = new Date();
-  d.setDate(d.getDate() - days);
-  return pacificDate(d);
-}
-
 /* ---------- building blocks ---------- */
 
 function Ring({
