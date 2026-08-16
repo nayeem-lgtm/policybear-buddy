@@ -120,13 +120,13 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 
 
 function buildSummary(c: CallDetail) {
-  const camp = c.campaign.split(" (")[0];
+  const camp = c.campaign.split(" (")[0] ?? c.campaign;
   const conv = c.validSale === "Valid";
   return `The customer initiated the call seeking help with ${camp.toLowerCase()}, having previously reached out through an online enquiry. ${c.agent} confirmed the caller's identity and existing account, then explained the process of gathering information to confirm service availability and scheduling. The customer raised concerns about additional costs, and the agent reassured them while collecting the details needed for an accurate estimate. ${conv ? "The conversation indicated a clear intent to proceed, making this a qualified lead." : "The conversation ended without a firm commitment, so the call was not counted as a sale."} The overall tone was cooperative and the required disclosures were covered.`;
 }
 
 function buildDisposition(c: CallDetail) {
-  const camp = c.campaign.split(" (")[0];
+  const camp = c.campaign.split(" (")[0] ?? c.campaign;
   const conv = c.validSale === "Valid";
   return `The customer called about ${camp.toLowerCase()} after an earlier conversation on another channel. ${c.agent} gathered the necessary information, verified the account and addressed the concern about potential extra charges. ${conv ? "The call ended with the customer ready to book, and it was recorded as a valid sale." : "The call ended with the customer still comparing options, so it was marked as " + c.validSale.toLowerCase() + "."} Overall the interaction was productive and handled within policy.`;
 }
@@ -134,7 +134,7 @@ function buildDisposition(c: CallDetail) {
 type TranscriptLine = { who: "Agent" | "Customer"; text: string; at: string };
 
 function buildTranscript(c: CallDetail): TranscriptLine[] {
-  const camp = c.campaign.split(" (")[0];
+  const camp = c.campaign.split(" (")[0] ?? c.campaign;
   const lines: [TranscriptLine["who"], string][] = [
     ["Agent", `Thank you for calling ${camp}. This call may be recorded for quality assurance.`],
     ["Agent", "Please hold while we connect your call."],
