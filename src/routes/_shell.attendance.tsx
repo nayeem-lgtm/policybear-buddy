@@ -241,6 +241,51 @@ function AttendancePage() {
     .flatMap((r) => exceptionsForSession(r, r.name, r.team))
     .sort((a, b) => (a.date === b.date ? b.minutes - a.minutes : b.date.localeCompare(a.date)));
 
+  /* ---- leave: pending approvals + who's on leave ---- */
+  const loadLeave = useServerFn(getLeaveForRange);
+  const leaveQuery = useQuery({
+    queryKey: ["leave-range", from, to],
+    queryFn: () => loadLeave({ data: { from, to } }),
+    refetchInterval: 60_000,
+  });
+  const decide = useServerFn(decideLeaveRequest);
+  const qc = useQueryClient();
+  const review = useMutation({
+    mutationFn: (v: { id: string; status: "Approved" | "Denied" }) =>
+      decide({ data: { id: v.id, status: v.status } }),
+    onSuccess: (_d, v) => {
+      toast.success(`Leave ${v.status.toLowerCase()}.`);
+      void qc.invalidateQueries({ queryKey: ["leave-range"] });
+      void qc.invalidateQueries({ queryKey: ["my-leave"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const leaveRows = useMemo(() => {
+    const profiles = new Map((leaveQuery.data?.profiles ?? []).map((p) => [p.id, p]));
+    return (leaveQuery.data?.leave ?? []).map((l) => {
+      const p = profiles.get(l.user_id);
+      return {
+        ...l,
+        name: p?.name ?? "Unknown employee",
+        team: p?.team ?? "—",
+        initials: p?.avatar_initials ?? "??",
+      };
+    });
+  }, [leaveQuery.data]);
+
+  const leaveFiltered = leaveRows.filter((l) => {
+    const matchesSearch =
+      !search || `${l.name} ${l.team} ${l.leave_type}`.toLowerCase().includes(search.toLowerCase());
+    return matchesSearch && (team === "all" || l.team === team);
+  });
+  const pendingLeave = leaveFiltered.filter((l) => l.status === "Pending");
+  const today = pacificDate();
+  const onLeave = leaveFiltered.filter((l) => l.status === "Approved");
+  const onLeaveToday = onLeave.filter((l) => coversDate(l, today));
+
+
+
 
 
   const totals = filtered.reduce(
