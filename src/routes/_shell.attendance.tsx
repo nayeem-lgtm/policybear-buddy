@@ -27,7 +27,60 @@ import {
 } from "@/components/ui/select";
 import { getAttendanceRegister } from "@/lib/shift.functions";
 import { formatClock, formatHm, pacificDate, workedSeconds } from "@/lib/shift-shared";
+import { DateRangeTabs, presetLabel, type DateSelection } from "@/components/crm/DateRangeTabs";
 import { cn } from "@/lib/utils";
+
+const STANDARD_DAY_SECONDS = 8 * 3600;
+
+/** Maps a date preset / custom range to Pacific-calendar from–to date strings. */
+function rangeFromSelection(sel: DateSelection): { from: string; to: string } {
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Los_Angeles",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const y = Number(parts.find((p) => p.type === "year")!.value);
+  const m = Number(parts.find((p) => p.type === "month")!.value);
+  const d = Number(parts.find((p) => p.type === "day")!.value);
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  const todayStr = `${y}-${pad(m)}-${pad(d)}`;
+  const dateStr = (yy: number, mm: number, dd: number) => `${yy}-${pad(mm)}-${pad(dd)}`;
+
+  switch (sel.preset) {
+    case "today":
+      return { from: todayStr, to: todayStr };
+    case "yesterday": {
+      const yd = new Date(y, m - 1, d - 1);
+      const s = dateStr(yd.getFullYear(), yd.getMonth() + 1, yd.getDate());
+      return { from: s, to: s };
+    }
+    case "7d": {
+      const start = new Date(y, m - 1, d - 6);
+      return {
+        from: dateStr(start.getFullYear(), start.getMonth() + 1, start.getDate()),
+        to: todayStr,
+      };
+    }
+    case "month":
+      return { from: dateStr(y, m, 1), to: todayStr };
+    case "last-month": {
+      const lm = m - 1;
+      const ly = lm < 1 ? y - 1 : y;
+      const lmm = lm < 1 ? 12 : lm;
+      const lastDay = new Date(ly, lmm, 0).getDate();
+      return { from: dateStr(ly, lmm, 1), to: dateStr(ly, lmm, lastDay) };
+    }
+    case "year":
+      return { from: dateStr(y, 1, 1), to: todayStr };
+    case "custom": {
+      const fmt = (dt?: Date) =>
+        dt ? `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}` : todayStr;
+      return { from: fmt(sel.range?.from), to: fmt(sel.range?.to ?? sel.range?.from) };
+    }
+  }
+}
 
 export const Route = createFileRoute("/_shell/attendance")({
   head: () => ({
@@ -49,18 +102,6 @@ export const Route = createFileRoute("/_shell/attendance")({
   }),
   component: AttendancePage,
 });
-
-const RANGES = [
-  { label: "Today", days: 0 },
-  { label: "Last 7 days", days: 6 },
-  { label: "Last 30 days", days: 29 },
-];
-
-function shiftDate(days: number) {
-  const d = new Date();
-  d.setDate(d.getDate() - days);
-  return pacificDate(d);
-}
 
 /* ---------- building blocks ---------- */
 
@@ -156,13 +197,13 @@ function MetricTile({
 /* ---------- page ---------- */
 
 function AttendancePage() {
-  const [rangeIndex, setRangeIndex] = useState(1);
-  const range = RANGES[rangeIndex]!;
+  const [selection, setSelection] = useState<DateSelection>({ preset: "7d" });
+  const { from, to } = rangeFromSelection(selection);
   const load = useServerFn(getAttendanceRegister);
 
   const query = useQuery({
-    queryKey: ["attendance-register", range.days],
-    queryFn: () => load({ data: { from: shiftDate(range.days), to: pacificDate() } }),
+    queryKey: ["attendance-register", from, to],
+    queryFn: () => load({ data: { from, to } }),
     refetchInterval: 60_000,
   });
 
@@ -195,13 +236,17 @@ function AttendancePage() {
   });
 
   const totals = filtered.reduce(
-    (acc, r) => ({
-      worked: acc.worked + r.worked,
-      breaks: acc.breaks + r.break_seconds,
-      lunch: acc.lunch + r.lunch_seconds,
-      overrun: acc.overrun + r.break_overrun_seconds + r.lunch_overrun_seconds,
-    }),
-    { worked: 0, breaks: 0, lunch: 0, overrun: 0 },
+    (acc, r) => {
+      const overtime = Math.max(0, r.worked - STANDARD_DAY_SECONDS);
+      return {
+        worked: acc.worked + r.worked,
+        breaks: acc.breaks + r.break_seconds,
+        lunch: acc.lunch + r.lunch_seconds,
+        overrun: acc.overrun + r.break_overrun_seconds + r.lunch_overrun_seconds,
+        overtime: acc.overtime + overtime,
+      };
+    },
+    { worked: 0, breaks: 0, lunch: 0, overrun: 0, overtime: 0 },
   );
 
   const people = new Set(filtered.map((r) => r.user_id)).size;
@@ -242,6 +287,9 @@ function AttendancePage() {
                   {activeNow} on shift now
                 </span>
                 <span className="rounded-full bg-brand-foreground/12 px-2.5 py-1 text-xs font-medium text-brand-foreground/85">
+                  {presetLabel(selection)}
+                </span>
+                <span className="tabular rounded-full bg-brand-foreground/12 px-2.5 py-1 text-xs font-medium text-brand-foreground/85">
                   {query.data?.from ?? "—"} → {query.data?.to ?? "—"}
                 </span>
               </div>
@@ -253,23 +301,6 @@ function AttendancePage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex rounded-xl bg-brand-foreground/12 p-1">
-              {RANGES.map((r, i) => (
-                <button
-                  key={r.label}
-                  type="button"
-                  onClick={() => setRangeIndex(i)}
-                  className={cn(
-                    "rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
-                    i === rangeIndex
-                      ? "bg-brand-foreground text-brand"
-                      : "text-brand-foreground/75 hover:text-brand-foreground",
-                  )}
-                >
-                  {r.label}
-                </button>
-              ))}
-            </div>
             <Button
               variant="ghost"
               size="icon"
@@ -284,11 +315,11 @@ function AttendancePage() {
       </Card>
 
       {/* Metrics */}
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <MetricTile
           label="Shift records"
           value={filtered.length}
-          hint={`${range.label} · ${people} employees`}
+          hint={`${presetLabel(selection)} · ${people} employees`}
           icon={<CalendarDays className="size-4" />}
           accent="brand"
         />
@@ -313,53 +344,63 @@ function AttendancePage() {
           icon={<UtensilsCrossed className="size-4" />}
           accent={totals.overrun > 0 ? "danger" : "success"}
         />
+        <MetricTile
+          label="Overtime"
+          value={formatHm(totals.overtime)}
+          hint="Worked past an 8h day"
+          icon={<TimerReset className="size-4" />}
+          accent={totals.overtime > 0 ? "warning" : "default"}
+        />
       </div>
 
       {/* Toolbar + table */}
       <Card className="gap-0 overflow-hidden rounded-3xl p-0 shadow-card">
-        <div className="flex flex-col gap-3 border-b border-border/60 bg-surface/50 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-1 flex-wrap items-center gap-2">
-            <div className="relative min-w-[15rem] flex-1">
-              <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search employee, team or date…"
-                className="h-9 rounded-xl pl-9"
-              />
+        <div className="flex flex-col gap-3 border-b border-border/60 bg-surface/50 p-4">
+          <DateRangeTabs value={selection} onChange={setSelection} />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-1 flex-wrap items-center gap-2">
+              <div className="relative min-w-[15rem] flex-1">
+                <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search employee, team or date…"
+                  className="h-9 rounded-xl pl-9"
+                />
+              </div>
+              <Select value={team} onValueChange={setTeam}>
+                <SelectTrigger className="h-9 w-[11rem] rounded-xl">
+                  <Users className="size-4 text-muted-foreground" />
+                  <SelectValue placeholder="All teams" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All teams</SelectItem>
+                  {teams.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {(search || team !== "all" || selection.preset !== "7d") && (
+                <Button
+                  variant="ghost"
+                  className="h-9 rounded-xl text-muted-foreground"
+                  onClick={() => {
+                    setSearch("");
+                    setTeam("all");
+                    setSelection({ preset: "7d" });
+                  }}
+                >
+                  <TimerReset className="size-4" /> Reset
+                </Button>
+              )}
             </div>
-            <Select value={team} onValueChange={setTeam}>
-              <SelectTrigger className="h-9 w-[11rem] rounded-xl">
-                <Users className="size-4 text-muted-foreground" />
-                <SelectValue placeholder="All teams" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All teams</SelectItem>
-                {teams.map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {t}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {(search || team !== "all" || rangeIndex !== 1) && (
-              <Button
-                variant="ghost"
-                className="h-9 rounded-xl text-muted-foreground"
-                onClick={() => {
-                  setSearch("");
-                  setTeam("all");
-                  setRangeIndex(1);
-                }}
-              >
-                <TimerReset className="size-4" /> Reset
-              </Button>
-            )}
+            <p className="tabular text-xs text-muted-foreground">
+              Showing <span className="font-semibold text-foreground">{filtered.length}</span> of{" "}
+              {rows.length} records
+            </p>
           </div>
-          <p className="tabular text-xs text-muted-foreground">
-            Showing <span className="font-semibold text-foreground">{filtered.length}</span> of{" "}
-            {rows.length} records
-          </p>
         </div>
 
         <DataTable
@@ -449,6 +490,21 @@ function AttendancePage() {
                 return over > 0 ? (
                   <span className="tabular rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-semibold text-destructive">
                     +{formatHm(over)}
+                  </span>
+                ) : (
+                  <span className="text-xs text-muted-foreground">—</span>
+                );
+              },
+            },
+            {
+              key: "overtime",
+              header: "Overtime",
+              align: "right",
+              cell: (r) => {
+                const ot = Math.max(0, r.worked - STANDARD_DAY_SECONDS);
+                return ot > 0 ? (
+                  <span className="tabular rounded-full bg-warning/15 px-2 py-0.5 text-xs font-semibold text-brand-tan">
+                    +{formatHm(ot)}
                   </span>
                 ) : (
                   <span className="text-xs text-muted-foreground">—</span>
