@@ -150,30 +150,34 @@ function MetricChart({
 }) {
   const up = delta >= 0;
   return (
-    <Card className="gap-3 p-5 shadow-card">
+    <Card className="gap-2 p-4 shadow-card">
       <div>
-        <p className="font-display text-base font-semibold text-foreground">{title}</p>
-        <div className="mt-1 flex items-center gap-2">
-          <span className="font-display text-3xl font-semibold tracking-tight text-foreground tabular">{value}</span>
+        <p className="font-display text-sm font-semibold text-foreground">{title}</p>
+        <div className="mt-0.5 flex items-center gap-1.5">
+          <span className="font-display text-xl font-semibold tracking-tight text-foreground tabular">{value}</span>
           <Badge
             variant="outline"
-            className={up ? "border-success/25 bg-success/12 text-success" : "border-destructive/25 bg-destructive/12 text-destructive"}
+            className={
+              up
+                ? "border-success/25 bg-success/12 px-1.5 py-0 text-[0.65rem] text-success"
+                : "border-destructive/25 bg-destructive/12 px-1.5 py-0 text-[0.65rem] text-destructive"
+            }
           >
             {up ? "↑" : "↓"}{Math.abs(delta).toFixed(1)}%
           </Badge>
         </div>
       </div>
-      <div className="h-40">
+      <div className="h-20">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 6, right: 8, left: -14, bottom: 0 }}>
+          <LineChart data={data} margin={{ top: 4, right: 4, left: -22, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
-            <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
+            <XAxis dataKey="day" tickLine={false} axisLine={false} interval="preserveStartEnd" tick={{ fontSize: 9, fill: "var(--muted-foreground)" }} />
             <YAxis
               tickLine={false}
               axisLine={false}
-              width={48}
-              tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-              tickFormatter={(v: number) => `${v}${suffix ?? ""}`}
+              width={38}
+              tick={{ fontSize: 9, fill: "var(--muted-foreground)" }}
+              tickFormatter={(v: number) => `${prefix ?? ""}${v}${suffix ?? ""}`}
             />
             <Tooltip
               contentStyle={{
@@ -182,15 +186,16 @@ function MetricChart({
                 borderRadius: "0.6rem",
                 fontSize: 12,
               }}
-              formatter={(v: number) => [`${v}${suffix ?? ""}`, title]}
+              formatter={(v: number) => [`${prefix ?? ""}${v}${suffix ?? ""}`, title]}
             />
-            <Line type="monotone" dataKey="v" stroke={color} strokeWidth={2.5} dot={false} />
+            <Line type="monotone" dataKey="v" stroke={color} strokeWidth={2} dot={false} />
           </LineChart>
         </ResponsiveContainer>
       </div>
     </Card>
   );
 }
+
 
 type QARow = QAReview & {
   timestamp: string;
