@@ -196,23 +196,33 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
 
   const tick = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  /**
+   * Elapsed time is always derived from the wall-clock anchor, never accumulated
+   * by counting ticks — background tabs throttle timers and would under-count.
+   */
   useEffect(() => {
-    tick.current = setInterval(() => setStatusSeconds((s) => s + 1), 1000);
+    const sync = () =>
+      setStatusSeconds(Math.max(0, Math.floor((Date.now() - statusStartedAt) / 1000)));
+    sync();
+    tick.current = setInterval(sync, 1000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") sync();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", sync);
     return () => {
       if (tick.current) clearInterval(tick.current);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", sync);
     };
-  }, []);
+  }, [statusStartedAt]);
 
   const applyDay = useCallback((day: ShiftDay) => {
     setSession(day.session);
     if (day.session) {
       setStatusState(day.session.current_status as PresenceStatus);
-      setStatusSeconds(
-        Math.max(
-          0,
-          Math.round((Date.now() - new Date(day.session.current_status_at).getTime()) / 1000),
-        ),
-      );
+      const anchor = new Date(day.session.current_status_at).getTime();
+      setStatusStartedAt(Number.isFinite(anchor) ? Math.min(anchor, Date.now()) : Date.now());
     }
     setEvents(
       day.events.map((e) => ({
