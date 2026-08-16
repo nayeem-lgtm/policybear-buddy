@@ -236,9 +236,10 @@ function enrich(r: QAReview, i: number): QARow {
     phone: `+1 ${200 + (i * 17) % 700}-${100 + (i * 31) % 899}-${pad((i * 977) % 10000, 4)}`,
     callStatus: skipped ? "Skipped" : "Completed",
     validSale: r.outcome === "Valid" ? "Valid" : r.outcome === "Pending" ? "-" : r.outcome === "Disputed" ? "Detailed" : "Invalid",
-    campaign: CAMPAIGNS[i % CAMPAIGNS.length],
+    campaign: CAMPAIGNS[i % CAMPAIGNS.length]!,
     buyer: `${460 + ((i * 23) % 200)}`,
-    target: TARGETS[i % TARGETS.length],
+    target: TARGETS[i % TARGETS.length]!,
+
     revenue: conv ? Math.round((5 + (i * 7.3) % 40) * 100) / 100 : 0,
     payout: conv ? Math.round((4 + (i * 6.1) % 32) * 100) / 100 : 0,
     answer: skipped ? i % 10 : 40 + ((i * 19) % 220),
