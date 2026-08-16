@@ -1239,37 +1239,24 @@ export function RealtimeDialer() {
 
             {/* ------------------------------------------------------------ callbacks */}
             <TabsContent value="callbacks" className="m-0 p-4">
-              <div className="grid gap-2 sm:grid-cols-4">
-                <Input
-                  placeholder="Phone"
-                  value={cb.phone}
-                  onChange={(e) => setCb((c) => ({ ...c, phone: e.target.value }))}
-                />
-                <Input
-                  placeholder="Name"
-                  value={cb.contactName}
-                  onChange={(e) => setCb((c) => ({ ...c, contactName: e.target.value }))}
-                />
-                <Input
-                  placeholder="Reason"
-                  value={cb.reason}
-                  onChange={(e) => setCb((c) => ({ ...c, reason: e.target.value }))}
-                />
-                <div className="flex gap-2">
-                  <Input
-                    type="datetime-local"
-                    value={cb.scheduledAt}
-                    onChange={(e) => setCb((c) => ({ ...c, scheduledAt: e.target.value }))}
-                  />
-                  <Button
-                    size="icon"
-                    disabled={cb.phone.length < 7 || callbackMutation.isPending}
-                    onClick={() => callbackMutation.mutate()}
-                  >
-                    <PlusCircle className="size-4" />
-                  </Button>
+              <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border/60 bg-surface/40 p-3">
+                <span className="grid size-9 place-items-center rounded-full bg-brand/12 text-brand">
+                  <CalendarClock className="size-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium">Set a callback for any number</p>
+                  <p className="text-xs text-muted-foreground">
+                    Quick slots, reason presets and notes — it lands straight in the callback book.
+                  </p>
                 </div>
+                <Button size="sm" onClick={() => openCallback(digits || active?.phone_e164 || "", active?.contact_name)}>
+                  <PlusCircle className="mr-1.5 size-4" /> Set callback
+                </Button>
+                <Button asChild size="sm" variant="outline">
+                  <Link to="/callbacks">Callback book</Link>
+                </Button>
               </div>
+
 
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {(["open", ...CALLBACK_STATUSES] as const).map((s) => (
