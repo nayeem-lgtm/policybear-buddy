@@ -14,10 +14,18 @@ import {
   fmtDuration,
   fmtMoney,
   fmtPct,
+  publisherOptions,
   totalRow,
   type ReportDimension,
   type ReportRow,
 } from "@/lib/reporting-metrics";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export const Route = createFileRoute("/_shell/reporting")({
   head: () => ({
