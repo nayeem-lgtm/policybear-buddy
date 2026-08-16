@@ -7,6 +7,7 @@ import { StatCard } from "@/components/crm/StatCard";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { DateRangeTabs, presetLabel, type DateSelection } from "@/components/crm/DateRangeTabs";
 import {
   buildReport,
   derive,
@@ -112,6 +113,7 @@ const metrics: Metric[] = [
 
 function ReportingPage() {
   const [dimension, setDimension] = useState<ReportDimension>("publisher");
+  const [dateSel, setDateSel] = useState<DateSelection>({ preset: "7d" });
   const [search, setSearch] = useState("");
 
   const rows = useMemo(() => buildReport(dimension), [dimension]);
@@ -129,6 +131,17 @@ function ReportingPage() {
         title="Reporting"
         description="One row per publisher, campaign or day — scroll sideways for every call, conversion and money metric."
       />
+
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card px-4 py-3 shadow-card">
+        <p className="text-sm text-muted-foreground">
+          Showing <span className="font-semibold text-foreground">{presetLabel(dateSel)}</span>
+        </p>
+        <DateRangeTabs
+          value={dateSel}
+          onChange={setDateSel}
+          className="border-0 bg-surface/70 shadow-none"
+        />
+      </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Incoming Calls" value={totals.incoming} hint={`${totals.connects} connected`} icon={<PhoneCall className="size-4" />} tone="brand" />
