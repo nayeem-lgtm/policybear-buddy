@@ -355,7 +355,13 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
           const updated = await pushStatus({
             data: { status: next, detail: resolvedDetail, allowanceSeconds: allowance },
           });
-          if (updated) setSession(updated as ShiftSessionRow);
+          if (updated) {
+            const row = updated as ShiftSessionRow;
+            setSession(row);
+            // Re-anchor on the server clock so client/server timing never drifts.
+            const anchor = new Date(row.current_status_at).getTime();
+            if (Number.isFinite(anchor)) setStatusStartedAt(Math.min(anchor, Date.now()));
+          }
           // Mirror presence into CallTools so the dialer never rings an agent on break.
           const ctStatus = CALLTOOLS_STATUS[next];
           if (ctStatus) {
