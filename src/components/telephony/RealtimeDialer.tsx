@@ -297,6 +297,7 @@ export function RealtimeDialer() {
       setDisposition("");
       setNotes("");
       setCallbackAt("");
+      setLiveNotes("");
       refresh();
     },
     onError: (e: Error) => toast.error(e.message),
