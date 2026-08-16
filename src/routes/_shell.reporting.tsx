@@ -1,9 +1,8 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { BarChart3, DollarSign, PhoneCall, Search, Target } from "lucide-react";
+import { Search } from "lucide-react";
 
 import { PageHeader } from "@/components/crm/PageHeader";
-import { StatCard } from "@/components/crm/StatCard";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -132,7 +131,6 @@ function ReportingPage() {
     [rows, search],
   );
   const totals = useMemo(() => totalRow(filtered), [filtered]);
-  const t = derive(totals);
 
   return (
     <div className="space-y-6">
