@@ -689,6 +689,32 @@ export function CallbackBook({ initialView = "queue" }: { initialView?: "queue" 
                     <dt className="text-muted-foreground">Owner</dt>
                     <dd className="text-right font-medium">{agentName(selected.assigned_to)}</dd>
                   </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted-foreground">Urgency</dt>
+                    <dd className="text-right font-medium">{urgencyOf(selected, now)}</dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted-foreground">Requested</dt>
+                    <dd className="text-right font-medium">
+                      {new Date(selected.requested_at).toLocaleString()}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted-foreground">Last attempt</dt>
+                    <dd className="text-right font-medium">
+                      {selected.last_attempt_at
+                        ? new Date(selected.last_attempt_at).toLocaleString()
+                        : "No attempts yet"}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted-foreground">Outcome</dt>
+                    <dd className="text-right font-medium">{selected.outcome || "—"}</dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted-foreground">Booked by</dt>
+                    <dd className="text-right font-medium">{agentName(selected.created_by)}</dd>
+                  </div>
                 </dl>
 
                 {selected.detail || selected.notes ? (
