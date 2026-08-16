@@ -123,8 +123,6 @@ export const navSections: NavSection[] = [
       {
         label: "Growth",
         items: [
-          { title: "Coaching", url: "/coaching", icon: GraduationCap, description: "Feedback sessions" },
-          { title: "Training", url: "/training", icon: BookOpen, description: "Courses and certifications" },
           { title: "Quotes", url: "/quotes", icon: Sparkles, description: "Pull and compare quotes" },
           { title: "Sales", url: "/sales", icon: FileStack, description: "Your sales and policies" },
         ],
