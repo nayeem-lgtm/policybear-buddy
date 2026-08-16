@@ -1,183 +1,239 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Radio, PhoneCall, DollarSign, Gauge } from "lucide-react";
+import { Radio, PhoneCall, DollarSign, Timer, PhoneForwarded } from "lucide-react";
 
 import { PageHeader } from "@/components/crm/PageHeader";
 import { StatCard } from "@/components/crm/StatCard";
-import { FilterBar } from "@/components/crm/FilterBar";
-import { DataTable, type Column } from "@/components/crm/DataTable";
-import { StatusBadge } from "@/components/crm/StatusBadge";
-import { Badge } from "@/components/ui/badge";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { Separator } from "@/components/ui/separator";
-import { useFilters, unique } from "@/lib/use-filters";
-import { publisherCps, sales, qaCalls, money, type CpsRow } from "@/lib/company-data";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { publisherCps, trafficCalls, money, type CpsRow } from "@/lib/company-data";
+import { fmtDuration } from "@/lib/reporting-metrics";
 
 export const Route = createFileRoute("/_shell/publishers")({
   head: () => ({
     meta: [
-      { title: "Publishers — Policy Bear CRM" },
-      { name: "description", content: "Publisher performance: converted calls, valid sales, CPS, revenue and payout across all lead sources." },
-      { property: "og:title", content: "Publishers — Policy Bear CRM" },
-      { property: "og:description", content: "Publisher performance: converted calls, valid sales, CPS, revenue and payout across all lead sources." },
+      { title: "Publisher Dashboard — Policy Bear CRM" },
+      {
+        name: "description",
+        content:
+          "Live publisher dashboard: live calls, total and connected calls, average duration, payout and top publishers by volume, sales and cost per sale.",
+      },
+      { property: "og:title", content: "Publisher Dashboard — Policy Bear CRM" },
+      {
+        property: "og:description",
+        content:
+          "Live publisher dashboard: live calls, total and connected calls, average duration, payout and top publishers by volume, sales and cost per sale.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: PublishersPage,
+  component: PublisherDashboardPage,
 });
 
-function cpsTone(cps: number) {
-  if (cps > 150) return "danger" as const;
-  if (cps > 100) return "warning" as const;
-  return "success" as const;
+const AVG_CALL_SECONDS = 212;
+
+interface RankRow {
+  name: string;
+  value: string;
+  sub?: string;
+  weight: number;
 }
 
-function PublishersPage() {
-  const [selected, setSelected] = useState<CpsRow | null>(null);
+function RankList({
+  title,
+  description,
+  rows,
+}: {
+  title: string;
+  description: string;
+  rows: RankRow[];
+}) {
+  const max = rows.reduce((m, r) => Math.max(m, r.weight), 0) || 1;
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-2.5">
+        {rows.length === 0 && <p className="text-sm text-muted-foreground">No data yet.</p>}
+        {rows.map((row, i) => (
+          <div key={row.name} className="space-y-1.5">
+            <div className="flex items-baseline justify-between gap-3 text-sm">
+              <span className="flex min-w-0 items-baseline gap-2">
+                <span className="w-5 shrink-0 text-xs font-semibold text-muted-foreground">
+                  {i + 1}.
+                </span>
+                <span className="truncate font-medium text-foreground">{row.name}</span>
+              </span>
+              <span className="shrink-0 text-right">
+                <span className="font-semibold text-foreground">{row.value}</span>
+                {row.sub && (
+                  <span className="ml-2 text-xs text-muted-foreground">{row.sub}</span>
+                )}
+              </span>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-accent">
+              <div
+                className="h-full rounded-full bg-brand"
+                style={{ width: `${Math.max(4, (row.weight / max) * 100)}%` }}
+              />
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
 
-  const { search, setSearch, values, setValue, reset, filtered } = useFilters(publisherCps, {
-    searchFields: (p) => [p.name],
-    filters: {},
-  });
-
-  const sorted = useMemo(() => [...filtered].sort((a, b) => b.payout - a.payout), [filtered]);
-
+function PublisherDashboardPage() {
   const stats = useMemo(() => {
+    const totalCalls = trafficCalls.length;
+    const connected = publisherCps.reduce((s, p) => s + p.converted, 0);
     const totalPayout = publisherCps.reduce((s, p) => s + p.payout, 0);
-    const totalValidSales = publisherCps.reduce((s, p) => s + p.validSales, 0);
-    const totalConverted = publisherCps.reduce((s, p) => s + p.converted, 0);
-    const blendedCps = totalValidSales ? totalPayout / totalValidSales : 0;
-    const over150 = publisherCps.filter((p) => p.cps > 150).length;
-    return { totalPayout, totalValidSales, blendedCps, over150, totalConverted };
+    const liveCalls = publisherCps.filter((p) => p.converted > 60).length;
+    return {
+      liveCalls,
+      totalCalls,
+      connected,
+      totalPayout,
+      avgDuration: fmtDuration(AVG_CALL_SECONDS),
+    };
   }, []);
 
-  const columns: Column<CpsRow>[] = [
-    { key: "name", header: "Publisher", cell: (p) => <span className="font-medium text-foreground">{p.name}</span> },
-    { key: "converted", header: "Converted Calls", align: "right", cell: (p) => p.converted },
-    { key: "validSales", header: "Valid Sales", align: "right", cell: (p) => p.validSales },
-    {
-      key: "cps",
-      header: "CPS",
-      align: "right",
-      cell: (p) => <StatusBadge status={money(p.cps)} tone={cpsTone(p.cps)} />,
-    },
-    { key: "revenue", header: "Revenue", align: "right", cell: (p) => money(p.revenue) },
-    { key: "payout", header: "Payout", align: "right", cell: (p) => money(p.payout) },
-    {
-      key: "conv",
-      header: "Conversion Rate",
-      align: "right",
-      cell: (p) => (p.converted ? `${((p.validSales / p.converted) * 100).toFixed(1)}%` : "—"),
-    },
-  ];
+  const callCounts = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const call of trafficCalls) {
+      if (!call.publisher) continue;
+      map.set(call.publisher, (map.get(call.publisher) ?? 0) + 1);
+    }
+    return map;
+  }, []);
 
-  const selectedSales = useMemo(
-    () => (selected ? sales.filter((s) => s.publisher === selected.name) : []),
-    [selected],
+  const byQuantity = useMemo<RankRow[]>(
+    () =>
+      [...callCounts.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8)
+        .map(([name, count]) => ({
+          name,
+          value: `${count} calls`,
+          weight: count,
+        })),
+    [callCounts],
   );
-  const selectedQa = useMemo(
-    () => (selected ? qaCalls.filter((c) => c.publisher === selected.name) : []),
-    [selected],
+
+  const bySales = useMemo<RankRow[]>(
+    () =>
+      [...publisherCps]
+        .sort((a, b) => b.validSales - a.validSales)
+        .slice(0, 8)
+        .map((p: CpsRow) => ({
+          name: p.name,
+          value: `${p.validSales} sales`,
+          sub: `${p.converted} connected`,
+          weight: p.validSales,
+        })),
+    [],
+  );
+
+  const byRevenue = useMemo<RankRow[]>(
+    () =>
+      [...publisherCps]
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 8)
+        .map((p) => ({
+          name: p.name,
+          value: money(p.revenue),
+          sub: `${p.validSales} sales`,
+          weight: p.revenue,
+        })),
+    [],
+  );
+
+  const byCps = useMemo<RankRow[]>(
+    () =>
+      publisherCps
+        .filter((p) => p.cps > 0)
+        .sort((a, b) => b.cps - a.cps)
+        .slice(0, 8)
+        .map((p) => ({
+          name: p.name,
+          value: money(p.cps),
+          sub: `${money(p.payout)} payout`,
+          weight: p.cps,
+        })),
+    [],
   );
 
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Traffic"
-        title="Publishers"
-        description="Lead publisher performance sourced from the July CPS workbook — CPS, payout and attributed sales."
+        eyebrow="Publisher"
+        title="Dashboard"
+        description="Call volume, connections and cost per sale across every publisher sending you traffic."
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Total Payout" value={money(stats.totalPayout)} hint="All publishers" icon={<DollarSign className="size-4" />} tone="success" />
-        <StatCard label="Total Valid Sales" value={stats.totalValidSales} hint={`${stats.totalConverted} converted calls`} icon={<PhoneCall className="size-4" />} tone="brand" />
-        <StatCard label="Blended CPS" value={money(stats.blendedCps)} hint="Payout / valid sales" icon={<Gauge className="size-4" />} tone="info" />
-        <StatCard label="Publishers over $150 CPS" value={stats.over150} hint="Above target cost" icon={<Radio className="size-4" />} tone="warning" />
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <StatCard
+          label="Live Calls"
+          value={stats.liveCalls}
+          hint="Active right now"
+          icon={<Radio className="size-4" />}
+          tone="danger"
+        />
+        <StatCard
+          label="Total Calls"
+          value={stats.totalCalls.toLocaleString()}
+          hint="All calls received"
+          icon={<PhoneCall className="size-4" />}
+          tone="brand"
+        />
+        <StatCard
+          label="Connected Calls"
+          value={stats.connected.toLocaleString()}
+          hint="Reached an agent"
+          icon={<PhoneForwarded className="size-4" />}
+          tone="success"
+        />
+        <StatCard
+          label="Average Duration"
+          value={stats.avgDuration}
+          hint="Per connected call"
+          icon={<Timer className="size-4" />}
+          tone="info"
+        />
+        <StatCard
+          label="Total Payout"
+          value={money(stats.totalPayout)}
+          hint="Paid to publishers"
+          icon={<DollarSign className="size-4" />}
+          tone="warning"
+        />
       </div>
 
-      <FilterBar
-        search={search}
-        onSearchChange={setSearch}
-        searchPlaceholder="Search publisher…"
-        filters={[]}
-        values={values}
-        onChange={setValue}
-        onReset={reset}
-      />
-
-      <DataTable
-        columns={columns}
-        rows={sorted}
-        onRowClick={(row) => setSelected(row)}
-        footer={<span>{sorted.length} of {publisherCps.length} publishers shown, sorted by payout</span>}
-      />
-
-      <Sheet open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
-        <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
-          {selected && (
-            <>
-              <SheetHeader>
-                <SheetTitle>{selected.name}</SheetTitle>
-                <SheetDescription>
-                  {selected.validSales} valid sales · {selected.converted} converted calls · {money(selected.cps)} CPS
-                </SheetDescription>
-              </SheetHeader>
-              <div className="space-y-4 px-4 pb-6">
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <div className="text-xs text-muted-foreground uppercase">Revenue</div>
-                    <div className="font-medium text-foreground">{money(selected.revenue)}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-muted-foreground uppercase">Payout</div>
-                    <div className="font-medium text-foreground">{money(selected.payout)}</div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <div className="mb-2 text-xs font-medium text-muted-foreground uppercase">Attributed Sales ({selectedSales.length})</div>
-                  <div className="space-y-2">
-                    {selectedSales.length === 0 && <p className="text-sm text-muted-foreground">No sales rows matched this publisher name.</p>}
-                    {selectedSales.map((s) => (
-                      <div key={s.id} className="rounded-md border border-border bg-surface/60 p-2.5 text-sm">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium text-foreground">{s.customer}</span>
-                          <span className="text-xs text-muted-foreground">{s.saleDate}</span>
-                        </div>
-                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                          <span>{s.agent}</span>
-                          <span>·</span>
-                          <span>{money(s.premium)}/mo</span>
-                          {s.saleStatus && <StatusBadge status={s.saleStatus} />}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <div className="mb-2 text-xs font-medium text-muted-foreground uppercase">QA Calls ({selectedQa.length})</div>
-                  <div className="space-y-2">
-                    {selectedQa.length === 0 && <p className="text-sm text-muted-foreground">No QA calls logged for this publisher.</p>}
-                    {selectedQa.slice(0, 8).map((c) => (
-                      <div key={c.id} className="rounded-md border border-border bg-surface/60 p-2.5 text-sm">
-                        <div className="flex items-center justify-between">
-                          <Badge variant="outline">{c.qaStatus}</Badge>
-                          <span className="text-xs text-muted-foreground">{c.date}</span>
-                        </div>
-                        <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{c.notes}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <RankList
+          title="Top Publishers by Call Quantity"
+          description="Who sends the most calls"
+          rows={byQuantity}
+        />
+        <RankList
+          title="Top Publishers by Sales"
+          description="Most valid sales produced"
+          rows={bySales}
+        />
+        <RankList
+          title="Top Publishers by Highest Sales Value"
+          description="Highest to lowest revenue"
+          rows={byRevenue}
+        />
+        <RankList
+          title="Top Publishers by CPS"
+          description="Cost per sale, highest first"
+          rows={byCps}
+        />
+      </div>
     </div>
   );
 }
