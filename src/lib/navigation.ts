@@ -59,7 +59,7 @@ export interface NavSubGroup {
 }
 
 export interface NavSection {
-  id: "agent" | "publisher" | "finance" | "other";
+  id: "operation" | "agent" | "publisher" | "finance" | "other";
   label: string;
   tagline: string;
   icon: typeof Home;
@@ -68,6 +68,31 @@ export interface NavSection {
 }
 
 export const navSections: NavSection[] = [
+  {
+    id: "operation",
+    label: "Operation",
+    tagline: "Daily ops, live floor, tasks and automation",
+    icon: Activity,
+    home: "/operations",
+    groups: [
+      {
+        label: "Daily ops",
+        items: [
+          { title: "Daily Operations", url: "/operations", icon: Activity, description: "Day-to-day operations hub" },
+          { title: "Live Operations", url: "/live-operations", icon: Radio, description: "Real-time floor view" },
+          { title: "Tasks & Approvals", url: "/tasks", icon: ClipboardCheck, description: "Approvals and task queue" },
+          { title: "Incidents", url: "/incidents", icon: Siren, description: "Incident log and response" },
+        ],
+      },
+      {
+        label: "Automation",
+        items: [
+          { title: "Automations", url: "/automations", icon: Workflow, description: "Workflow automations" },
+          { title: "HR Automations", url: "/hr-automations", icon: Workflow, description: "People process automations" },
+        ],
+      },
+    ],
+  },
   {
     id: "agent",
     label: "Agent",
@@ -171,16 +196,10 @@ export const navSections: NavSection[] = [
         ],
       },
       {
-        label: "People & operations",
+        label: "People & reports",
         items: [
           { title: "Employees", url: "/employees", icon: Users },
           { title: "Complaints & Tips", url: "/complaints", icon: Inbox },
-          { title: "HR Automations", url: "/hr-automations", icon: Workflow },
-          { title: "Automations", url: "/automations", icon: Workflow },
-          { title: "Daily Operations", url: "/operations", icon: Activity },
-          { title: "Live Operations", url: "/live-operations", icon: Radio },
-          { title: "Tasks & Approvals", url: "/tasks", icon: ClipboardCheck },
-          { title: "Incidents", url: "/incidents", icon: Siren },
           { title: "Reports", url: "/reports", icon: BarChart3 },
           { title: "Documents", url: "/documents", icon: FileText },
           { title: "New Application", url: "/sales/new", icon: ClipboardCheck },
