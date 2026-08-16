@@ -396,6 +396,7 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
     (kind: "Break" | "Lunch" = "Break") => {
       setTestKind(kind);
       setStatusState(kind);
+      setStatusStartedAt(Date.now());
       setStatusSeconds(0);
       setAlarmAcknowledgedAt(null);
       setAutoCallAnswered(false);
