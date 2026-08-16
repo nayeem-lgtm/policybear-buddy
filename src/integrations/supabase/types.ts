@@ -771,6 +771,101 @@ export type Database = {
           },
         ]
       }
+      dnc_entries: {
+        Row: {
+          active: boolean
+          added_by: string | null
+          contact_name: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          phone_e164: string
+          reason: string
+          released_at: string | null
+          released_by: string | null
+          scope: string
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          added_by?: string | null
+          contact_name?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          phone_e164: string
+          reason?: string
+          released_at?: string | null
+          released_by?: string | null
+          scope?: string
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          added_by?: string | null
+          contact_name?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          phone_e164?: string
+          reason?: string
+          released_at?: string | null
+          released_by?: string | null
+          scope?: string
+          source?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      dnc_events: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_name: string | null
+          created_at: string
+          detail: Json
+          entry_id: string | null
+          id: string
+          phone_e164: string
+          reason: string | null
+          source: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_name?: string | null
+          created_at?: string
+          detail?: Json
+          entry_id?: string | null
+          id?: string
+          phone_e164: string
+          reason?: string | null
+          source?: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_name?: string | null
+          created_at?: string
+          detail?: Json
+          entry_id?: string | null
+          id?: string
+          phone_e164?: string
+          reason?: string | null
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dnc_events_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "dnc_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_events: {
         Row: {
           created_at: string

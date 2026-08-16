@@ -106,6 +106,14 @@ export const startCall = createServerFn({ method: "POST" })
     if (!phone) throw new Error("Enter a valid phone number");
     const { supabase, userId } = context;
 
+    const { assertDialable } = await import("@/lib/dnc.server");
+    await assertDialable(supabase, phone, {
+      userId,
+      source: `dialer:${data.mode}`,
+      detail: { campaignId: data.campaignId ?? null, dialTaskId: data.dialTaskId ?? null },
+    });
+
+
     const from = data.fromNumberId
       ? (await supabase.from("phone_numbers").select("e164").eq("id", data.fromNumberId).maybeSingle()).data
       : null;
@@ -246,6 +254,28 @@ export const wrapCall = createServerFn({ method: "POST" })
         })
         .eq("id", call.dial_task_id);
     }
+
+    // A "DNC" outcome adds the number to the Do-Not-Call list and audit trail.
+    if (data.disposition === "DNC") {
+      const target = call.phone_e164 ?? call.to_number ?? call.from_number;
+      if (target) {
+        const { addToDnc } = await import("@/lib/dnc.server");
+        await addToDnc(
+          supabase,
+          {
+            phone: target,
+            contactName: call.contact_name,
+            reason: "Consumer request",
+            scope: "internal",
+            source: "agent-wrapup",
+            notes: data.notes ?? null,
+          },
+          { userId },
+        );
+      }
+    }
+
+
 
     if (data.callbackAt) {
       await supabase.from("callbacks").insert({
