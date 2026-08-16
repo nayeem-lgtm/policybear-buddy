@@ -106,6 +106,14 @@ export const startCall = createServerFn({ method: "POST" })
     if (!phone) throw new Error("Enter a valid phone number");
     const { supabase, userId } = context;
 
+    const { assertDialable } = await import("@/lib/dnc.server");
+    await assertDialable(supabase, phone, {
+      userId,
+      source: `dialer:${data.mode}`,
+      detail: { campaignId: data.campaignId ?? null, dialTaskId: data.dialTaskId ?? null },
+    });
+
+
     const from = data.fromNumberId
       ? (await supabase.from("phone_numbers").select("e164").eq("id", data.fromNumberId).maybeSingle()).data
       : null;
