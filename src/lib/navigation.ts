@@ -69,6 +69,31 @@ export interface NavSection {
 
 export const navSections: NavSection[] = [
   {
+    id: "operation",
+    label: "Operation",
+    tagline: "Daily ops, live floor, tasks and automation",
+    icon: Activity,
+    home: "/operations",
+    groups: [
+      {
+        label: "Daily ops",
+        items: [
+          { title: "Daily Operations", url: "/operations", icon: Activity, description: "Day-to-day operations hub" },
+          { title: "Live Operations", url: "/live-operations", icon: Radio, description: "Real-time floor view" },
+          { title: "Tasks & Approvals", url: "/tasks", icon: ClipboardCheck, description: "Approvals and task queue" },
+          { title: "Incidents", url: "/incidents", icon: Siren, description: "Incident log and response" },
+        ],
+      },
+      {
+        label: "Automation",
+        items: [
+          { title: "Automations", url: "/automations", icon: Workflow, description: "Workflow automations" },
+          { title: "HR Automations", url: "/hr-automations", icon: Workflow, description: "People process automations" },
+        ],
+      },
+    ],
+  },
+  {
     id: "agent",
     label: "Agent",
     tagline: "Shift, attendance and the calling desk",
