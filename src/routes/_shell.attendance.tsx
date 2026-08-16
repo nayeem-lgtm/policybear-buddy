@@ -287,6 +287,9 @@ function AttendancePage() {
                   {activeNow} on shift now
                 </span>
                 <span className="rounded-full bg-brand-foreground/12 px-2.5 py-1 text-xs font-medium text-brand-foreground/85">
+                  {presetLabel(selection)}
+                </span>
+                <span className="tabular rounded-full bg-brand-foreground/12 px-2.5 py-1 text-xs font-medium text-brand-foreground/85">
                   {query.data?.from ?? "—"} → {query.data?.to ?? "—"}
                 </span>
               </div>
@@ -298,23 +301,6 @@ function AttendancePage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex rounded-xl bg-brand-foreground/12 p-1">
-              {RANGES.map((r, i) => (
-                <button
-                  key={r.label}
-                  type="button"
-                  onClick={() => setRangeIndex(i)}
-                  className={cn(
-                    "rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
-                    i === rangeIndex
-                      ? "bg-brand-foreground text-brand"
-                      : "text-brand-foreground/75 hover:text-brand-foreground",
-                  )}
-                >
-                  {r.label}
-                </button>
-              ))}
-            </div>
             <Button
               variant="ghost"
               size="icon"
