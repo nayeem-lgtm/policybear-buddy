@@ -540,43 +540,85 @@ export function RealtimeDialer() {
   return (
     <div className="space-y-5">
       {/* ------------------------------------------------------------ presence bar */}
-      <Card className="flex flex-wrap items-center gap-4 rounded-3xl border-border/60 bg-gradient-to-r from-brand/12 via-surface to-background p-4 shadow-card">
-        <span
-          className={cn(
-            "grid size-11 place-items-center rounded-2xl",
-            ready ? "bg-success/15 text-success" : "bg-muted text-muted-foreground",
-          )}
-        >
-          <Signal className="size-5" />
-        </span>
-        <div className="min-w-0">
-          <p className="font-display text-base font-semibold text-foreground">
-            {ready ? "Ready for calls" : "Not accepting calls"}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Policy Bear Dialer · {data?.numbers?.length ?? 0} numbers · {data?.campaigns?.length ?? 0}{" "}
-            campaigns
-          </p>
-        </div>
+      <Card className="rounded-3xl border-border/60 bg-gradient-to-r from-brand/12 via-surface to-background p-4 shadow-card">
+        <div className="flex flex-wrap items-center gap-4">
+          <span
+            className={cn(
+              "relative grid size-11 place-items-center rounded-2xl",
+              ready ? "bg-success/15 text-success" : "bg-muted text-muted-foreground",
+            )}
+          >
+            <Signal className="size-5" />
+            {ready ? (
+              <span className="absolute -right-0.5 -top-0.5 size-2.5 animate-pulse rounded-full bg-success ring-2 ring-card" />
+            ) : null}
+          </span>
+          <div className="min-w-0">
+            <p className="font-display text-base font-semibold text-foreground">
+              {ready ? "Ready for calls" : "Not accepting calls"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Policy Bear Dialer · {data?.numbers?.length ?? 0} numbers · {data?.campaigns?.length ?? 0}{" "}
+              campaigns · {speedDial.length} speed dial
+            </p>
+          </div>
 
-        <div className="ml-auto flex flex-wrap items-center gap-5">
-          <label className="flex items-center gap-2 text-sm">
-            <Switch checked={ready} onCheckedChange={setReady} />
-            Ready
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <Switch checked={autoAnswer} onCheckedChange={setAutoAnswer} />
-            Auto-answer
-          </label>
-          <div className="hidden min-w-[160px] sm:block">
-            <div className="mb-1 flex justify-between text-xs text-muted-foreground">
-              <span>Connect rate</span>
-              <span className="tabular-nums">{connectRate}%</span>
+          <div className="ml-auto flex flex-wrap items-center gap-4">
+            <label className="flex items-center gap-2 text-sm">
+              <Switch checked={ready} onCheckedChange={setReady} />
+              Ready
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <Switch checked={autoAnswer} onCheckedChange={setAutoAnswer} />
+              Auto-answer
+            </label>
+            <Button
+              variant="outline"
+              size="icon"
+              className="rounded-xl"
+              title={sound ? "Mute desk audio" : "Enable desk audio"}
+              aria-label={sound ? "Mute desk audio" : "Enable desk audio"}
+              onClick={() => setSound((s) => !s)}
+            >
+              {sound ? <Bell className="size-4" /> : <BellOff className="size-4 text-muted-foreground" />}
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="rounded-xl"
+              title="Keyboard shortcuts"
+              aria-label="Keyboard shortcuts"
+              onClick={() => setShowShortcuts((v) => !v)}
+            >
+              <Keyboard className="size-4" />
+            </Button>
+            <div className="hidden min-w-[160px] sm:block">
+              <div className="mb-1 flex justify-between text-xs text-muted-foreground">
+                <span>Connect rate</span>
+                <span className="tabular-nums">{connectRate}%</span>
+              </div>
+              <Progress value={connectRate} className="h-1.5" />
             </div>
-            <Progress value={connectRate} className="h-1.5" />
           </div>
         </div>
+
+        {showShortcuts ? (
+          <div className="mt-3 flex flex-wrap gap-2 border-t border-border/60 pt-3">
+            {SHORTCUTS.map((s) => (
+              <span
+                key={s.keys}
+                className="flex items-center gap-1.5 rounded-full bg-surface/70 px-2.5 py-1 text-xs text-muted-foreground"
+              >
+                <kbd className="rounded bg-background px-1.5 py-0.5 font-mono text-[0.65rem] text-foreground shadow-sm">
+                  {s.keys}
+                </kbd>
+                {s.label}
+              </span>
+            ))}
+          </div>
+        ) : null}
       </Card>
+
 
       {/* ------------------------------------------------------------ status strip */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
