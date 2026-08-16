@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Radio, PhoneCall, DollarSign, Timer, PhoneForwarded } from "lucide-react";
 
@@ -7,6 +7,7 @@ import { StatCard } from "@/components/crm/StatCard";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { publisherCps, trafficCalls, money, type CpsRow } from "@/lib/company-data";
 import { fmtDuration } from "@/lib/reporting-metrics";
+import { DateRangeTabs, presetLabel, type DateSelection } from "@/components/crm/DateRangeTabs";
 
 export const Route = createFileRoute("/_shell/publishers")({
   head: () => ({
@@ -87,6 +88,8 @@ function RankList({
 }
 
 function PublisherDashboardPage() {
+  const [dateSel, setDateSel] = useState<DateSelection>({ preset: "7d" });
+
   const stats = useMemo(() => {
     const totalCalls = trafficCalls.length;
     const connected = publisherCps.reduce((s, p) => s + p.converted, 0);
@@ -174,11 +177,26 @@ function PublisherDashboardPage() {
         description="Call volume, connections and cost per sale across every publisher sending you traffic."
       />
 
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground">
+          Showing <span className="font-medium text-foreground">{presetLabel(dateSel)}</span>
+        </p>
+        <DateRangeTabs value={dateSel} onChange={setDateSel} />
+      </div>
+
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <StatCard
           label="Live Calls"
-          value={stats.liveCalls}
-          hint="Active right now"
+          value={
+            <span className="inline-flex items-center gap-2">
+              <span className="relative flex size-2.5">
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-destructive opacity-75" />
+                <span className="relative inline-flex size-2.5 rounded-full bg-destructive" />
+              </span>
+              {stats.liveCalls}
+            </span>
+          }
+          hint="Live now — updates in real time"
           icon={<Radio className="size-4" />}
           tone="danger"
         />
