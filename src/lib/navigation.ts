@@ -81,7 +81,6 @@ export const navSections: NavSection[] = [
           { title: "Live Operations", url: "/live-operations", icon: Radio, description: "Real-time floor view" },
           { title: "Tasks & Approvals", url: "/tasks", icon: ClipboardCheck, description: "Approvals and task queue" },
           { title: "Incidents", url: "/incidents", icon: Siren, description: "Incident log and response" },
-          { title: "DNC & Compliance", url: "/dnc", icon: ShieldOff, description: "Do-Not-Call list and audit log" },
         ],
       },
       {
@@ -109,7 +108,7 @@ export const navSections: NavSection[] = [
           { title: "Customers", url: "/customers", icon: Contact, description: "Customer records" },
           { title: "Callbacks", url: "/callbacks", icon: PhoneForwarded, description: "Callback queue" },
           { title: "Callback Calendar", url: "/callbacks/calendar", icon: CalendarDays, description: "Scheduled callbacks" },
-          { title: "DNC List", url: "/dnc", icon: ShieldOff, description: "Add numbers to Do-Not-Call" },
+          { title: "DNC & Compliance", url: "/dnc", icon: ShieldOff, description: "Do-Not-Call list, add numbers and audit log" },
         ],
       },
       {
