@@ -108,7 +108,7 @@ export const navSections: NavSection[] = [
           { title: "Customers", url: "/customers", icon: Contact, description: "Customer records" },
           { title: "Callbacks", url: "/callbacks", icon: PhoneForwarded, description: "Callback queue" },
           { title: "Callback Calendar", url: "/callbacks/calendar", icon: CalendarDays, description: "Scheduled callbacks" },
-          { title: "DNC List", url: "/dnc", icon: ShieldOff, description: "Add numbers to Do-Not-Call" },
+          { title: "DNC & Compliance", url: "/dnc", icon: ShieldOff, description: "Do-Not-Call list, add numbers and audit log" },
         ],
       },
       {
