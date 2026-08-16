@@ -93,6 +93,36 @@ function isOverdue(row: CallbackRow, now: Date): boolean {
   );
 }
 
+type Urgency = "Urgent" | "High" | "Normal" | "Low";
+
+const URGENCY_TONE: Record<Urgency, string> = {
+  Urgent: "border-destructive/40 bg-destructive/12 text-destructive",
+  High: "border-warning/45 bg-warning/18 text-brand-tan",
+  Normal: "border-brand/35 bg-brand/10 text-brand",
+  Low: "border-border bg-muted text-muted-foreground",
+};
+
+/** Urgency is derived from how close (or past) the booked slot is. */
+function urgencyOf(row: CallbackRow, now: Date): Urgency {
+  if (!OPEN_STATUSES.includes(row.status)) return "Low";
+  if (!row.scheduled_at) return "Normal";
+  const diff = (new Date(row.scheduled_at).getTime() - now.getTime()) / 60000;
+  if (diff < 0) return "Urgent";
+  if (diff <= 60) return "High";
+  if (diff <= 60 * 24) return "Normal";
+  return "Low";
+}
+
+function initialsOf(row: CallbackRow): string {
+  const name = (row.contact_name ?? "").trim();
+  if (!name) return "#";
+  return name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
 function timeText(iso: string | null): string {
   if (!iso) return "—";
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -181,7 +211,12 @@ export function CallbackBook({ initialView = "queue" }: { initialView?: "queue" 
   };
 
   const statusMutation = useMutation({
-    mutationFn: (input: { id: string; status?: CallbackStatus; assignToMe?: boolean }) =>
+    mutationFn: (input: {
+      id: string;
+      status?: CallbackStatus;
+      assignToMe?: boolean;
+      assignTo?: string | null;
+    }) =>
       patch({ data: input }),
     onSuccess: () => invalidate(),
     onError: (e: Error) => toast.error(e.message),
