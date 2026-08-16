@@ -590,7 +590,7 @@ export function RealtimeDialer() {
                   value={digits}
                   onChange={(e) => setDigits(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && digits.length >= 7) {
+                    if (e.key === "Enter" && digits.length >= 7 && !dncBlocked) {
                       dialMutation.mutate({
                         phone: digits,
                         mode: "manual",
@@ -601,7 +601,44 @@ export function RealtimeDialer() {
                   placeholder="Enter a number"
                   className="h-12 border-0 bg-transparent text-center text-2xl font-semibold tracking-wider shadow-none focus-visible:ring-0"
                 />
+                {debouncedDigits.replace(/\D/g, "").length >= 7 ? (
+                  <p
+                    className={cn(
+                      "flex items-center justify-center gap-1.5 text-xs font-medium",
+                      dncCheck.isFetching
+                        ? "text-muted-foreground"
+                        : dncBlocked
+                          ? "text-destructive"
+                          : "text-success",
+                    )}
+                  >
+                    {dncCheck.isFetching ? (
+                      <>Checking Do-Not-Call…</>
+                    ) : dncBlocked ? (
+                      <>
+                        <ShieldOff className="size-3.5" /> On DNC — {dncEntry?.reason}
+                      </>
+                    ) : (
+                      <>
+                        <ShieldCheck className="size-3.5" /> Cleared against DNC
+                      </>
+                    )}
+                  </p>
+                ) : null}
               </div>
+
+              {dncBlocked ? (
+                <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
+                  <ShieldAlert className="size-4 shrink-0" />
+                  <span className="min-w-0 flex-1">
+                    Dialing is blocked for compliance. Any attempt is logged in the audit trail.
+                  </span>
+                  <Button asChild size="sm" variant="outline" className="h-7 text-xs">
+                    <Link to="/dnc">Open DNC center</Link>
+                  </Button>
+                </div>
+              ) : null}
+
 
               <div className="grid grid-cols-3 gap-2">
                 {KEYPAD.map((k) => (
