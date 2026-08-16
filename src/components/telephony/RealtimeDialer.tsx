@@ -1368,7 +1368,12 @@ export function RealtimeDialer() {
                     <PhoneCall className="mr-2 size-4" /> Dial {formatPhone(lead.phone_e164)}
                   </Button>
                 ) : null}
+                <label className="ml-auto flex items-center gap-2 rounded-full border border-border/60 bg-surface/50 px-3 py-1.5 text-xs">
+                  <Switch checked={autoNext} onCheckedChange={setAutoNext} />
+                  Auto-load next lead
+                </label>
               </div>
+
 
               <ScrollArea className="h-[300px] pr-3">
                 {(data?.tasks ?? []).length === 0 ? (
