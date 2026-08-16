@@ -381,6 +381,7 @@ function QAPage() {
       key: "timestamp",
       header: "Timestamp",
       cell: (r) => <span className="tabular font-medium text-foreground">{r.timestamp}</span>,
+      className: "sticky left-0 z-10 bg-card",
     },
     { key: "phone", header: "Inbound Phone", cell: (r) => <span className="tabular">{r.phone}</span> },
     { key: "status", header: "Status", cell: (r) => <CallStatusCell status={r.callStatus} /> },
@@ -562,7 +563,7 @@ function QAPage() {
           columns={columns}
           rows={filtered}
           onRowClick={setSelected}
-          footer={`${filtered.length} of ${qaReviews.length} reviews`}
+          footer={`${filtered.length} of ${qaRows.length} calls`}
           className="rounded-none border-0 border-t border-border/70 shadow-none"
         />
       </Card>
