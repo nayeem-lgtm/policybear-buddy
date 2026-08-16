@@ -700,10 +700,9 @@ export function RealtimeDialer() {
               <Button
                 variant="outline"
                 className="w-full text-destructive"
-                disabled={digits.replace(/\D/g, "").length < 7 || dncBlocked}
                 onClick={() => openDnc(digits)}
               >
-                <Ban className="mr-2 size-4" /> Add this number to DNC
+                <Ban className="mr-2 size-4" /> Add any number to DNC
               </Button>
 
 

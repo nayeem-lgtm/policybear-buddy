@@ -81,7 +81,6 @@ export const navSections: NavSection[] = [
           { title: "Live Operations", url: "/live-operations", icon: Radio, description: "Real-time floor view" },
           { title: "Tasks & Approvals", url: "/tasks", icon: ClipboardCheck, description: "Approvals and task queue" },
           { title: "Incidents", url: "/incidents", icon: Siren, description: "Incident log and response" },
-          { title: "DNC & Compliance", url: "/dnc", icon: ShieldOff, description: "Do-Not-Call list and audit log" },
         ],
       },
       {
