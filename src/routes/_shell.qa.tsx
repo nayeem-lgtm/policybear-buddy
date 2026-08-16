@@ -470,6 +470,8 @@ function QAPage() {
                 setFAgent(ALL);
                 setFReviewer(ALL);
                 setFOutcome(ALL);
+                setFStatus(ALL);
+                setPhone("");
                 setSearch("");
               }}
             >
@@ -493,7 +495,14 @@ function QAPage() {
               </SelectContent>
             </Select>
           ))}
+          <Input
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="Phone number…"
+            inputMode="tel"
+          />
         </div>
+
       </Collapsible>
 
       <Collapsible title="Charts" icon={<LineChartIcon className="size-4 text-brand" />}>
