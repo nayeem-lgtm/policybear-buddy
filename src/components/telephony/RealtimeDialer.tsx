@@ -14,11 +14,16 @@ import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowLeftRight,
   Ban,
+  Bell,
+  BellOff,
   CalendarClock,
+  ClipboardPaste,
+  Copy,
   Delete,
   Gauge,
   Grip,
   History,
+  Keyboard,
   Mic,
   MicOff,
   Pause,
@@ -36,10 +41,14 @@ import {
   ShieldOff,
   Signal,
   Star,
+  StickyNote,
   Timer,
+  Trash2,
   Users,
   Volume2,
+  Zap,
 } from "lucide-react";
+
 
 import { toast } from "sonner";
 
