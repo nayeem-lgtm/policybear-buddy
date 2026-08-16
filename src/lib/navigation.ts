@@ -121,7 +121,7 @@ export const navSections: NavSection[] = [
         label: "Traffic",
         items: [
           { title: "Publishers", url: "/publishers", icon: Building2, description: "Who sends the calls" },
-          { title: "Campaigns", url: "/campaigns", icon: Target, description: "Campaign performance" },
+          { title: "Reporting", url: "/reporting", icon: BarChart3, description: "Full call and revenue report" },
           { title: "Calls", url: "/calls", icon: PhoneCall, description: "All calls received" },
           { title: "Source Attribution", url: "/telephony-attribution", icon: Repeat, description: "Which source sent what" },
         ],

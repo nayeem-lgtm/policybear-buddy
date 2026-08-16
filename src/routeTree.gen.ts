@@ -45,6 +45,7 @@ import { Route as ShellPayrollRouteImport } from './routes/_shell.payroll'
 import { Route as ShellPublishersRouteImport } from './routes/_shell.publishers'
 import { Route as ShellQaRouteImport } from './routes/_shell.qa'
 import { Route as ShellQuotesRouteImport } from './routes/_shell.quotes'
+import { Route as ShellReportingRouteImport } from './routes/_shell.reporting'
 import { Route as ShellReportsRouteImport } from './routes/_shell.reports'
 import { Route as ShellRetentionRouteImport } from './routes/_shell.retention'
 import { Route as ShellRevenueRouteImport } from './routes/_shell.revenue'
@@ -252,6 +253,11 @@ const ShellQuotesRoute = ShellQuotesRouteImport.update({
   path: '/quotes',
   getParentRoute: () => ShellRoute,
 } as any)
+const ShellReportingRoute = ShellReportingRouteImport.update({
+  id: '/reporting',
+  path: '/reporting',
+  getParentRoute: () => ShellRoute,
+} as any)
 const ShellReportsRoute = ShellReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
@@ -422,6 +428,7 @@ export interface FileRoutesByFullPath {
   '/publishers': typeof ShellPublishersRoute
   '/qa': typeof ShellQaRouteWithChildren
   '/quotes': typeof ShellQuotesRoute
+  '/reporting': typeof ShellReportingRoute
   '/reports': typeof ShellReportsRoute
   '/retention': typeof ShellRetentionRoute
   '/revenue': typeof ShellRevenueRoute
@@ -485,6 +492,7 @@ export interface FileRoutesByTo {
   '/publishers': typeof ShellPublishersRoute
   '/qa': typeof ShellQaRouteWithChildren
   '/quotes': typeof ShellQuotesRoute
+  '/reporting': typeof ShellReportingRoute
   '/reports': typeof ShellReportsRoute
   '/retention': typeof ShellRetentionRoute
   '/revenue': typeof ShellRevenueRoute
@@ -550,6 +558,7 @@ export interface FileRoutesById {
   '/_shell/publishers': typeof ShellPublishersRoute
   '/_shell/qa': typeof ShellQaRouteWithChildren
   '/_shell/quotes': typeof ShellQuotesRoute
+  '/_shell/reporting': typeof ShellReportingRoute
   '/_shell/reports': typeof ShellReportsRoute
   '/_shell/retention': typeof ShellRetentionRoute
   '/_shell/revenue': typeof ShellRevenueRoute
@@ -615,6 +624,7 @@ export interface FileRouteTypes {
     | '/publishers'
     | '/qa'
     | '/quotes'
+    | '/reporting'
     | '/reports'
     | '/retention'
     | '/revenue'
@@ -678,6 +688,7 @@ export interface FileRouteTypes {
     | '/publishers'
     | '/qa'
     | '/quotes'
+    | '/reporting'
     | '/reports'
     | '/retention'
     | '/revenue'
@@ -742,6 +753,7 @@ export interface FileRouteTypes {
     | '/_shell/publishers'
     | '/_shell/qa'
     | '/_shell/quotes'
+    | '/_shell/reporting'
     | '/_shell/reports'
     | '/_shell/retention'
     | '/_shell/revenue'
@@ -1032,6 +1044,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellQuotesRouteImport
       parentRoute: typeof ShellRoute
     }
+    '/_shell/reporting': {
+      id: '/_shell/reporting'
+      path: '/reporting'
+      fullPath: '/reporting'
+      preLoaderRoute: typeof ShellReportingRouteImport
+      parentRoute: typeof ShellRoute
+    }
     '/_shell/reports': {
       id: '/_shell/reports'
       path: '/reports'
@@ -1289,6 +1308,7 @@ interface ShellRouteChildren {
   ShellPublishersRoute: typeof ShellPublishersRoute
   ShellQaRoute: typeof ShellQaRouteWithChildren
   ShellQuotesRoute: typeof ShellQuotesRoute
+  ShellReportingRoute: typeof ShellReportingRoute
   ShellReportsRoute: typeof ShellReportsRoute
   ShellRetentionRoute: typeof ShellRetentionRoute
   ShellRevenueRoute: typeof ShellRevenueRoute
@@ -1345,6 +1365,7 @@ const ShellRouteChildren: ShellRouteChildren = {
   ShellPublishersRoute: ShellPublishersRoute,
   ShellQaRoute: ShellQaRouteWithChildren,
   ShellQuotesRoute: ShellQuotesRoute,
+  ShellReportingRoute: ShellReportingRoute,
   ShellReportsRoute: ShellReportsRoute,
   ShellRetentionRoute: ShellRetentionRoute,
   ShellRevenueRoute: ShellRevenueRoute,
