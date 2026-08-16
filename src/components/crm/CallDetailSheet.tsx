@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Bot,
   Phone,
   Play,
   Pause,
@@ -117,7 +118,71 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-function AudioBar() {
+
+function buildSummary(c: CallDetail) {
+  const camp = c.campaign.split(" (")[0];
+  const conv = c.validSale === "Valid";
+  return `The customer initiated the call seeking help with ${camp.toLowerCase()}, having previously reached out through an online enquiry. ${c.agent} confirmed the caller's identity and existing account, then explained the process of gathering information to confirm service availability and scheduling. The customer raised concerns about additional costs, and the agent reassured them while collecting the details needed for an accurate estimate. ${conv ? "The conversation indicated a clear intent to proceed, making this a qualified lead." : "The conversation ended without a firm commitment, so the call was not counted as a sale."} The overall tone was cooperative and the required disclosures were covered.`;
+}
+
+function buildDisposition(c: CallDetail) {
+  const camp = c.campaign.split(" (")[0];
+  const conv = c.validSale === "Valid";
+  return `The customer called about ${camp.toLowerCase()} after an earlier conversation on another channel. ${c.agent} gathered the necessary information, verified the account and addressed the concern about potential extra charges. ${conv ? "The call ended with the customer ready to book, and it was recorded as a valid sale." : "The call ended with the customer still comparing options, so it was marked as " + c.validSale.toLowerCase() + "."} Overall the interaction was productive and handled within policy.`;
+}
+
+type TranscriptLine = { who: "Agent" | "Customer"; text: string; at: string };
+
+function buildTranscript(c: CallDetail): TranscriptLine[] {
+  const camp = c.campaign.split(" (")[0];
+  const lines: [TranscriptLine["who"], string][] = [
+    ["Agent", `Thank you for calling ${camp}. This call may be recorded for quality assurance.`],
+    ["Agent", "Please hold while we connect your call."],
+    ["Agent", `Thanks for holding, this is ${c.agent} with the scheduling center. How may I help you?`],
+    ["Customer", "Hi, good morning."],
+    ["Customer", "I was chatting with somebody earlier — my unit stopped working and I'd like an estimate for the repair."],
+    ["Agent", "I'll be more than happy to assist. May I have your first and last name?"],
+    ["Customer", c.customer],
+    ["Agent", "Thank you. And the ZIP code of the property?"],
+    ["Customer", `It's ${c.phone.slice(3, 6)}01.`],
+    ["Agent", "Perfect. I see the account on file. Let me confirm the service availability for your area."],
+    ["Customer", "I don't want to be charged twice — someone already looked at it."],
+    ["Agent", "Understood, there's no extra diagnostic fee for a return visit. I'll note that on the ticket."],
+    ["Customer", "Great, that works for me."],
+    ["Agent", "Wonderful. I've read the required disclosures and your appointment request is submitted. Anything else today?"],
+    ["Customer", "No, that's all. Thank you."],
+  ];
+  return lines.map(([who, text], i) => {
+    const secs = 13 + i * 17;
+    return { who, text, at: `${String(Math.floor(secs / 60)).padStart(2, "0")}:${String(secs % 60).padStart(2, "0")}` };
+  });
+}
+
+function ScoreRing({ value }: { value: number }) {
+  const r = 18;
+  const circ = 2 * Math.PI * r;
+  return (
+    <svg width="48" height="48" viewBox="0 0 48 48" className="shrink-0">
+      <circle cx="24" cy="24" r={r} fill="none" stroke="var(--muted)" strokeWidth="4" />
+      <circle
+        cx="24"
+        cy="24"
+        r={r}
+        fill="none"
+        stroke="var(--brand)"
+        strokeWidth="4"
+        strokeLinecap="round"
+        strokeDasharray={`${(value / 100) * circ} ${circ}`}
+        transform="rotate(-90 24 24)"
+      />
+      <text x="24" y="27" textAnchor="middle" fontSize="10" fill="var(--brand)" fontWeight="600">
+        {value}%
+      </text>
+    </svg>
+  );
+}
+
+function AudioBar({ duration }: { duration: string }) {
   const [playing, setPlaying] = useState(false);
   return (
     <Card className="flex flex-row items-center gap-3 p-3 shadow-card">
@@ -137,7 +202,7 @@ function AudioBar() {
         </div>
         <div className="flex justify-between text-[11px] text-muted-foreground">
           <span>00:00</span>
-          <span>—</span>
+          <span>{duration}</span>
         </div>
       </div>
       <Volume2 className="size-4 text-muted-foreground" />
@@ -163,6 +228,7 @@ export function CallDetailSheet({
 
   if (!call) return null;
   const scored = call.outcome !== "Pending";
+  const good = call.score >= 80;
 
   return (
     <Sheet open={!!call} onOpenChange={(o) => !o && onClose()}>
@@ -321,11 +387,17 @@ export function CallDetailSheet({
                     Clear
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {call.auditedBy && call.auditedBy !== "-"
-                    ? `Audited by ${call.auditedBy}`
-                    : "Not audited yet"}
-                </p>
+                <div className="flex items-center gap-1.5 border-t border-dashed border-border/70 pt-2 text-xs text-muted-foreground">
+                  {call.auditedBy && call.auditedBy !== "-" ? (
+                    <>
+                      Audited by
+                      <Bot className="size-3.5 text-brand" />
+                      <span className="font-medium text-brand">{call.auditedBy}</span>
+                    </>
+                  ) : (
+                    "Not audited yet"
+                  )}
+                </div>
               </Card>
 
               <Card className="gap-0 p-4 shadow-card">
@@ -351,7 +423,10 @@ export function CallDetailSheet({
                     </span>
                     <div>
                       <p className="text-sm font-semibold text-foreground">QA Disposition</p>
-                      <p className="text-xs text-muted-foreground">{disposition ?? "—"}</p>
+                      <p className="text-sm leading-relaxed text-muted-foreground">
+                        {disposition ? `${disposition} — ` : ""}
+                        {call.summary ? buildDisposition(call) : "—"}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
