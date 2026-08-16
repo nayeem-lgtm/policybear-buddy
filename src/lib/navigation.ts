@@ -117,7 +117,6 @@ export const navSections: NavSection[] = [
           { title: "My Shift", url: "/my-shift", icon: AlarmClock, description: "Clock in, breaks, shift status" },
           { title: "Break Alarm", url: "/break-alarm", icon: BellRing, description: "Break timers and alerts" },
           { title: "Attendance", url: "/attendance", icon: CalendarClock, description: "Attendance records" },
-          { title: "Exceptions", url: "/attendance-exceptions", icon: Siren, description: "Late, absent, missed breaks" },
           { title: "Leave", url: "/leave", icon: CalendarDays, description: "Time off requests" },
         ],
       },

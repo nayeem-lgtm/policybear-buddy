@@ -1,7 +1,8 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
 import {
   AlertOctagon,
   CalendarDays,
@@ -30,6 +31,8 @@ import { getAttendanceRegister } from "@/lib/shift.functions";
 import { formatClock, formatHm, pacificDate, workedSeconds } from "@/lib/shift-shared";
 import { DateRangeTabs, presetLabel, type DateSelection } from "@/components/crm/DateRangeTabs";
 import { exceptionsForSession, exceptionTone } from "@/lib/attendance-exceptions";
+import { decideLeaveRequest, getLeaveForRange } from "@/lib/leave.functions";
+import { coversDate, formatDateRange, leaveTone } from "@/lib/leave-shared";
 import { cn } from "@/lib/utils";
 
 const STANDARD_DAY_SECONDS = 8 * 3600;
@@ -240,6 +243,51 @@ function AttendancePage() {
   const exceptions = filtered
     .flatMap((r) => exceptionsForSession(r, r.name, r.team))
     .sort((a, b) => (a.date === b.date ? b.minutes - a.minutes : b.date.localeCompare(a.date)));
+
+  /* ---- leave: pending approvals + who's on leave ---- */
+  const loadLeave = useServerFn(getLeaveForRange);
+  const leaveQuery = useQuery({
+    queryKey: ["leave-range", from, to],
+    queryFn: () => loadLeave({ data: { from, to } }),
+    refetchInterval: 60_000,
+  });
+  const decide = useServerFn(decideLeaveRequest);
+  const qc = useQueryClient();
+  const review = useMutation({
+    mutationFn: (v: { id: string; status: "Approved" | "Denied" }) =>
+      decide({ data: { id: v.id, status: v.status } }),
+    onSuccess: (_d, v) => {
+      toast.success(`Leave ${v.status.toLowerCase()}.`);
+      void qc.invalidateQueries({ queryKey: ["leave-range"] });
+      void qc.invalidateQueries({ queryKey: ["my-leave"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const leaveRows = useMemo(() => {
+    const profiles = new Map((leaveQuery.data?.profiles ?? []).map((p) => [p.id, p]));
+    return (leaveQuery.data?.leave ?? []).map((l) => {
+      const p = profiles.get(l.user_id);
+      return {
+        ...l,
+        name: p?.name ?? "Unknown employee",
+        team: p?.team ?? "—",
+        initials: p?.avatar_initials ?? "??",
+      };
+    });
+  }, [leaveQuery.data]);
+
+  const leaveFiltered = leaveRows.filter((l) => {
+    const matchesSearch =
+      !search || `${l.name} ${l.team} ${l.leave_type}`.toLowerCase().includes(search.toLowerCase());
+    return matchesSearch && (team === "all" || l.team === team);
+  });
+  const pendingLeave = leaveFiltered.filter((l) => l.status === "Pending");
+  const today = pacificDate();
+  const onLeave = leaveFiltered.filter((l) => l.status === "Approved");
+  const onLeaveToday = onLeave.filter((l) => coversDate(l, today));
+
+
 
 
 
@@ -604,6 +652,124 @@ function AttendancePage() {
           }
         />
       </Card>
+
+      {/* Leave */}
+      <div className="grid gap-4 xl:grid-cols-2">
+        <Card className="gap-0 overflow-hidden rounded-3xl p-0 shadow-card">
+          <div className="flex items-center justify-between gap-3 border-b border-border/60 bg-surface/50 p-4">
+            <div className="flex items-start gap-3">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-warning/25 text-brand-tan">
+                <Clock3 className="size-4" />
+              </span>
+              <div>
+                <h2 className="font-display text-base font-semibold text-foreground">
+                  Leave — pending approval
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  Requests submitted by employees for this date range.
+                </p>
+              </div>
+            </div>
+            <span className="tabular rounded-full bg-warning/25 px-2.5 py-1 text-xs font-semibold text-brand-tan">
+              {pendingLeave.length}
+            </span>
+          </div>
+
+          <div className="divide-y divide-border/60">
+            {pendingLeave.length === 0 && (
+              <p className="p-6 text-center text-sm text-muted-foreground">
+                {leaveQuery.isLoading ? "Loading leave requests…" : "No pending leave requests."}
+              </p>
+            )}
+            {pendingLeave.map((l) => (
+              <div key={l.id} className="flex flex-wrap items-center gap-3 p-4">
+                <Avatar className="size-9 ring-1 ring-border/60">
+                  <AvatarFallback className="bg-brand/10 text-[0.65rem] font-semibold text-brand">
+                    {l.initials}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium text-foreground">{l.name}</p>
+                  <p className="tabular truncate text-xs text-muted-foreground">
+                    {l.leave_type} · {formatDateRange(l.start_date, l.end_date)} ·{" "}
+                    {Number(l.days)}d{l.reason ? ` · ${l.reason}` : ""}
+                  </p>
+                </div>
+                <div className="flex gap-1.5">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-xl"
+                    disabled={review.isPending}
+                    onClick={() => review.mutate({ id: l.id, status: "Approved" })}
+                  >
+                    Approve
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="rounded-xl text-muted-foreground"
+                    disabled={review.isPending}
+                    onClick={() => review.mutate({ id: l.id, status: "Denied" })}
+                  >
+                    Deny
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="gap-0 overflow-hidden rounded-3xl p-0 shadow-card">
+          <div className="flex items-center justify-between gap-3 border-b border-border/60 bg-surface/50 p-4">
+            <div className="flex items-start gap-3">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-success/15 text-success">
+                <CalendarDays className="size-4" />
+              </span>
+              <div>
+                <h2 className="font-display text-base font-semibold text-foreground">On leave</h2>
+                <p className="text-xs text-muted-foreground">
+                  Approved time off in this range · {onLeaveToday.length} out today.
+                </p>
+              </div>
+            </div>
+            <span className="tabular rounded-full bg-success/15 px-2.5 py-1 text-xs font-semibold text-success">
+              {onLeave.length}
+            </span>
+          </div>
+
+          <div className="divide-y divide-border/60">
+            {onLeave.length === 0 && (
+              <p className="p-6 text-center text-sm text-muted-foreground">
+                {leaveQuery.isLoading ? "Loading approved leave…" : "Nobody is on approved leave."}
+              </p>
+            )}
+            {onLeave.map((l) => {
+              const outNow = coversDate(l, today);
+              return (
+                <div key={l.id} className="flex items-center gap-3 p-4">
+                  <Avatar className="size-9 ring-1 ring-border/60">
+                    <AvatarFallback className="bg-success/12 text-[0.65rem] font-semibold text-success">
+                      {l.initials}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-foreground">{l.name}</p>
+                    <p className="tabular truncate text-xs text-muted-foreground">
+                      {l.leave_type} · {formatDateRange(l.start_date, l.end_date)} ·{" "}
+                      {Number(l.days)}d
+                    </p>
+                  </div>
+                  <StatusBadge
+                    status={outNow ? "On Leave Today" : "Scheduled"}
+                    tone={outNow ? "success" : leaveTone(l.status)}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

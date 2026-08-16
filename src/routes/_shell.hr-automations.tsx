@@ -89,7 +89,7 @@ function HrAutomationsPage() {
           <Link to="/break-alarm" className="inline-flex items-center gap-1 text-brand hover:underline">
             Break Alarm Control <ArrowRight className="size-3.5" />
           </Link>
-          <Link to="/attendance-exceptions" className="inline-flex items-center gap-1 text-brand hover:underline">
+          <Link to="/attendance" className="inline-flex items-center gap-1 text-brand hover:underline">
             Attendance Exceptions <ArrowRight className="size-3.5" />
           </Link>
         </div>
