@@ -71,7 +71,6 @@ export function derive(row: ReportRow) {
   };
 }
 
-function fromCps(source: CpsRow[], match: (name: string) => number): ReportRow[] {
 function fromCps(
   source: CpsRow[],
   match: (name: string) => number,
