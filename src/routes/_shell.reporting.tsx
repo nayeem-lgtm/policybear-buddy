@@ -145,6 +145,12 @@ function ReportingPage() {
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card px-4 py-3 shadow-card">
         <p className="text-sm text-muted-foreground">
           Showing <span className="font-semibold text-foreground">{presetLabel(dateSel)}</span>
+          {publisher !== "all" && (
+            <>
+              {" · "}
+              <span className="font-semibold text-foreground">{publisher}</span>
+            </>
+          )}
         </p>
         <DateRangeTabs
           value={dateSel}
