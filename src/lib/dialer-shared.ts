@@ -130,6 +130,8 @@ export const callbackUpdateSchema = z.object({
   status: z.enum(CALLBACK_STATUSES).optional(),
   scheduledAt: z.string().max(40).nullable().optional(),
   assignToMe: z.boolean().optional(),
+  assignTo: z.string().uuid().nullable().optional(),
+
   notes: z.string().max(1000).optional(),
 });
 
