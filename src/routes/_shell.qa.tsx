@@ -11,15 +11,12 @@ import {
 } from "recharts";
 import { PageHeader } from "@/components/crm/PageHeader";
 import { DataTable, type Column } from "@/components/crm/DataTable";
-import { StatusBadge } from "@/components/crm/StatusBadge";
 import { DateRangeTabs, type DateSelection } from "@/components/crm/DateRangeTabs";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { CallDetailSheet } from "@/components/crm/CallDetailSheet";
-import { Separator } from "@/components/ui/separator";
-import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -53,14 +50,6 @@ export const Route = createFileRoute("/_shell/qa")({
   }),
   component: QAPage,
 });
-
-const scorecardCriteria = [
-  { label: "Consent captured", weight: 20 },
-  { label: "Correct plan explanation", weight: 20 },
-  { label: "Compliance disclosures read", weight: 25 },
-  { label: "Verified identity & eligibility", weight: 20 },
-  { label: "Call handling & tone", weight: 15 },
-];
 
 const ALL = "__all__";
 
@@ -316,7 +305,6 @@ const money = (n: number) => `$${n.toFixed(2)}`;
 
 function QAPage() {
   const [selected, setSelected] = useState<QARow | null>(null);
-  const [reviewer, setReviewer] = useState<string>("");
   const [dateSel, setDateSel] = useState<DateSelection>({ preset: "7d" });
   const [search, setSearch] = useState("");
   const [phone, setPhone] = useState("");
