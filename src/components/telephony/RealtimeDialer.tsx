@@ -196,6 +196,12 @@ export function RealtimeDialer() {
     phone: "",
     name: null,
   });
+  const [cbOpen, setCbOpen] = useState(false);
+  const [cbTarget, setCbTarget] = useState<{ phone: string; name: string | null }>({
+    phone: "",
+    name: null,
+  });
+
 
   /* premium desk options: audio, speed dial, live notes, auto-flow */
   const [sound, setSound] = useState(true);
