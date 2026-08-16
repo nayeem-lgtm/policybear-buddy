@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { CreateTicketDialog } from "@/components/crm/CreateTicketDialog";
 import {
   Bot,
   Phone,
