@@ -26,6 +26,7 @@ import { Route as ShellCommissionsRouteImport } from './routes/_shell.commission
 import { Route as ShellComplaintsRouteImport } from './routes/_shell.complaints'
 import { Route as ShellCustomersRouteImport } from './routes/_shell.customers'
 import { Route as ShellDashboardRouteImport } from './routes/_shell.dashboard'
+import { Route as ShellDncRouteImport } from './routes/_shell.dnc'
 import { Route as ShellDocumentsRouteImport } from './routes/_shell.documents'
 import { Route as ShellEmployeesRouteImport } from './routes/_shell.employees'
 import { Route as ShellExpensesRouteImport } from './routes/_shell.expenses'
@@ -155,6 +156,11 @@ const ShellCustomersRoute = ShellCustomersRouteImport.update({
 const ShellDashboardRoute = ShellDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellDncRoute = ShellDncRouteImport.update({
+  id: '/dnc',
+  path: '/dnc',
   getParentRoute: () => ShellRoute,
 } as any)
 const ShellDocumentsRoute = ShellDocumentsRouteImport.update({
@@ -408,6 +414,7 @@ export interface FileRoutesByFullPath {
   '/complaints': typeof ShellComplaintsRoute
   '/customers': typeof ShellCustomersRoute
   '/dashboard': typeof ShellDashboardRoute
+  '/dnc': typeof ShellDncRoute
   '/documents': typeof ShellDocumentsRoute
   '/employees': typeof ShellEmployeesRoute
   '/expenses': typeof ShellExpensesRoute
@@ -472,6 +479,7 @@ export interface FileRoutesByTo {
   '/complaints': typeof ShellComplaintsRoute
   '/customers': typeof ShellCustomersRoute
   '/dashboard': typeof ShellDashboardRoute
+  '/dnc': typeof ShellDncRoute
   '/documents': typeof ShellDocumentsRoute
   '/employees': typeof ShellEmployeesRoute
   '/expenses': typeof ShellExpensesRoute
@@ -538,6 +546,7 @@ export interface FileRoutesById {
   '/_shell/complaints': typeof ShellComplaintsRoute
   '/_shell/customers': typeof ShellCustomersRoute
   '/_shell/dashboard': typeof ShellDashboardRoute
+  '/_shell/dnc': typeof ShellDncRoute
   '/_shell/documents': typeof ShellDocumentsRoute
   '/_shell/employees': typeof ShellEmployeesRoute
   '/_shell/expenses': typeof ShellExpensesRoute
@@ -604,6 +613,7 @@ export interface FileRouteTypes {
     | '/complaints'
     | '/customers'
     | '/dashboard'
+    | '/dnc'
     | '/documents'
     | '/employees'
     | '/expenses'
@@ -668,6 +678,7 @@ export interface FileRouteTypes {
     | '/complaints'
     | '/customers'
     | '/dashboard'
+    | '/dnc'
     | '/documents'
     | '/employees'
     | '/expenses'
@@ -733,6 +744,7 @@ export interface FileRouteTypes {
     | '/_shell/complaints'
     | '/_shell/customers'
     | '/_shell/dashboard'
+    | '/_shell/dnc'
     | '/_shell/documents'
     | '/_shell/employees'
     | '/_shell/expenses'
@@ -908,6 +920,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof ShellDashboardRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/dnc': {
+      id: '/_shell/dnc'
+      path: '/dnc'
+      fullPath: '/dnc'
+      preLoaderRoute: typeof ShellDncRouteImport
       parentRoute: typeof ShellRoute
     }
     '/_shell/documents': {
@@ -1275,6 +1294,7 @@ interface ShellRouteChildren {
   ShellComplaintsRoute: typeof ShellComplaintsRoute
   ShellCustomersRoute: typeof ShellCustomersRoute
   ShellDashboardRoute: typeof ShellDashboardRoute
+  ShellDncRoute: typeof ShellDncRoute
   ShellDocumentsRoute: typeof ShellDocumentsRoute
   ShellEmployeesRoute: typeof ShellEmployeesRoute
   ShellExpensesRoute: typeof ShellExpensesRoute
@@ -1334,6 +1354,7 @@ const ShellRouteChildren: ShellRouteChildren = {
   ShellComplaintsRoute: ShellComplaintsRoute,
   ShellCustomersRoute: ShellCustomersRoute,
   ShellDashboardRoute: ShellDashboardRoute,
+  ShellDncRoute: ShellDncRoute,
   ShellDocumentsRoute: ShellDocumentsRoute,
   ShellEmployeesRoute: ShellEmployeesRoute,
   ShellExpensesRoute: ShellExpensesRoute,
