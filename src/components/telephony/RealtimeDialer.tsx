@@ -8,7 +8,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
+
 import {
   ArrowLeftRight,
   Ban,
@@ -29,12 +31,16 @@ import {
   PlusCircle,
   Rocket,
   Search,
+  ShieldAlert,
+  ShieldCheck,
+  ShieldOff,
   Signal,
   Star,
   Timer,
   Users,
   Volume2,
 } from "lucide-react";
+
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -76,7 +82,11 @@ import {
   updateCallback,
   wrapCall,
 } from "@/lib/dialer.functions";
+import { checkDncNumber, getDncCenter } from "@/lib/dnc.functions";
+import { DNC_ACTION_LABEL, DNC_ACTION_TONE } from "@/lib/dnc-shared";
+import { AddToDncDialog } from "@/components/compliance/AddToDncDialog";
 import { cn } from "@/lib/utils";
+
 
 const KEYPAD: { key: string; sub: string }[] = [
   { key: "1", sub: "" },
@@ -151,8 +161,43 @@ export function RealtimeDialer() {
   const [lead, setLead] = useState<{ id: string; phone_e164: string; contact_name: string | null } | null>(
     null,
   );
+  const [dncOpen, setDncOpen] = useState(false);
+  const [dncTarget, setDncTarget] = useState<{ phone: string; name: string | null }>({
+    phone: "",
+    name: null,
+  });
+
+  /* ------------------------------------------------- live Do-Not-Call pre-check */
+  const checkDnc = useServerFn(checkDncNumber);
+  const loadBlocked = useServerFn(getDncCenter);
+  const [debouncedDigits, setDebouncedDigits] = useState("");
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedDigits(digits), 350);
+    return () => clearTimeout(id);
+  }, [digits]);
+
+  const dncCheck = useQuery({
+    queryKey: ["dnc-check", debouncedDigits],
+    queryFn: () => checkDnc({ data: { phone: debouncedDigits } }),
+    enabled: debouncedDigits.replace(/\D/g, "").length >= 7,
+    staleTime: 15000,
+  });
+  const dncBlocked = Boolean(dncCheck.data?.blocked);
+  const dncEntry = dncCheck.data?.entry ?? null;
+
+  const blocked = useQuery({
+    queryKey: ["dnc-blocked"],
+    queryFn: () => loadBlocked({ data: { action: "dial_blocked", days: 7, limit: 50, status: "active" } }),
+    refetchInterval: 30000,
+  });
+
+  const openDnc = (phone: string | null | undefined, name?: string | null) => {
+    setDncTarget({ phone: phone ?? "", name: name ?? null });
+    setDncOpen(true);
+  };
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["dialer-desk"] });
+
 
   const dialMutation = useMutation({
     mutationFn: (input: StartCallInput) => dial({ data: input }),
@@ -242,14 +287,21 @@ export function RealtimeDialer() {
   const leadMutation = useMutation({
     mutationFn: () => nextLead({ data: { campaignId } }),
     onSuccess: (res) => {
+      if (res.suppressed) {
+        toast.warning(
+          `${res.suppressed} DNC lead${res.suppressed === 1 ? "" : "s"} skipped and closed automatically`,
+        );
+        queryClient.invalidateQueries({ queryKey: ["dnc-blocked"] });
+      }
       if (!res.task) {
         setLead(null);
-        toast.info("No leads left in this campaign right now");
+        toast.info("No dialable leads left in this campaign right now");
         return;
       }
       setLead(res.task as never);
       toast.success(`Next lead: ${formatPhone(res.task.phone_e164)}`);
     },
+
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -538,7 +590,7 @@ export function RealtimeDialer() {
                   value={digits}
                   onChange={(e) => setDigits(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && digits.length >= 7) {
+                    if (e.key === "Enter" && digits.length >= 7 && !dncBlocked) {
                       dialMutation.mutate({
                         phone: digits,
                         mode: "manual",
@@ -549,7 +601,44 @@ export function RealtimeDialer() {
                   placeholder="Enter a number"
                   className="h-12 border-0 bg-transparent text-center text-2xl font-semibold tracking-wider shadow-none focus-visible:ring-0"
                 />
+                {debouncedDigits.replace(/\D/g, "").length >= 7 ? (
+                  <p
+                    className={cn(
+                      "flex items-center justify-center gap-1.5 text-xs font-medium",
+                      dncCheck.isFetching
+                        ? "text-muted-foreground"
+                        : dncBlocked
+                          ? "text-destructive"
+                          : "text-success",
+                    )}
+                  >
+                    {dncCheck.isFetching ? (
+                      <>Checking Do-Not-Call…</>
+                    ) : dncBlocked ? (
+                      <>
+                        <ShieldOff className="size-3.5" /> On DNC — {dncEntry?.reason}
+                      </>
+                    ) : (
+                      <>
+                        <ShieldCheck className="size-3.5" /> Cleared against DNC
+                      </>
+                    )}
+                  </p>
+                ) : null}
               </div>
+
+              {dncBlocked ? (
+                <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
+                  <ShieldAlert className="size-4 shrink-0" />
+                  <span className="min-w-0 flex-1">
+                    Dialing is blocked for compliance. Any attempt is logged in the audit trail.
+                  </span>
+                  <Button asChild size="sm" variant="outline" className="h-7 text-xs">
+                    <Link to="/dnc">Open DNC center</Link>
+                  </Button>
+                </div>
+              ) : null}
+
 
               <div className="grid grid-cols-3 gap-2">
                 {KEYPAD.map((k) => (
@@ -588,7 +677,7 @@ export function RealtimeDialer() {
 
               <Button
                 className="h-12 w-full rounded-2xl"
-                disabled={digits.length < 7 || dialMutation.isPending}
+                disabled={digits.length < 7 || dialMutation.isPending || dncBlocked}
                 onClick={() =>
                   dialMutation.mutate({
                     phone: digits,
@@ -597,8 +686,26 @@ export function RealtimeDialer() {
                   })
                 }
               >
-                <PhoneCall className="mr-2 size-4" /> Call
+                {dncBlocked ? (
+                  <>
+                    <ShieldOff className="mr-2 size-4" /> Blocked — on DNC
+                  </>
+                ) : (
+                  <>
+                    <PhoneCall className="mr-2 size-4" /> Call
+                  </>
+                )}
               </Button>
+
+              <Button
+                variant="outline"
+                className="w-full text-destructive"
+                disabled={digits.replace(/\D/g, "").length < 7 || dncBlocked}
+                onClick={() => openDnc(digits)}
+              >
+                <Ban className="mr-2 size-4" /> Add this number to DNC
+              </Button>
+
 
               {(data?.today ?? []).length ? (
                 <div>
@@ -648,7 +755,16 @@ export function RealtimeDialer() {
                 <TabsTrigger value="history">
                   <History className="mr-1.5 size-4" /> Today
                 </TabsTrigger>
+                <TabsTrigger value="compliance">
+                  <ShieldOff className="mr-1.5 size-4" /> DNC
+                  {(blocked.data?.events.length ?? 0) > 0 ? (
+                    <Badge variant="secondary" className="ml-2">
+                      {blocked.data?.events.length}
+                    </Badge>
+                  ) : null}
+                </TabsTrigger>
               </TabsList>
+
             </div>
 
             {/* -------------------------------------------------------- inbound queue */}
@@ -988,6 +1104,79 @@ export function RealtimeDialer() {
                         >
                           <PhoneCall className="size-4" />
                         </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive"
+                          title="Add to Do-Not-Call"
+                          onClick={() => openDnc(c.phone_e164, c.contact_name)}
+                        >
+                          <Ban className="size-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </TabsContent>
+
+            {/* ----------------------------------------------------------- compliance */}
+            <TabsContent value="compliance" className="m-0 space-y-3 p-4">
+              <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border/60 bg-surface/40 p-3">
+                <span className="grid size-9 place-items-center rounded-full bg-destructive/12 text-destructive">
+                  <ShieldOff className="size-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium">
+                    {blocked.data?.totals.active ?? 0} numbers suppressed
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {blocked.data?.totals.blocked ?? 0} dial attempts blocked in the last 7 days
+                  </p>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => openDnc(digits || "")}>
+                  <Ban className="mr-1.5 size-4" /> Add number
+                </Button>
+                <Button asChild size="sm">
+                  <Link to="/dnc">Full DNC center</Link>
+                </Button>
+              </div>
+
+              <ScrollArea className="h-[320px] pr-3">
+                {(blocked.data?.events ?? []).length === 0 ? (
+                  <div className="grid place-items-center gap-2 py-14 text-center">
+                    <span className="grid size-12 place-items-center rounded-2xl bg-success/12 text-success">
+                      <ShieldCheck className="size-5" />
+                    </span>
+                    <p className="text-sm text-muted-foreground">
+                      No blocked dial attempts this week — the floor is staying compliant.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {(blocked.data?.events ?? []).map((ev) => (
+                      <div
+                        key={ev.id}
+                        className="flex flex-wrap items-center gap-3 rounded-2xl border border-border/60 bg-surface/40 p-3"
+                      >
+                        <Badge className={cn("border-0", DNC_ACTION_TONE[ev.action])}>
+                          {DNC_ACTION_LABEL[ev.action] ?? ev.action}
+                        </Badge>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-medium tabular-nums">{formatPhone(ev.phone_e164)}</p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {ev.reason ?? "—"} · {ev.source}
+                            {ev.actor_name ? ` · ${ev.actor_name}` : ""}
+                          </p>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(ev.created_at).toLocaleString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -997,6 +1186,19 @@ export function RealtimeDialer() {
           </Tabs>
         </Card>
       </div>
+
+      <AddToDncDialog
+        open={dncOpen}
+        onOpenChange={setDncOpen}
+        phone={dncTarget.phone}
+        contactName={dncTarget.name}
+        source="agent-desk"
+        onAdded={() => {
+          refresh();
+          queryClient.invalidateQueries({ queryKey: ["dnc-check"] });
+        }}
+      />
     </div>
   );
 }
+

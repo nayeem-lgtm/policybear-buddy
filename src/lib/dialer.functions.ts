@@ -606,24 +606,57 @@ export const addDialTasks = createServerFn({ method: "POST" })
     return { added: rows.length };
   });
 
-/** Hand the agent the next lead in a campaign (power / preview dialing). */
+/**
+ * Hand the agent the next lead in a campaign (power / preview dialing).
+ *
+ * Leads sitting on the Do-Not-Call list are never handed out: they are closed
+ * with a `DNC` outcome and a `dial_blocked` compliance event instead, so the
+ * agent only ever receives a dialable lead.
+ */
 export const claimNextLead = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => z.object({ campaignId: z.string().uuid() }).parse(data))
   .middleware([requireSupabaseAuth])
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const nowIso = new Date().toISOString();
-    const { data: task } = await supabase
+    const { data: candidates } = await supabase
       .from("dial_tasks")
       .select("*")
       .eq("campaign_id", data.campaignId)
       .eq("status", "pending")
       .or(`next_attempt_at.is.null,next_attempt_at.lte.${nowIso}`)
       .order("next_attempt_at", { ascending: true, nullsFirst: true })
-      .limit(1)
-      .maybeSingle();
-    if (!task) return { task: null };
+      .limit(25);
 
-    await supabase.from("dial_tasks").update({ assigned_to: userId }).eq("id", task.id);
-    return { task };
+    const { findDnc, logDncEvent, actorName } = await import("@/lib/dnc.server");
+    let suppressed = 0;
+    let actor: string | null = null;
+
+    for (const task of candidates ?? []) {
+      const hit = await findDnc(supabase, task.phone_e164);
+      if (!hit) {
+        await supabase.from("dial_tasks").update({ assigned_to: userId }).eq("id", task.id);
+        return { task, suppressed };
+      }
+
+      suppressed += 1;
+      actor = actor ?? (await actorName(supabase, userId));
+      await supabase
+        .from("dial_tasks")
+        .update({ status: "closed", last_outcome: "DNC", next_attempt_at: null })
+        .eq("id", task.id);
+      await logDncEvent(supabase, {
+        phone: hit.phone_e164,
+        action: "dial_blocked",
+        reason: hit.reason,
+        source: "dialer:power",
+        detail: { scope: hit.scope, campaignId: data.campaignId, dialTaskId: task.id },
+        actorId: userId,
+        actorName: actor,
+        entryId: hit.id,
+      });
+    }
+
+    return { task: null, suppressed };
   });
+
