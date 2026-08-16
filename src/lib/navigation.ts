@@ -59,7 +59,7 @@ export interface NavSubGroup {
 }
 
 export interface NavSection {
-  id: "agent" | "publisher" | "finance" | "other";
+  id: "operation" | "agent" | "publisher" | "finance" | "other";
   label: string;
   tagline: string;
   icon: typeof Home;
