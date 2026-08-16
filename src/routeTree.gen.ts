@@ -14,7 +14,6 @@ import { Route as ShellRouteImport } from './routes/_shell'
 import { Route as ShellAgentDeskRouteImport } from './routes/_shell.agent-desk'
 import { Route as ShellAnnouncementsRouteImport } from './routes/_shell.announcements'
 import { Route as ShellAttendanceRouteImport } from './routes/_shell.attendance'
-import { Route as ShellAttendanceExceptionsRouteImport } from './routes/_shell.attendance-exceptions'
 import { Route as ShellAutomationsRouteImport } from './routes/_shell.automations'
 import { Route as ShellBreakAlarmRouteImport } from './routes/_shell.break-alarm'
 import { Route as ShellCallCostsRouteImport } from './routes/_shell.call-costs'
@@ -99,12 +98,6 @@ const ShellAttendanceRoute = ShellAttendanceRouteImport.update({
   path: '/attendance',
   getParentRoute: () => ShellRoute,
 } as any)
-const ShellAttendanceExceptionsRoute =
-  ShellAttendanceExceptionsRouteImport.update({
-    id: '/attendance-exceptions',
-    path: '/attendance-exceptions',
-    getParentRoute: () => ShellRoute,
-  } as any)
 const ShellAutomationsRoute = ShellAutomationsRouteImport.update({
   id: '/automations',
   path: '/automations',
@@ -409,7 +402,6 @@ export interface FileRoutesByFullPath {
   '/agent-desk': typeof ShellAgentDeskRoute
   '/announcements': typeof ShellAnnouncementsRoute
   '/attendance': typeof ShellAttendanceRoute
-  '/attendance-exceptions': typeof ShellAttendanceExceptionsRoute
   '/automations': typeof ShellAutomationsRoute
   '/break-alarm': typeof ShellBreakAlarmRoute
   '/call-costs': typeof ShellCallCostsRoute
@@ -475,7 +467,6 @@ export interface FileRoutesByTo {
   '/agent-desk': typeof ShellAgentDeskRoute
   '/announcements': typeof ShellAnnouncementsRoute
   '/attendance': typeof ShellAttendanceRoute
-  '/attendance-exceptions': typeof ShellAttendanceExceptionsRoute
   '/automations': typeof ShellAutomationsRoute
   '/break-alarm': typeof ShellBreakAlarmRoute
   '/call-costs': typeof ShellCallCostsRoute
@@ -543,7 +534,6 @@ export interface FileRoutesById {
   '/_shell/agent-desk': typeof ShellAgentDeskRoute
   '/_shell/announcements': typeof ShellAnnouncementsRoute
   '/_shell/attendance': typeof ShellAttendanceRoute
-  '/_shell/attendance-exceptions': typeof ShellAttendanceExceptionsRoute
   '/_shell/automations': typeof ShellAutomationsRoute
   '/_shell/break-alarm': typeof ShellBreakAlarmRoute
   '/_shell/call-costs': typeof ShellCallCostsRoute
@@ -611,7 +601,6 @@ export interface FileRouteTypes {
     | '/agent-desk'
     | '/announcements'
     | '/attendance'
-    | '/attendance-exceptions'
     | '/automations'
     | '/break-alarm'
     | '/call-costs'
@@ -677,7 +666,6 @@ export interface FileRouteTypes {
     | '/agent-desk'
     | '/announcements'
     | '/attendance'
-    | '/attendance-exceptions'
     | '/automations'
     | '/break-alarm'
     | '/call-costs'
@@ -744,7 +732,6 @@ export interface FileRouteTypes {
     | '/_shell/agent-desk'
     | '/_shell/announcements'
     | '/_shell/attendance'
-    | '/_shell/attendance-exceptions'
     | '/_shell/automations'
     | '/_shell/break-alarm'
     | '/_shell/call-costs'
@@ -849,13 +836,6 @@ declare module '@tanstack/react-router' {
       path: '/attendance'
       fullPath: '/attendance'
       preLoaderRoute: typeof ShellAttendanceRouteImport
-      parentRoute: typeof ShellRoute
-    }
-    '/_shell/attendance-exceptions': {
-      id: '/_shell/attendance-exceptions'
-      path: '/attendance-exceptions'
-      fullPath: '/attendance-exceptions'
-      preLoaderRoute: typeof ShellAttendanceExceptionsRouteImport
       parentRoute: typeof ShellRoute
     }
     '/_shell/automations': {
@@ -1302,7 +1282,6 @@ interface ShellRouteChildren {
   ShellAgentDeskRoute: typeof ShellAgentDeskRoute
   ShellAnnouncementsRoute: typeof ShellAnnouncementsRoute
   ShellAttendanceRoute: typeof ShellAttendanceRoute
-  ShellAttendanceExceptionsRoute: typeof ShellAttendanceExceptionsRoute
   ShellAutomationsRoute: typeof ShellAutomationsRoute
   ShellBreakAlarmRoute: typeof ShellBreakAlarmRoute
   ShellCallCostsRoute: typeof ShellCallCostsRoute
@@ -1363,7 +1342,6 @@ const ShellRouteChildren: ShellRouteChildren = {
   ShellAgentDeskRoute: ShellAgentDeskRoute,
   ShellAnnouncementsRoute: ShellAnnouncementsRoute,
   ShellAttendanceRoute: ShellAttendanceRoute,
-  ShellAttendanceExceptionsRoute: ShellAttendanceExceptionsRoute,
   ShellAutomationsRoute: ShellAutomationsRoute,
   ShellBreakAlarmRoute: ShellBreakAlarmRoute,
   ShellCallCostsRoute: ShellCallCostsRoute,
