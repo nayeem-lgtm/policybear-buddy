@@ -207,31 +207,62 @@ export function CallDetailSheet({
         <div className="space-y-3 px-4 py-4">
           {tab === "Overview" && (
             <>
-              <Card className="gap-1 p-4 shadow-card">
+              <Card className="gap-2 p-4 shadow-card">
                 <p className="font-display text-sm font-semibold text-foreground">Call Summary</p>
-                <p className="text-sm text-muted-foreground">
-                  {call.summary
-                    ? `${call.agent} handled an inbound ${call.campaign} call from ${call.customer}. Outcome recorded as ${call.outcome}.`
-                    : "No summary available for this call."}
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {call.summary ? buildSummary(call) : "No summary available for this call."}
                 </p>
               </Card>
 
-              <AudioBar />
+              <AudioBar duration={call.duration} />
 
               <div className="grid gap-3 sm:grid-cols-2">
-                <Card className="flex-row items-center gap-3 p-4 shadow-card">
-                  <span className="flex size-9 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                <Card
+                  className={`flex-row items-center gap-3 p-4 shadow-card ${
+                    scored
+                      ? good
+                        ? "border-success/30 bg-success/8"
+                        : "border-destructive/30 bg-destructive/8"
+                      : ""
+                  }`}
+                >
+                  <span
+                    className={`flex size-9 items-center justify-center rounded-lg ${
+                      scored
+                        ? good
+                          ? "bg-success/15 text-success"
+                          : "bg-destructive/15 text-destructive"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
                     <ShieldQuestion className="size-4" />
                   </span>
-                  <div>
+                  <div className="flex-1">
                     <p className="text-xs text-muted-foreground">QC Status</p>
-                    <p className="font-display text-base font-semibold text-foreground">
-                      {scored ? call.outcome : "Not Scored"}
+                    <p
+                      className={`font-display text-base font-semibold ${
+                        scored ? (good ? "text-success" : "text-destructive") : "text-foreground"
+                      }`}
+                    >
+                      {scored ? (good ? "Good" : "Poor") : "Not Scored"}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {scored ? call.reason : "QC scoring is not available for this call yet."}
+                      {scored
+                        ? good
+                          ? "The quality of this call meets our standards."
+                          : call.reason || "This call fell below the quality threshold."
+                        : "QC scoring is not available for this call yet."}
                     </p>
                   </div>
+                  {scored && (
+                    <span
+                      className={`flex size-8 shrink-0 items-center justify-center rounded-full ${
+                        good ? "bg-success/20 text-success" : "bg-destructive/20 text-destructive"
+                      }`}
+                    >
+                      {good ? <Check className="size-4" /> : <Flag className="size-4" />}
+                    </span>
+                  )}
                 </Card>
                 <Card className="flex-row items-center gap-3 border-brand/25 bg-brand/6 p-4 shadow-card">
                   <span className="flex size-9 items-center justify-center rounded-lg bg-brand/15 text-brand">
@@ -244,8 +275,10 @@ export function CallDetailSheet({
                     </p>
                     <p className="text-xs text-muted-foreground">Overall audit score</p>
                   </div>
+                  <ScoreRing value={scored ? call.score : 0} />
                 </Card>
               </div>
+
 
               <Card className="gap-3 p-3 shadow-card">
                 <div className="flex flex-wrap items-center gap-2">
