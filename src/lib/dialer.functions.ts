@@ -295,7 +295,34 @@ export const wrapCall = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/** The full callback book (queue + calendar) in one round-trip. */
+export const getCallbackBook = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const since = new Date(Date.now() - 21 * 24 * 3600 * 1000).toISOString();
+
+    const [book, agents, queues] = await Promise.all([
+      supabase
+        .from("callbacks")
+        .select("*")
+        .or(`status.not.in.("Completed","Cancelled"),created_at.gte.${since}`)
+        .order("scheduled_at", { ascending: true, nullsFirst: false })
+        .limit(500),
+      supabase.from("profiles").select("id, name, avatar_initials").order("name"),
+      supabase.from("call_queues").select("id, name").eq("active", true).order("priority"),
+    ]);
+
+    return {
+      userId,
+      callbacks: book.data ?? [],
+      agents: agents.data ?? [],
+      queues: queues.data ?? [],
+    };
+  });
+
 /** Put a lead into the callback book. */
+
 export const createCallback = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => callbackSchema.parse(data))
   .middleware([requireSupabaseAuth])
