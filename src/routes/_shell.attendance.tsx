@@ -237,6 +237,12 @@ function AttendancePage() {
     return matchesSearch && matchesTeam;
   });
 
+  const exceptions = filtered
+    .flatMap((r) => exceptionsForSession(r, r.name, r.team))
+    .sort((a, b) => (a.date === b.date ? b.minutes - a.minutes : b.date.localeCompare(a.date)));
+
+
+
   const totals = filtered.reduce(
     (acc, r) => {
       const overtime = Math.max(0, r.worked - STANDARD_DAY_SECONDS);
