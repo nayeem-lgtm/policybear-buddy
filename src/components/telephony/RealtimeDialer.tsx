@@ -197,6 +197,32 @@ export function RealtimeDialer() {
     name: null,
   });
 
+  /* premium desk options: audio, speed dial, live notes, auto-flow */
+  const [sound, setSound] = useState(true);
+  const [autoNext, setAutoNext] = useState(false);
+  const [liveNotes, setLiveNotes] = useState("");
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [speedDial, setSpeedDial] = useState<{ phone: string; name: string }[]>([]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(SPEED_DIAL_KEY);
+      if (raw) setSpeedDial(JSON.parse(raw) as { phone: string; name: string }[]);
+    } catch {
+      /* ignore malformed local data */
+    }
+  }, []);
+
+  const saveSpeedDial = useCallback((next: { phone: string; name: string }[]) => {
+    setSpeedDial(next);
+    try {
+      localStorage.setItem(SPEED_DIAL_KEY, JSON.stringify(next));
+    } catch {
+      /* storage unavailable — keep in memory only */
+    }
+  }, []);
+
+
   /* ------------------------------------------------- live Do-Not-Call pre-check */
   const checkDnc = useServerFn(checkDncNumber);
   const loadBlocked = useServerFn(getDncCenter);
