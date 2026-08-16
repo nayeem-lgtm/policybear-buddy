@@ -287,14 +287,21 @@ export function RealtimeDialer() {
   const leadMutation = useMutation({
     mutationFn: () => nextLead({ data: { campaignId } }),
     onSuccess: (res) => {
+      if (res.suppressed) {
+        toast.warning(
+          `${res.suppressed} DNC lead${res.suppressed === 1 ? "" : "s"} skipped and closed automatically`,
+        );
+        queryClient.invalidateQueries({ queryKey: ["dnc-blocked"] });
+      }
       if (!res.task) {
         setLead(null);
-        toast.info("No leads left in this campaign right now");
+        toast.info("No dialable leads left in this campaign right now");
         return;
       }
       setLead(res.task as never);
       toast.success(`Next lead: ${formatPhone(res.task.phone_e164)}`);
     },
+
     onError: (e: Error) => toast.error(e.message),
   });
 
