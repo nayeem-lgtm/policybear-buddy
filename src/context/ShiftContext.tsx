@@ -413,6 +413,7 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
   const stopAlarmTest = useCallback(() => {
     setTestKind(null);
     setStatusState("Available");
+    setStatusStartedAt(Date.now());
     setStatusSeconds(0);
     setAlarmAcknowledgedAt(null);
     setAutoCallAnswered(false);
