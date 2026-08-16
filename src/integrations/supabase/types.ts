@@ -124,6 +124,36 @@ export type Database = {
         }
         Relationships: []
       }
+      business_hours: {
+        Row: {
+          created_at: string
+          holidays: Json
+          id: string
+          name: string
+          schedule: Json
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          holidays?: Json
+          id?: string
+          name: string
+          schedule?: Json
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          holidays?: Json
+          id?: string
+          name?: string
+          schedule?: Json
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       call_participants: {
         Row: {
           call_id: string
@@ -158,6 +188,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      call_queues: {
+        Row: {
+          active: boolean
+          announce_position: boolean
+          created_at: string
+          description: string | null
+          hold_music: string | null
+          id: string
+          max_wait_seconds: number
+          name: string
+          overflow_action: string
+          overflow_target: string | null
+          priority: number
+          ring_seconds: number
+          strategy: string
+          updated_at: string
+          wrap_seconds: number
+        }
+        Insert: {
+          active?: boolean
+          announce_position?: boolean
+          created_at?: string
+          description?: string | null
+          hold_music?: string | null
+          id?: string
+          max_wait_seconds?: number
+          name: string
+          overflow_action?: string
+          overflow_target?: string | null
+          priority?: number
+          ring_seconds?: number
+          strategy?: string
+          updated_at?: string
+          wrap_seconds?: number
+        }
+        Update: {
+          active?: boolean
+          announce_position?: boolean
+          created_at?: string
+          description?: string | null
+          hold_music?: string | null
+          id?: string
+          max_wait_seconds?: number
+          name?: string
+          overflow_action?: string
+          overflow_target?: string | null
+          priority?: number
+          ring_seconds?: number
+          strategy?: string
+          updated_at?: string
+          wrap_seconds?: number
+        }
+        Relationships: []
       }
       call_sessions: {
         Row: {
@@ -217,6 +301,87 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      callbacks: {
+        Row: {
+          assigned_to: string | null
+          attempts: number
+          contact_id: string | null
+          contact_name: string | null
+          created_at: string
+          created_by: string | null
+          detail: string | null
+          id: string
+          last_attempt_at: string | null
+          notes: string | null
+          outcome: string | null
+          phone_e164: string
+          queue_id: string | null
+          reason: string
+          requested_at: string
+          scheduled_at: string | null
+          source: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          attempts?: number
+          contact_id?: string | null
+          contact_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          detail?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          notes?: string | null
+          outcome?: string | null
+          phone_e164: string
+          queue_id?: string | null
+          reason?: string
+          requested_at?: string
+          scheduled_at?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          attempts?: number
+          contact_id?: string | null
+          contact_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          detail?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          notes?: string | null
+          outcome?: string | null
+          phone_e164?: string
+          queue_id?: string | null
+          reason?: string
+          requested_at?: string
+          scheduled_at?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "callbacks_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "callbacks_queue_id_fkey"
+            columns: ["queue_id"]
+            isOneToOne: false
+            referencedRelation: "call_queues"
             referencedColumns: ["id"]
           },
         ]
@@ -346,6 +511,266 @@ export type Database = {
         }
         Relationships: []
       }
+      dial_tasks: {
+        Row: {
+          assigned_to: string | null
+          attempts: number
+          campaign_id: string
+          contact_id: string | null
+          contact_name: string | null
+          created_at: string
+          id: string
+          last_attempt_at: string | null
+          last_outcome: string | null
+          next_attempt_at: string | null
+          notes: string | null
+          phone_e164: string
+          state: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          attempts?: number
+          campaign_id: string
+          contact_id?: string | null
+          contact_name?: string | null
+          created_at?: string
+          id?: string
+          last_attempt_at?: string | null
+          last_outcome?: string | null
+          next_attempt_at?: string | null
+          notes?: string | null
+          phone_e164: string
+          state?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          attempts?: number
+          campaign_id?: string
+          contact_id?: string | null
+          contact_name?: string | null
+          created_at?: string
+          id?: string
+          last_attempt_at?: string | null
+          last_outcome?: string | null
+          next_attempt_at?: string | null
+          notes?: string | null
+          phone_e164?: string
+          state?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dial_tasks_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "dialer_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dial_tasks_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dialer_calls: {
+        Row: {
+          agent_user_id: string | null
+          answered_at: string | null
+          campaign_id: string | null
+          contact_id: string | null
+          contact_name: string | null
+          created_at: string
+          dial_task_id: string | null
+          direction: string
+          disposition: string | null
+          ended_at: string | null
+          from_number: string | null
+          hold_seconds: number
+          id: string
+          muted: boolean
+          notes: string | null
+          on_hold: boolean
+          phone_e164: string | null
+          phone_number_id: string | null
+          provider: string | null
+          provider_call_id: string | null
+          queue_id: string | null
+          queued_at: string
+          recording_url: string | null
+          state: string
+          talk_seconds: number
+          to_number: string | null
+          updated_at: string
+          wait_seconds: number
+        }
+        Insert: {
+          agent_user_id?: string | null
+          answered_at?: string | null
+          campaign_id?: string | null
+          contact_id?: string | null
+          contact_name?: string | null
+          created_at?: string
+          dial_task_id?: string | null
+          direction?: string
+          disposition?: string | null
+          ended_at?: string | null
+          from_number?: string | null
+          hold_seconds?: number
+          id?: string
+          muted?: boolean
+          notes?: string | null
+          on_hold?: boolean
+          phone_e164?: string | null
+          phone_number_id?: string | null
+          provider?: string | null
+          provider_call_id?: string | null
+          queue_id?: string | null
+          queued_at?: string
+          recording_url?: string | null
+          state?: string
+          talk_seconds?: number
+          to_number?: string | null
+          updated_at?: string
+          wait_seconds?: number
+        }
+        Update: {
+          agent_user_id?: string | null
+          answered_at?: string | null
+          campaign_id?: string | null
+          contact_id?: string | null
+          contact_name?: string | null
+          created_at?: string
+          dial_task_id?: string | null
+          direction?: string
+          disposition?: string | null
+          ended_at?: string | null
+          from_number?: string | null
+          hold_seconds?: number
+          id?: string
+          muted?: boolean
+          notes?: string | null
+          on_hold?: boolean
+          phone_e164?: string | null
+          phone_number_id?: string | null
+          provider?: string | null
+          provider_call_id?: string | null
+          queue_id?: string | null
+          queued_at?: string
+          recording_url?: string | null
+          state?: string
+          talk_seconds?: number
+          to_number?: string | null
+          updated_at?: string
+          wait_seconds?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dialer_calls_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "dialer_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dialer_calls_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dialer_calls_dial_task_id_fkey"
+            columns: ["dial_task_id"]
+            isOneToOne: false
+            referencedRelation: "dial_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dialer_calls_phone_number_id_fkey"
+            columns: ["phone_number_id"]
+            isOneToOne: false
+            referencedRelation: "phone_numbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dialer_calls_queue_id_fkey"
+            columns: ["queue_id"]
+            isOneToOne: false
+            referencedRelation: "call_queues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dialer_campaigns: {
+        Row: {
+          active: boolean
+          caller_id: string | null
+          calling_window_end: string
+          calling_window_start: string
+          created_at: string
+          created_by: string | null
+          id: string
+          max_attempts: number
+          mode: string
+          name: string
+          pacing: number
+          queue_id: string | null
+          retry_minutes: number
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          caller_id?: string | null
+          calling_window_end?: string
+          calling_window_start?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          max_attempts?: number
+          mode?: string
+          name: string
+          pacing?: number
+          queue_id?: string | null
+          retry_minutes?: number
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          caller_id?: string | null
+          calling_window_end?: string
+          calling_window_start?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          max_attempts?: number
+          mode?: string
+          name?: string
+          pacing?: number
+          queue_id?: string | null
+          retry_minutes?: number
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dialer_campaigns_queue_id_fkey"
+            columns: ["queue_id"]
+            isOneToOne: false
+            referencedRelation: "call_queues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_events: {
         Row: {
           created_at: string
@@ -456,6 +881,45 @@ export type Database = {
           status?: string
           updated_at?: string
           webhook_token?: string | null
+        }
+        Relationships: []
+      }
+      ivr_menus: {
+        Row: {
+          active: boolean
+          created_at: string
+          greeting: string
+          id: string
+          invalid_message: string
+          max_retries: number
+          name: string
+          options: Json
+          timeout_seconds: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          greeting?: string
+          id?: string
+          invalid_message?: string
+          max_retries?: number
+          name: string
+          options?: Json
+          timeout_seconds?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          greeting?: string
+          id?: string
+          invalid_message?: string
+          max_retries?: number
+          name?: string
+          options?: Json
+          timeout_seconds?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -718,6 +1182,88 @@ export type Database = {
         }
         Relationships: []
       }
+      phone_numbers: {
+        Row: {
+          active: boolean
+          after_hours_action: string
+          after_hours_target: string | null
+          business_hours_id: string | null
+          country: string
+          created_at: string
+          e164: string
+          id: string
+          ivr_menu_id: string | null
+          kind: string
+          label: string
+          notes: string | null
+          provider: string
+          queue_id: string | null
+          record_calls: boolean
+          sms_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          after_hours_action?: string
+          after_hours_target?: string | null
+          business_hours_id?: string | null
+          country?: string
+          created_at?: string
+          e164: string
+          id?: string
+          ivr_menu_id?: string | null
+          kind?: string
+          label: string
+          notes?: string | null
+          provider?: string
+          queue_id?: string | null
+          record_calls?: boolean
+          sms_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          after_hours_action?: string
+          after_hours_target?: string | null
+          business_hours_id?: string | null
+          country?: string
+          created_at?: string
+          e164?: string
+          id?: string
+          ivr_menu_id?: string | null
+          kind?: string
+          label?: string
+          notes?: string | null
+          provider?: string
+          queue_id?: string | null
+          record_calls?: boolean
+          sms_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phone_numbers_business_hours_id_fkey"
+            columns: ["business_hours_id"]
+            isOneToOne: false
+            referencedRelation: "business_hours"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phone_numbers_ivr_menu_id_fkey"
+            columns: ["ivr_menu_id"]
+            isOneToOne: false
+            referencedRelation: "ivr_menus"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phone_numbers_queue_id_fkey"
+            columns: ["queue_id"]
+            isOneToOne: false
+            referencedRelation: "call_queues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_attachments: {
         Row: {
           created_at: string
@@ -906,6 +1452,41 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      queue_members: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          queue_id: string
+          skill_priority: number
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          queue_id: string
+          skill_priority?: number
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          queue_id?: string
+          skill_priority?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "queue_members_queue_id_fkey"
+            columns: ["queue_id"]
+            isOneToOne: false
+            referencedRelation: "call_queues"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shift_sessions: {
         Row: {
