@@ -606,7 +606,9 @@ export function RealtimeDialer() {
                     <Star className="size-3.5" /> Recent
                   </p>
                   <div className="flex flex-wrap gap-1.5">
-                    {[...new Set((data?.today ?? []).map((c) => c.phone_e164))].slice(0, 6).map((p) => (
+                    {[...new Set((data?.today ?? []).map((c) => c.phone_e164).filter((p): p is string => Boolean(p)))]
+                      .slice(0, 6)
+                      .map((p) => (
                       <Button
                         key={p}
                         size="sm"
@@ -982,7 +984,7 @@ export function RealtimeDialer() {
                           size="sm"
                           variant="ghost"
                           disabled={Boolean(active)}
-                          onClick={() => dialMutation.mutate({ phone: c.phone_e164, mode: "manual" })}
+                          onClick={() => dialMutation.mutate({ phone: c.phone_e164 ?? "", mode: "manual" })}
                         >
                           <PhoneCall className="size-4" />
                         </Button>
