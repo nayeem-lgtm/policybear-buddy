@@ -84,7 +84,6 @@ import { formatPhone } from "@/lib/phone";
 import {
   claimNextLead,
   controlCall,
-  createCallback,
   getDialerDesk,
   simulateInboundCall,
   startCall,
@@ -154,7 +153,6 @@ export function RealtimeDialer() {
   const dial = useServerFn(startCall);
   const control = useServerFn(controlCall);
   const wrap = useServerFn(wrapCall);
-  const bookCallback = useServerFn(createCallback);
   const patchCallback = useServerFn(updateCallback);
   const simulate = useServerFn(simulateInboundCall);
   const nextLead = useServerFn(claimNextLead);
@@ -184,7 +182,6 @@ export function RealtimeDialer() {
   const [callbackAt, setCallbackAt] = useState("");
   const [transferTo, setTransferTo] = useState("");
   const [showInCallPad, setShowInCallPad] = useState(false);
-  const [cb, setCb] = useState({ phone: "", contactName: "", reason: "Requested callback", scheduledAt: "" });
   const [cbFilter, setCbFilter] = useState<"open" | CallbackStatus>("open");
   const [sim, setSim] = useState({ phone: "", numberId: "auto" });
   const [campaignId, setCampaignId] = useState("");
@@ -311,24 +308,6 @@ export function RealtimeDialer() {
       setNotes("");
       setCallbackAt("");
       setLiveNotes("");
-      refresh();
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const callbackMutation = useMutation({
-    mutationFn: () =>
-      bookCallback({
-        data: {
-          phone: cb.phone,
-          reason: cb.reason,
-          ...(cb.contactName ? { contactName: cb.contactName } : {}),
-          ...(cb.scheduledAt ? { scheduledAt: cb.scheduledAt } : {}),
-        },
-      }),
-    onSuccess: () => {
-      toast.success("Callback booked");
-      setCb({ phone: "", contactName: "", reason: "Requested callback", scheduledAt: "" });
       refresh();
     },
     onError: (e: Error) => toast.error(e.message),
