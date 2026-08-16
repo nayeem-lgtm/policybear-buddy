@@ -677,7 +677,7 @@ export function RealtimeDialer() {
 
               <Button
                 className="h-12 w-full rounded-2xl"
-                disabled={digits.length < 7 || dialMutation.isPending}
+                disabled={digits.length < 7 || dialMutation.isPending || dncBlocked}
                 onClick={() =>
                   dialMutation.mutate({
                     phone: digits,
@@ -686,8 +686,26 @@ export function RealtimeDialer() {
                   })
                 }
               >
-                <PhoneCall className="mr-2 size-4" /> Call
+                {dncBlocked ? (
+                  <>
+                    <ShieldOff className="mr-2 size-4" /> Blocked — on DNC
+                  </>
+                ) : (
+                  <>
+                    <PhoneCall className="mr-2 size-4" /> Call
+                  </>
+                )}
               </Button>
+
+              <Button
+                variant="outline"
+                className="w-full text-destructive"
+                disabled={digits.replace(/\D/g, "").length < 7 || dncBlocked}
+                onClick={() => openDnc(digits)}
+              >
+                <Ban className="mr-2 size-4" /> Add this number to DNC
+              </Button>
+
 
               {(data?.today ?? []).length ? (
                 <div>
