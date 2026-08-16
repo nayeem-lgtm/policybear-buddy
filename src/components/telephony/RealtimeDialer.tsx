@@ -526,7 +526,10 @@ export function RealtimeDialer() {
     try {
       const text = await navigator.clipboard.readText();
       const cleaned = text.replace(/[^\d+*#]/g, "").slice(0, 20);
-      if (!cleaned) return toast.error("No number on the clipboard");
+      if (!cleaned) {
+        toast.error("No number on the clipboard");
+        return;
+      }
       setDigits(cleaned);
     } catch {
       toast.error("Clipboard unavailable");
