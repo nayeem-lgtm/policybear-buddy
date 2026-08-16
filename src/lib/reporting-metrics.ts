@@ -72,9 +72,14 @@ export function derive(row: ReportRow) {
 }
 
 function fromCps(source: CpsRow[], match: (name: string) => number): ReportRow[] {
+function fromCps(
+  source: CpsRow[],
+  match: (name: string) => number,
+  salesSource: SaleRecord[] = sales,
+): ReportRow[] {
   return source.map((c) => {
     const incoming = Math.max(c.converted, match(c.name));
-    const revenue = sales
+    const revenue = salesSource
       .filter((s) => (s.publisher ?? "") === c.name)
       .reduce((sum, s) => sum + s.premium, 0);
     const rev = revenue || c.revenue;
