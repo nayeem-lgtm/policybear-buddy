@@ -476,7 +476,7 @@ export function RealtimeDialer() {
   /* --------------------------------------------------------- audio cues + flow */
   const waitingCount = data?.queue?.length ?? 0;
   useEffect(() => {
-    if (!sound || !ready || active || waitingCount === 0) return;
+    if (!sound || !ready || active || waitingCount === 0) return undefined;
     playRing();
     const id = setInterval(() => playRing(), 4000);
     return () => clearInterval(id);
