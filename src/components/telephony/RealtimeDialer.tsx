@@ -755,7 +755,16 @@ export function RealtimeDialer() {
                 <TabsTrigger value="history">
                   <History className="mr-1.5 size-4" /> Today
                 </TabsTrigger>
+                <TabsTrigger value="compliance">
+                  <ShieldOff className="mr-1.5 size-4" /> DNC
+                  {(blocked.data?.events.length ?? 0) > 0 ? (
+                    <Badge variant="secondary" className="ml-2">
+                      {blocked.data?.events.length}
+                    </Badge>
+                  ) : null}
+                </TabsTrigger>
               </TabsList>
+
             </div>
 
             {/* -------------------------------------------------------- inbound queue */}
