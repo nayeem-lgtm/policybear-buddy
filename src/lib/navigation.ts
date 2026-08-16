@@ -127,15 +127,7 @@ export const navSections: NavSection[] = [
         ],
       },
       {
-        label: "Conversion",
-        items: [
-          { title: "Sales Conversion", url: "/sales", icon: FileStack, description: "Calls turned into sales" },
-          { title: "Retention", url: "/retention", icon: HeartHandshake, description: "Keeping customers" },
-          { title: "Reconciliation", url: "/call-reconciliation", icon: Repeat, description: "Match calls to billing" },
-          { title: "Cost & Returns", url: "/call-costs", icon: BadgeDollarSign, description: "Cost per call vs revenue" },
-        ],
-      },
-      {
+
         label: "Quality & recordings",
         items: [
           { title: "QA Reviews", url: "/qa", icon: ShieldCheck, description: "Score call recordings" },
