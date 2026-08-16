@@ -355,49 +355,52 @@ function AttendancePage() {
 
       {/* Toolbar + table */}
       <Card className="gap-0 overflow-hidden rounded-3xl p-0 shadow-card">
-        <div className="flex flex-col gap-3 border-b border-border/60 bg-surface/50 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-1 flex-wrap items-center gap-2">
-            <div className="relative min-w-[15rem] flex-1">
-              <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search employee, team or date…"
-                className="h-9 rounded-xl pl-9"
-              />
+        <div className="flex flex-col gap-3 border-b border-border/60 bg-surface/50 p-4">
+          <DateRangeTabs value={selection} onChange={setSelection} />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-1 flex-wrap items-center gap-2">
+              <div className="relative min-w-[15rem] flex-1">
+                <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search employee, team or date…"
+                  className="h-9 rounded-xl pl-9"
+                />
+              </div>
+              <Select value={team} onValueChange={setTeam}>
+                <SelectTrigger className="h-9 w-[11rem] rounded-xl">
+                  <Users className="size-4 text-muted-foreground" />
+                  <SelectValue placeholder="All teams" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All teams</SelectItem>
+                  {teams.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {(search || team !== "all" || selection.preset !== "7d") && (
+                <Button
+                  variant="ghost"
+                  className="h-9 rounded-xl text-muted-foreground"
+                  onClick={() => {
+                    setSearch("");
+                    setTeam("all");
+                    setSelection({ preset: "7d" });
+                  }}
+                >
+                  <TimerReset className="size-4" /> Reset
+                </Button>
+              )}
             </div>
-            <Select value={team} onValueChange={setTeam}>
-              <SelectTrigger className="h-9 w-[11rem] rounded-xl">
-                <Users className="size-4 text-muted-foreground" />
-                <SelectValue placeholder="All teams" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All teams</SelectItem>
-                {teams.map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {t}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {(search || team !== "all" || rangeIndex !== 1) && (
-              <Button
-                variant="ghost"
-                className="h-9 rounded-xl text-muted-foreground"
-                onClick={() => {
-                  setSearch("");
-                  setTeam("all");
-                  setRangeIndex(1);
-                }}
-              >
-                <TimerReset className="size-4" /> Reset
-              </Button>
-            )}
+            <p className="tabular text-xs text-muted-foreground">
+              Showing <span className="font-semibold text-foreground">{filtered.length}</span> of{" "}
+              {rows.length} records
+            </p>
           </div>
-          <p className="tabular text-xs text-muted-foreground">
-            Showing <span className="font-semibold text-foreground">{filtered.length}</span> of{" "}
-            {rows.length} records
-          </p>
         </div>
 
         <DataTable
