@@ -7,14 +7,7 @@ import { z } from "zod";
 
 /* ------------------------------------------------------------------ vocabulary */
 
-export const CALL_STATES = [
-  "queued",
-  "ringing",
-  "connected",
-  "hold",
-  "wrap",
-  "ended",
-] as const;
+export const CALL_STATES = ["queued", "ringing", "connected", "hold", "wrap", "ended"] as const;
 export type CallState = (typeof CALL_STATES)[number];
 
 export const CALLBACK_STATUSES = [
@@ -45,7 +38,11 @@ export const DISPOSITIONS = [
 export type Disposition = (typeof DISPOSITIONS)[number];
 
 /** Dispositions that should keep the lead in the working set. */
-export const RETRY_DISPOSITIONS: readonly string[] = ["No Answer", "Follow-up Required", "Interested"];
+export const RETRY_DISPOSITIONS: readonly string[] = [
+  "No Answer",
+  "Follow-up Required",
+  "Interested",
+];
 /** Dispositions that close a lead out permanently. */
 export const CLOSING_DISPOSITIONS: readonly string[] = [
   "Sold",
@@ -281,7 +278,9 @@ export function isWithinHours(
   const parts = Object.fromEntries(fmt.formatToParts(at).map((p) => [p.type, p.value]));
   const iso = `${parts["year"]}-${parts["month"]}-${parts["day"]}`;
   if ((holidays ?? []).includes(iso)) return false;
-  const key = String(parts["weekday"] ?? "").slice(0, 3).toLowerCase() as Weekday;
+  const key = String(parts["weekday"] ?? "")
+    .slice(0, 3)
+    .toLowerCase() as Weekday;
   const day = schedule[key];
   if (!day) return false;
   const now = `${parts["hour"]}:${parts["minute"]}`;

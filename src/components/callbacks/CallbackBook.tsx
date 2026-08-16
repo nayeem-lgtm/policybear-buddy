@@ -55,7 +55,14 @@ import { cn } from "@/lib/utils";
 
 type CallbackRow = Database["public"]["Tables"]["callbacks"]["Row"];
 
-const OPEN_STATUSES: readonly string[] = ["Pending", "Scheduled", "Calling", "No Answer", "Busy", "Failed"];
+const OPEN_STATUSES: readonly string[] = [
+  "Pending",
+  "Scheduled",
+  "Calling",
+  "No Answer",
+  "Busy",
+  "Failed",
+];
 const HOURS = Array.from({ length: 14 }, (_, i) => 7 + i); // 07:00 → 20:00
 
 function startOfWeek(d: Date): Date {
@@ -68,7 +75,9 @@ function startOfWeek(d: Date): Date {
 
 function sameDay(a: Date, b: Date): boolean {
   return (
-    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
   );
 }
 
@@ -166,7 +175,11 @@ export function CallbackBook({ initialView = "queue" }: { initialView?: "queue" 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return rows.filter((r) => {
-      if (status === "open" ? !OPEN_STATUSES.includes(r.status) : status !== "all" && r.status !== status)
+      if (
+        status === "open"
+          ? !OPEN_STATUSES.includes(r.status)
+          : status !== "all" && r.status !== status
+      )
         return false;
       if (agent === "mine" ? r.assigned_to !== me : agent === "unassigned" ? r.assigned_to : false)
         return false;
@@ -216,8 +229,7 @@ export function CallbackBook({ initialView = "queue" }: { initialView?: "queue" 
       status?: CallbackStatus;
       assignToMe?: boolean;
       assignTo?: string | null;
-    }) =>
-      patch({ data: input }),
+    }) => patch({ data: input }),
     onSuccess: () => invalidate(),
     onError: (e: Error) => toast.error(e.message),
   });
@@ -234,7 +246,9 @@ export function CallbackBook({ initialView = "queue" }: { initialView?: "queue" 
         },
       }),
     onSuccess: (_r, row) => {
-      toast.success(`Calling ${row.contact_name ?? formatPhone(row.phone_e164)} — open the agent desk`);
+      toast.success(
+        `Calling ${row.contact_name ?? formatPhone(row.phone_e164)} — open the agent desk`,
+      );
       invalidate();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -242,13 +256,14 @@ export function CallbackBook({ initialView = "queue" }: { initialView?: "queue" 
 
   /* --------------------------------------------------------------- calendar data */
   const weekStart = startOfWeek(anchor);
-  const calDays = calMode === "week"
-    ? Array.from({ length: 7 }, (_, i) => {
-        const d = new Date(weekStart);
-        d.setDate(d.getDate() + i);
-        return d;
-      })
-    : [new Date(anchor)];
+  const calDays =
+    calMode === "week"
+      ? Array.from({ length: 7 }, (_, i) => {
+          const d = new Date(weekStart);
+          d.setDate(d.getDate() + i);
+          return d;
+        })
+      : [new Date(anchor)];
 
   const unscheduled = filtered.filter((r) => !r.scheduled_at);
 
@@ -277,11 +292,36 @@ export function CallbackBook({ initialView = "queue" }: { initialView?: "queue" 
       />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <StatCard label="Open" value={stats.open} icon={<ListChecks className="size-4" />} tone="brand" />
-        <StatCard label="Overdue" value={stats.overdue} icon={<AlarmClock className="size-4" />} tone="danger" />
-        <StatCard label="Due today" value={stats.today} icon={<Clock className="size-4" />} tone="warning" />
-        <StatCard label="Assigned to me" value={stats.mine} icon={<UserPlus className="size-4" />} tone="info" />
-        <StatCard label="Completed today" value={stats.completed} icon={<CheckCircle2 className="size-4" />} tone="success" />
+        <StatCard
+          label="Open"
+          value={stats.open}
+          icon={<ListChecks className="size-4" />}
+          tone="brand"
+        />
+        <StatCard
+          label="Overdue"
+          value={stats.overdue}
+          icon={<AlarmClock className="size-4" />}
+          tone="danger"
+        />
+        <StatCard
+          label="Due today"
+          value={stats.today}
+          icon={<Clock className="size-4" />}
+          tone="warning"
+        />
+        <StatCard
+          label="Assigned to me"
+          value={stats.mine}
+          icon={<UserPlus className="size-4" />}
+          tone="info"
+        />
+        <StatCard
+          label="Completed today"
+          value={stats.completed}
+          icon={<CheckCircle2 className="size-4" />}
+          tone="success"
+        />
       </div>
 
       <Card className="gap-0 rounded-3xl p-0 shadow-card">
@@ -378,7 +418,9 @@ export function CallbackBook({ initialView = "queue" }: { initialView?: "queue" 
                 {sorted.length === 0 ? (
                   <tr>
                     <td colSpan={10} className="p-10 text-center text-sm text-muted-foreground">
-                      {isPending ? "Loading the callback book…" : "No callbacks match these filters."}
+                      {isPending
+                        ? "Loading the callback book…"
+                        : "No callbacks match these filters."}
                     </td>
                   </tr>
                 ) : (
@@ -394,11 +436,16 @@ export function CallbackBook({ initialView = "queue" }: { initialView?: "queue" 
                         )}
                       >
                         <td className="px-4 py-3">
-                          <button className="flex items-center gap-3 text-left" onClick={() => setSelected(r)}>
+                          <button
+                            className="flex items-center gap-3 text-left"
+                            onClick={() => setSelected(r)}
+                          >
                             <span
                               className={cn(
                                 "grid size-9 shrink-0 place-items-center rounded-xl text-[0.7rem] font-semibold",
-                                overdue ? "bg-destructive/12 text-destructive" : "bg-brand/10 text-brand",
+                                overdue
+                                  ? "bg-destructive/12 text-destructive"
+                                  : "bg-brand/10 text-brand",
                               )}
                             >
                               {initialsOf(r)}
@@ -415,13 +462,18 @@ export function CallbackBook({ initialView = "queue" }: { initialView?: "queue" 
                         </td>
 
                         <td className="px-3 py-3">
-                          <Badge variant="secondary" className={cn("rounded-full", URGENCY_TONE[urgency])}>
+                          <Badge
+                            variant="secondary"
+                            className={cn("rounded-full", URGENCY_TONE[urgency])}
+                          >
                             {urgency}
                           </Badge>
                         </td>
 
                         <td className="max-w-[15rem] px-3 py-3">
-                          <span className="block truncate font-medium text-foreground">{r.reason}</span>
+                          <span className="block truncate font-medium text-foreground">
+                            {r.reason}
+                          </span>
                           {r.detail || r.notes ? (
                             <span className="block truncate text-xs text-muted-foreground">
                               {r.detail || r.notes}
@@ -440,7 +492,8 @@ export function CallbackBook({ initialView = "queue" }: { initialView?: "queue" 
                                 {timeText(r.scheduled_at)}
                               </span>
                               <span className="block text-xs text-muted-foreground">
-                                Booked {new Date(r.requested_at).toLocaleDateString([], {
+                                Booked{" "}
+                                {new Date(r.requested_at).toLocaleDateString([], {
                                   month: "short",
                                   day: "numeric",
                                 })}
@@ -508,12 +561,17 @@ export function CallbackBook({ initialView = "queue" }: { initialView?: "queue" 
                         <td className="px-3 py-3">
                           <Badge
                             variant="secondary"
-                            className={cn("rounded-full", CALLBACK_STATUS_TONE[r.status as CallbackStatus])}
+                            className={cn(
+                              "rounded-full",
+                              CALLBACK_STATUS_TONE[r.status as CallbackStatus],
+                            )}
                           >
                             {r.status}
                           </Badge>
                           {r.outcome ? (
-                            <span className="mt-1 block text-xs text-muted-foreground">{r.outcome}</span>
+                            <span className="mt-1 block text-xs text-muted-foreground">
+                              {r.outcome}
+                            </span>
                           ) : null}
                         </td>
 
@@ -532,7 +590,9 @@ export function CallbackBook({ initialView = "queue" }: { initialView?: "queue" 
                             <Button
                               size="sm"
                               variant="secondary"
-                              onClick={() => statusMutation.mutate({ id: r.id, status: "Completed" })}
+                              onClick={() =>
+                                statusMutation.mutate({ id: r.id, status: "Completed" })
+                              }
                             >
                               <CheckCircle2 className="mr-1.5 size-3.5" /> Done
                             </Button>
@@ -562,7 +622,6 @@ export function CallbackBook({ initialView = "queue" }: { initialView?: "queue" 
             ) : null}
           </div>
         ) : (
-
           /* ---------------------------------------------------------- calendar view */
           <div className="space-y-4 p-4">
             <div className="overflow-x-auto rounded-2xl border border-border">
@@ -611,7 +670,8 @@ export function CallbackBook({ initialView = "queue" }: { initialView?: "queue" 
                               )}
                             >
                               <span className="block truncate font-medium">
-                                {timeText(r.scheduled_at)} · {r.contact_name || formatPhone(r.phone_e164)}
+                                {timeText(r.scheduled_at)} ·{" "}
+                                {r.contact_name || formatPhone(r.phone_e164)}
                               </span>
                               <span className="block truncate opacity-80">{r.reason}</span>
                             </button>
