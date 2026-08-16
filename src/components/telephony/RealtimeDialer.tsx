@@ -54,6 +54,7 @@ import {
   DISPOSITION_TONE,
   type CallbackStatus,
   type Disposition,
+  type StartCallInput,
 } from "@/lib/dialer-shared";
 import { formatPhone } from "@/lib/phone";
 import {
@@ -119,7 +120,7 @@ export function RealtimeDialer() {
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["dialer-desk"] });
 
   const dialMutation = useMutation({
-    mutationFn: (input: Parameters<typeof dial>[0]["data"]) => dial({ data: input }),
+    mutationFn: (input: StartCallInput) => dial({ data: input }),
     onSuccess: () => {
       toast.success("Dialing…");
       setDigits("");
