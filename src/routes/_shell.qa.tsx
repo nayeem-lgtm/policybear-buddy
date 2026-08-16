@@ -352,20 +352,26 @@ function QAPage() {
     const days = ["Aug 11", "Aug 12", "Aug 13", "Aug 14", "Aug 15", "Aug 16", "Aug 17"];
     const buckets = days.map((day, i) => {
       const rows = filtered.filter((_, idx) => idx % days.length === i);
-      const reviews = rows.length;
-      const avg = reviews ? Math.round(rows.reduce((s, r) => s + r.score, 0) / reviews) : 0;
-      const passed = rows.filter((r) => r.score >= 80).length;
-      const invalid = rows.filter((r) => r.outcome === "Invalid").length;
-      return { day, reviews, avg, pass: reviews ? Math.round((passed / reviews) * 100) : 0, invalid };
+      const calls = rows.length;
+      const sales = rows.filter((r) => r.outcome === "Valid").length;
+      const spend = rows.reduce((s, r) => s + r.payout, 0);
+      const health = calls ? Math.round(rows.reduce((s, r) => s + r.score, 0) / calls) : 0;
+      return {
+        day,
+        calls,
+        cps: sales ? Math.round((spend / sales) * 100) / 100 : 0,
+        health,
+        conv: calls ? Math.round((sales / calls) * 100) : 0,
+      };
     });
-    const totalReviews = filtered.length;
-    const avgScore = totalReviews
-      ? Math.round(filtered.reduce((s, r) => s + r.score, 0) / totalReviews)
+    const totalCalls = filtered.length;
+    const totalSales = filtered.filter((r) => r.outcome === "Valid").length;
+    const totalSpend = filtered.reduce((s, r) => s + r.payout, 0);
+    const cps = totalSales ? totalSpend / totalSales : 0;
+    const agentHealth = totalCalls
+      ? Math.round(filtered.reduce((s, r) => s + r.score, 0) / totalCalls)
       : 0;
-    const passRate = totalReviews
-      ? Math.round((filtered.filter((r) => r.score >= 80).length / totalReviews) * 100)
-      : 0;
-    const invalidCount = filtered.filter((r) => r.outcome === "Invalid").length;
+    const convRate = totalCalls ? Math.round((totalSales / totalCalls) * 100) : 0;
     const delta = (arr: number[]) => {
       const first = arr[0] || 1;
       const last = arr[arr.length - 1] || 0;
@@ -373,16 +379,17 @@ function QAPage() {
     };
     return {
       buckets,
-      totalReviews,
-      avgScore,
-      passRate,
-      invalidCount,
-      dReviews: delta(buckets.map((b) => b.reviews)),
-      dAvg: delta(buckets.map((b) => b.avg)),
-      dPass: delta(buckets.map((b) => b.pass)),
-      dInvalid: -delta(buckets.map((b) => b.invalid)),
+      totalCalls,
+      cps,
+      agentHealth,
+      convRate,
+      dCalls: delta(buckets.map((b) => b.calls)),
+      dCps: -delta(buckets.map((b) => b.cps)),
+      dHealth: delta(buckets.map((b) => b.health)),
+      dConv: delta(buckets.map((b) => b.conv)),
     };
   }, [filtered]);
+
 
   const columns: Column<QARow>[] = [
     {
