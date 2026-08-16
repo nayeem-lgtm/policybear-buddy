@@ -717,11 +717,20 @@ export function RealtimeDialer() {
                     <Button
                       size="sm"
                       variant="ghost"
+                      className="h-8 gap-1 text-xs"
+                      onClick={() => openCallback(active.phone_e164, active.contact_name)}
+                    >
+                      <CalendarClock className="size-3.5" /> Set callback
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
                       className="h-8 gap-1 text-xs text-destructive"
                       onClick={() => openDnc(active.phone_e164, active.contact_name)}
                     >
                       <Ban className="size-3.5" /> DNC
                     </Button>
+
                   </div>
                 </div>
               </div>
