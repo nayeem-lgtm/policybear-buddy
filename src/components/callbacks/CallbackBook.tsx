@@ -323,81 +323,211 @@ export function CallbackBook({ initialView = "queue" }: { initialView?: "queue" 
 
         {/* ------------------------------------------------------------- queue view */}
         {view === "queue" ? (
-          <div className="divide-y divide-border/60">
-            {sorted.length === 0 ? (
-              <p className="p-10 text-center text-sm text-muted-foreground">
-                {isPending ? "Loading the callback book…" : "No callbacks match these filters."}
-              </p>
-            ) : (
-              sorted.map((r) => {
-                const overdue = isOverdue(r, now);
-                return (
-                  <div
-                    key={r.id}
-                    className={cn(
-                      "flex flex-wrap items-center gap-3 p-4 transition-colors hover:bg-accent/50",
-                      overdue && "bg-destructive/[0.04]",
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "flex size-10 shrink-0 items-center justify-center rounded-2xl text-xs font-semibold",
-                        overdue ? "bg-destructive/12 text-destructive" : "bg-brand/10 text-brand",
-                      )}
-                    >
-                      {timeText(r.scheduled_at).replace(/\s?[AP]M/i, "")}
-                    </span>
-
-                    <button className="min-w-0 flex-1 text-left" onClick={() => setSelected(r)}>
-                      <p className="truncate font-medium text-foreground">
-                        {r.contact_name || formatPhone(r.phone_e164)}
-                      </p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {formatPhone(r.phone_e164)} · {r.reason} · {agentName(r.assigned_to)}
-                      </p>
-                    </button>
-
-                    <span
-                      className={cn(
-                        "shrink-0 text-xs font-medium",
-                        overdue ? "text-destructive" : "text-muted-foreground",
-                      )}
-                    >
-                      {dueLabel(r, now)}
-                    </span>
-
-                    <Badge
-                      variant="secondary"
-                      className={cn("shrink-0", CALLBACK_STATUS_TONE[r.status as CallbackStatus])}
-                    >
-                      {r.status}
-                    </Badge>
-
-                    <div className="flex shrink-0 items-center gap-1.5">
-                      <Button
-                        size="sm"
-                        disabled={dialMutation.isPending}
-                        onClick={() => dialMutation.mutate(r)}
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[1180px] border-collapse text-sm">
+              <thead>
+                <tr className="bg-surface/70 text-[0.68rem] font-semibold tracking-[0.09em] text-muted-foreground uppercase">
+                  <th className="px-4 py-3 text-left">Customer</th>
+                  <th className="px-3 py-3 text-left">Urgency</th>
+                  <th className="px-3 py-3 text-left">Reason</th>
+                  <th className="px-3 py-3 text-left">Scheduled</th>
+                  <th className="px-3 py-3 text-left">Due</th>
+                  <th className="px-3 py-3 text-left">Assigned agent</th>
+                  <th className="px-3 py-3 text-left">Source</th>
+                  <th className="px-3 py-3 text-center">Attempts</th>
+                  <th className="px-3 py-3 text-left">Status</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {sorted.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className="p-10 text-center text-sm text-muted-foreground">
+                      {isPending ? "Loading the callback book…" : "No callbacks match these filters."}
+                    </td>
+                  </tr>
+                ) : (
+                  sorted.map((r) => {
+                    const overdue = isOverdue(r, now);
+                    const urgency = urgencyOf(r, now);
+                    return (
+                      <tr
+                        key={r.id}
+                        className={cn(
+                          "group transition-colors hover:bg-accent/40",
+                          overdue && "bg-destructive/[0.035]",
+                        )}
                       >
-                        <PhoneCall className="mr-1.5 size-3.5" /> Call
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => setReschedule(r)}>
-                        <CalendarDays className="mr-1.5 size-3.5" /> Reschedule
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => statusMutation.mutate({ id: r.id, status: "Completed" })}
-                      >
-                        <CheckCircle2 className="mr-1.5 size-3.5" /> Done
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })
-            )}
+                        <td className="px-4 py-3">
+                          <button className="flex items-center gap-3 text-left" onClick={() => setSelected(r)}>
+                            <span
+                              className={cn(
+                                "grid size-9 shrink-0 place-items-center rounded-xl text-[0.7rem] font-semibold",
+                                overdue ? "bg-destructive/12 text-destructive" : "bg-brand/10 text-brand",
+                              )}
+                            >
+                              {initialsOf(r)}
+                            </span>
+                            <span className="min-w-0">
+                              <span className="block truncate font-medium text-foreground group-hover:text-brand">
+                                {r.contact_name || formatPhone(r.phone_e164)}
+                              </span>
+                              <span className="block truncate text-xs text-muted-foreground">
+                                {formatPhone(r.phone_e164)}
+                              </span>
+                            </span>
+                          </button>
+                        </td>
+
+                        <td className="px-3 py-3">
+                          <Badge variant="secondary" className={cn("rounded-full", URGENCY_TONE[urgency])}>
+                            {urgency}
+                          </Badge>
+                        </td>
+
+                        <td className="max-w-[15rem] px-3 py-3">
+                          <span className="block truncate font-medium text-foreground">{r.reason}</span>
+                          {r.detail || r.notes ? (
+                            <span className="block truncate text-xs text-muted-foreground">
+                              {r.detail || r.notes}
+                            </span>
+                          ) : null}
+                        </td>
+
+                        <td className="px-3 py-3 whitespace-nowrap">
+                          {r.scheduled_at ? (
+                            <>
+                              <span className="block text-foreground">
+                                {new Date(r.scheduled_at).toLocaleDateString([], {
+                                  month: "short",
+                                  day: "numeric",
+                                })}{" "}
+                                {timeText(r.scheduled_at)}
+                              </span>
+                              <span className="block text-xs text-muted-foreground">
+                                Booked {new Date(r.requested_at).toLocaleDateString([], {
+                                  month: "short",
+                                  day: "numeric",
+                                })}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-muted-foreground">Unscheduled</span>
+                          )}
+                        </td>
+
+                        <td className="px-3 py-3 whitespace-nowrap">
+                          <span
+                            className={cn(
+                              "font-medium",
+                              overdue
+                                ? "text-destructive"
+                                : urgency === "High"
+                                  ? "text-brand"
+                                  : "text-muted-foreground",
+                            )}
+                          >
+                            {dueLabel(r, now)}
+                          </span>
+                        </td>
+
+                        <td className="px-3 py-3">
+                          <Select
+                            value={r.assigned_to ?? "unassigned"}
+                            onValueChange={(v) =>
+                              statusMutation.mutate({
+                                id: r.id,
+                                assignTo: v === "unassigned" ? null : v,
+                              })
+                            }
+                          >
+                            <SelectTrigger className="h-8 w-40">
+                              <SelectValue placeholder="Unassigned" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="unassigned">Unassigned</SelectItem>
+                              {agents.map((a) => (
+                                <SelectItem key={a.id} value={a.id}>
+                                  {a.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </td>
+
+                        <td className="px-3 py-3 whitespace-nowrap">
+                          <Badge variant="outline" className="rounded-full text-xs capitalize">
+                            {r.source}
+                          </Badge>
+                        </td>
+
+                        <td className="px-3 py-3 text-center whitespace-nowrap">
+                          <span className="font-medium tabular-nums">{r.attempts}</span>
+                          {r.last_attempt_at ? (
+                            <span className="block text-xs text-muted-foreground">
+                              last {timeText(r.last_attempt_at)}
+                            </span>
+                          ) : null}
+                        </td>
+
+                        <td className="px-3 py-3">
+                          <Badge
+                            variant="secondary"
+                            className={cn("rounded-full", CALLBACK_STATUS_TONE[r.status as CallbackStatus])}
+                          >
+                            {r.status}
+                          </Badge>
+                          {r.outcome ? (
+                            <span className="mt-1 block text-xs text-muted-foreground">{r.outcome}</span>
+                          ) : null}
+                        </td>
+
+                        <td className="px-4 py-3">
+                          <div className="flex justify-end gap-1.5">
+                            <Button
+                              size="sm"
+                              disabled={dialMutation.isPending}
+                              onClick={() => dialMutation.mutate(r)}
+                            >
+                              <PhoneCall className="mr-1.5 size-3.5" /> Call
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => setReschedule(r)}>
+                              <CalendarDays className="mr-1.5 size-3.5" /> Reschedule
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => statusMutation.mutate({ id: r.id, status: "Completed" })}
+                            >
+                              <CheckCircle2 className="mr-1.5 size-3.5" /> Done
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+            {sorted.length ? (
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 px-4 py-3 text-xs text-muted-foreground">
+                <span>
+                  Showing {sorted.length} of {rows.length} callbacks
+                </span>
+                <span className="flex items-center gap-3">
+                  <span className="flex items-center gap-1.5">
+                    <span className="size-2 rounded-full bg-destructive" /> Overdue
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="size-2 rounded-full bg-brand" /> Due soon
+                  </span>
+                  <span>Click a customer for the full callback record</span>
+                </span>
+              </div>
+            ) : null}
           </div>
         ) : (
+
           /* ---------------------------------------------------------- calendar view */
           <div className="space-y-4 p-4">
             <div className="overflow-x-auto rounded-2xl border border-border">
