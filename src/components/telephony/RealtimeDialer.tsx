@@ -1057,13 +1057,19 @@ export function RealtimeDialer() {
                 )}
               </Button>
 
-              <Button
-                variant="outline"
-                className="w-full text-destructive"
-                onClick={() => openDnc(digits)}
-              >
-                <Ban className="mr-2 size-4" /> Add any number to DNC
-              </Button>
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" onClick={() => openCallback(digits)}>
+                  <CalendarClock className="mr-2 size-4" /> Set callback
+                </Button>
+                <Button
+                  variant="outline"
+                  className="text-destructive"
+                  onClick={() => openDnc(digits)}
+                >
+                  <Ban className="mr-2 size-4" /> Add to DNC
+                </Button>
+              </div>
+
 
               {speedDial.length ? (
                 <div>
