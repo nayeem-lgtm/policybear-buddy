@@ -161,8 +161,43 @@ export function RealtimeDialer() {
   const [lead, setLead] = useState<{ id: string; phone_e164: string; contact_name: string | null } | null>(
     null,
   );
+  const [dncOpen, setDncOpen] = useState(false);
+  const [dncTarget, setDncTarget] = useState<{ phone: string; name: string | null }>({
+    phone: "",
+    name: null,
+  });
+
+  /* ------------------------------------------------- live Do-Not-Call pre-check */
+  const checkDnc = useServerFn(checkDncNumber);
+  const loadBlocked = useServerFn(getDncCenter);
+  const [debouncedDigits, setDebouncedDigits] = useState("");
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedDigits(digits), 350);
+    return () => clearTimeout(id);
+  }, [digits]);
+
+  const dncCheck = useQuery({
+    queryKey: ["dnc-check", debouncedDigits],
+    queryFn: () => checkDnc({ data: { phone: debouncedDigits } }),
+    enabled: debouncedDigits.replace(/\D/g, "").length >= 7,
+    staleTime: 15000,
+  });
+  const dncBlocked = Boolean(dncCheck.data?.blocked);
+  const dncEntry = dncCheck.data?.entry ?? null;
+
+  const blocked = useQuery({
+    queryKey: ["dnc-blocked"],
+    queryFn: () => loadBlocked({ data: { action: "dial_blocked", days: 7, limit: 50, status: "active" } }),
+    refetchInterval: 30000,
+  });
+
+  const openDnc = (phone: string | null | undefined, name?: string | null) => {
+    setDncTarget({ phone: phone ?? "", name: name ?? null });
+    setDncOpen(true);
+  };
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["dialer-desk"] });
+
 
   const dialMutation = useMutation({
     mutationFn: (input: StartCallInput) => dial({ data: input }),
