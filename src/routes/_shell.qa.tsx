@@ -140,6 +140,7 @@ function MetricChart({
   data,
   color,
   suffix,
+  prefix,
 }: {
   title: string;
   value: string;
@@ -147,33 +148,39 @@ function MetricChart({
   data: { day: string; v: number }[];
   color: string;
   suffix?: string;
+  prefix?: string;
 }) {
+
   const up = delta >= 0;
   return (
-    <Card className="gap-3 p-5 shadow-card">
+    <Card className="gap-2 p-4 shadow-card">
       <div>
-        <p className="font-display text-base font-semibold text-foreground">{title}</p>
-        <div className="mt-1 flex items-center gap-2">
-          <span className="font-display text-3xl font-semibold tracking-tight text-foreground tabular">{value}</span>
+        <p className="font-display text-sm font-semibold text-foreground">{title}</p>
+        <div className="mt-0.5 flex items-center gap-1.5">
+          <span className="font-display text-xl font-semibold tracking-tight text-foreground tabular">{value}</span>
           <Badge
             variant="outline"
-            className={up ? "border-success/25 bg-success/12 text-success" : "border-destructive/25 bg-destructive/12 text-destructive"}
+            className={
+              up
+                ? "border-success/25 bg-success/12 px-1.5 py-0 text-[0.65rem] text-success"
+                : "border-destructive/25 bg-destructive/12 px-1.5 py-0 text-[0.65rem] text-destructive"
+            }
           >
             {up ? "↑" : "↓"}{Math.abs(delta).toFixed(1)}%
           </Badge>
         </div>
       </div>
-      <div className="h-40">
+      <div className="h-20">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 6, right: 8, left: -14, bottom: 0 }}>
+          <LineChart data={data} margin={{ top: 4, right: 4, left: -22, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
-            <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
+            <XAxis dataKey="day" tickLine={false} axisLine={false} interval="preserveStartEnd" tick={{ fontSize: 9, fill: "var(--muted-foreground)" }} />
             <YAxis
               tickLine={false}
               axisLine={false}
-              width={48}
-              tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-              tickFormatter={(v: number) => `${v}${suffix ?? ""}`}
+              width={38}
+              tick={{ fontSize: 9, fill: "var(--muted-foreground)" }}
+              tickFormatter={(v: number) => `${prefix ?? ""}${v}${suffix ?? ""}`}
             />
             <Tooltip
               contentStyle={{
@@ -182,15 +189,16 @@ function MetricChart({
                 borderRadius: "0.6rem",
                 fontSize: 12,
               }}
-              formatter={(v: number) => [`${v}${suffix ?? ""}`, title]}
+              formatter={(v: number) => [`${prefix ?? ""}${v}${suffix ?? ""}`, title]}
             />
-            <Line type="monotone" dataKey="v" stroke={color} strokeWidth={2.5} dot={false} />
+            <Line type="monotone" dataKey="v" stroke={color} strokeWidth={2} dot={false} />
           </LineChart>
         </ResponsiveContainer>
       </div>
     </Card>
   );
 }
+
 
 type QARow = QAReview & {
   timestamp: string;
@@ -344,20 +352,26 @@ function QAPage() {
     const days = ["Aug 11", "Aug 12", "Aug 13", "Aug 14", "Aug 15", "Aug 16", "Aug 17"];
     const buckets = days.map((day, i) => {
       const rows = filtered.filter((_, idx) => idx % days.length === i);
-      const reviews = rows.length;
-      const avg = reviews ? Math.round(rows.reduce((s, r) => s + r.score, 0) / reviews) : 0;
-      const passed = rows.filter((r) => r.score >= 80).length;
-      const invalid = rows.filter((r) => r.outcome === "Invalid").length;
-      return { day, reviews, avg, pass: reviews ? Math.round((passed / reviews) * 100) : 0, invalid };
+      const calls = rows.length;
+      const sales = rows.filter((r) => r.outcome === "Valid").length;
+      const spend = rows.reduce((s, r) => s + r.payout, 0);
+      const health = calls ? Math.round(rows.reduce((s, r) => s + r.score, 0) / calls) : 0;
+      return {
+        day,
+        calls,
+        cps: sales ? Math.round((spend / sales) * 100) / 100 : 0,
+        health,
+        conv: calls ? Math.round((sales / calls) * 100) : 0,
+      };
     });
-    const totalReviews = filtered.length;
-    const avgScore = totalReviews
-      ? Math.round(filtered.reduce((s, r) => s + r.score, 0) / totalReviews)
+    const totalCalls = filtered.length;
+    const totalSales = filtered.filter((r) => r.outcome === "Valid").length;
+    const totalSpend = filtered.reduce((s, r) => s + r.payout, 0);
+    const cps = totalSales ? totalSpend / totalSales : 0;
+    const agentHealth = totalCalls
+      ? Math.round(filtered.reduce((s, r) => s + r.score, 0) / totalCalls)
       : 0;
-    const passRate = totalReviews
-      ? Math.round((filtered.filter((r) => r.score >= 80).length / totalReviews) * 100)
-      : 0;
-    const invalidCount = filtered.filter((r) => r.outcome === "Invalid").length;
+    const convRate = totalCalls ? Math.round((totalSales / totalCalls) * 100) : 0;
     const delta = (arr: number[]) => {
       const first = arr[0] || 1;
       const last = arr[arr.length - 1] || 0;
@@ -365,16 +379,17 @@ function QAPage() {
     };
     return {
       buckets,
-      totalReviews,
-      avgScore,
-      passRate,
-      invalidCount,
-      dReviews: delta(buckets.map((b) => b.reviews)),
-      dAvg: delta(buckets.map((b) => b.avg)),
-      dPass: delta(buckets.map((b) => b.pass)),
-      dInvalid: -delta(buckets.map((b) => b.invalid)),
+      totalCalls,
+      cps,
+      agentHealth,
+      convRate,
+      dCalls: delta(buckets.map((b) => b.calls)),
+      dCps: -delta(buckets.map((b) => b.cps)),
+      dHealth: delta(buckets.map((b) => b.health)),
+      dConv: delta(buckets.map((b) => b.conv)),
     };
   }, [filtered]);
+
 
   const columns: Column<QARow>[] = [
     {
@@ -507,38 +522,40 @@ function QAPage() {
       </Collapsible>
 
       <Collapsible title="Charts" icon={<LineChartIcon className="size-4 text-brand" />}>
-        <div className="grid gap-4 xl:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <MetricChart
-            title="Reviews"
-            value={`${charts.totalReviews}`}
-            delta={charts.dReviews}
-            data={charts.buckets.map((b) => ({ day: b.day, v: b.reviews }))}
+            title="Calls"
+            value={`${charts.totalCalls}`}
+            delta={charts.dCalls}
+            data={charts.buckets.map((b) => ({ day: b.day, v: b.calls }))}
             color="var(--brand)"
           />
           <MetricChart
-            title="Average score"
-            value={`${charts.avgScore}%`}
-            delta={charts.dAvg}
-            data={charts.buckets.map((b) => ({ day: b.day, v: b.avg }))}
+            title="CPS"
+            value={`$${charts.cps.toFixed(2)}`}
+            delta={charts.dCps}
+            data={charts.buckets.map((b) => ({ day: b.day, v: b.cps }))}
             color="var(--brand-teal)"
-            suffix="%"
+            prefix="$"
           />
           <MetricChart
-            title="Pass rate"
-            value={`${charts.passRate}%`}
-            delta={charts.dPass}
-            data={charts.buckets.map((b) => ({ day: b.day, v: b.pass }))}
+            title="Agent Health"
+            value={`${charts.agentHealth}%`}
+            delta={charts.dHealth}
+            data={charts.buckets.map((b) => ({ day: b.day, v: b.health }))}
             color="var(--success)"
             suffix="%"
           />
           <MetricChart
-            title="Invalid calls"
-            value={`${charts.invalidCount}`}
-            delta={charts.dInvalid}
-            data={charts.buckets.map((b) => ({ day: b.day, v: b.invalid }))}
-            color="var(--destructive)"
+            title="Conversion rate"
+            value={`${charts.convRate}%`}
+            delta={charts.dConv}
+            data={charts.buckets.map((b) => ({ day: b.day, v: b.conv }))}
+            color="var(--warning)"
+            suffix="%"
           />
         </div>
+
       </Collapsible>
 
       <Card className="gap-0 p-0 shadow-card">
