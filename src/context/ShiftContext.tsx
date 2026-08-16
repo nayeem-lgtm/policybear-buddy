@@ -308,6 +308,7 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
   const setStatus = useCallback(
     (next: PresenceStatus, detail?: string) => {
       setStatusState(next);
+      setStatusStartedAt(Date.now());
       setStatusSeconds(0);
       setTestKind(null);
       setAlarmAcknowledgedAt(null);
