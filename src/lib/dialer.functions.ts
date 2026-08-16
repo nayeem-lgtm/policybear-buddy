@@ -198,7 +198,7 @@ export const controlCall = createServerFn({ method: "POST" })
 
     const { data: updated, error } = await supabase
       .from("dialer_calls")
-      .update(patch)
+      .update(patch as never)
       .eq("id", data.callId)
       .select()
       .single();
@@ -249,7 +249,7 @@ export const wrapCall = createServerFn({ method: "POST" })
 
     if (data.callbackAt) {
       await supabase.from("callbacks").insert({
-        phone_e164: call.phone_e164,
+        phone_e164: call.phone_e164 ?? call.to_number ?? "",
         contact_id: call.contact_id,
         contact_name: call.contact_name,
         reason: data.callbackReason ?? data.disposition,
@@ -310,7 +310,7 @@ export const updateCallback = createServerFn({ method: "POST" })
 
     const { data: row, error } = await supabase
       .from("callbacks")
-      .update(patch)
+      .update(patch as never)
       .eq("id", data.id)
       .select()
       .single();
