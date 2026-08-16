@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
+  AlertOctagon,
   CalendarDays,
   Clock3,
   Coffee,
@@ -28,6 +29,7 @@ import {
 import { getAttendanceRegister } from "@/lib/shift.functions";
 import { formatClock, formatHm, pacificDate, workedSeconds } from "@/lib/shift-shared";
 import { DateRangeTabs, presetLabel, type DateSelection } from "@/components/crm/DateRangeTabs";
+import { exceptionsForSession, exceptionTone } from "@/lib/attendance-exceptions";
 import { cn } from "@/lib/utils";
 
 const STANDARD_DAY_SECONDS = 8 * 3600;
@@ -234,6 +236,12 @@ function AttendancePage() {
     const matchesTeam = team === "all" || r.team === team;
     return matchesSearch && matchesTeam;
   });
+
+  const exceptions = filtered
+    .flatMap((r) => exceptionsForSession(r, r.name, r.team))
+    .sort((a, b) => (a.date === b.date ? b.minutes - a.minutes : b.date.localeCompare(a.date)));
+
+
 
   const totals = filtered.reduce(
     (acc, r) => {
@@ -525,6 +533,78 @@ function AttendancePage() {
           }
         />
       </Card>
+
+      {/* Exceptions */}
+      <Card className="gap-0 overflow-hidden rounded-3xl p-0 shadow-card">
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border/60 bg-surface/50 p-4">
+          <div className="flex items-start gap-3">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-destructive/12 text-destructive">
+              <AlertOctagon className="size-4" />
+            </span>
+            <div>
+              <h2 className="font-display text-base font-semibold text-foreground">
+                Attendance Exceptions
+              </h2>
+              <p className="max-w-xl text-xs text-muted-foreground">
+                Detected automatically from shift records — late sign-ins, early or missed sign-outs
+                and break/lunch overruns. Follows the same date, team and search filters.
+              </p>
+            </div>
+          </div>
+          <span className="tabular rounded-full bg-destructive/10 px-2.5 py-1 text-xs font-semibold text-destructive">
+            {exceptions.length} exceptions
+          </span>
+        </div>
+
+        <DataTable
+          className="rounded-none border-0 shadow-none"
+          columns={[
+            {
+              key: "employee",
+              header: "Employee",
+              cell: (r) => (
+                <div className="min-w-0">
+                  <p className="font-medium text-foreground">{r.employee}</p>
+                  <p className="text-xs text-muted-foreground">{r.team}</p>
+                </div>
+              ),
+            },
+            {
+              key: "date",
+              header: "Date",
+              cell: (r) => <span className="tabular">{r.date}</span>,
+            },
+            {
+              key: "type",
+              header: "Type",
+              cell: (r) => <StatusBadge status={r.type} tone={exceptionTone(r.type)} />,
+            },
+            {
+              key: "detail",
+              header: "Details",
+              cell: (r) => <span className="text-sm text-muted-foreground">{r.detail}</span>,
+            },
+            {
+              key: "minutes",
+              header: "Impact",
+              align: "right",
+              cell: (r) =>
+                r.minutes > 0 ? (
+                  <span className="tabular font-medium text-destructive">{r.minutes} min</span>
+                ) : (
+                  <span className="text-xs text-muted-foreground">—</span>
+                ),
+            },
+          ]}
+          rows={exceptions}
+          empty={
+            query.isLoading
+              ? "Checking shift records…"
+              : "No attendance exceptions for this selection — everyone stayed inside policy."
+          }
+        />
+      </Card>
     </div>
   );
 }
+
