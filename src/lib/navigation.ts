@@ -10,11 +10,9 @@ import {
   CalendarClock,
   CalendarDays,
   ClipboardCheck,
-  ClipboardList,
   Contact,
   CreditCard,
   Database,
-  FileStack,
   FileText,
   Gauge,
   Headphones,
@@ -104,8 +102,8 @@ export const navSections: NavSection[] = [
         items: [
           { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, description: "Your day at a glance" },
           { title: "Agent Desk", url: "/agent-desk", icon: Headphones, description: "Take and handle calls" },
-          { title: "My Work", url: "/my-work", icon: ClipboardList, description: "Everything assigned to you" },
-          { title: "Customers", url: "/customers", icon: Contact, description: "Customer records" },
+          { title: "Customers & Sales", url: "/customers", icon: Contact, description: "Customer records, policies, payments and commission" },
+          { title: "Quotes", url: "/quotes", icon: Sparkles, description: "Pull and compare quotes" },
           { title: "Callbacks", url: "/callbacks", icon: PhoneForwarded, description: "Callback queue and calendar in one book" },
 
           { title: "DNC & Compliance", url: "/dnc", icon: ShieldOff, description: "Do-Not-Call list, add numbers and audit log" },
@@ -118,13 +116,6 @@ export const navSections: NavSection[] = [
           { title: "Break Alarm", url: "/break-alarm", icon: BellRing, description: "Break timers and alerts" },
           { title: "Attendance", url: "/attendance", icon: CalendarClock, description: "Attendance records" },
           { title: "Leave", url: "/leave", icon: CalendarDays, description: "Time off requests" },
-        ],
-      },
-      {
-        label: "Growth",
-        items: [
-          { title: "Quotes", url: "/quotes", icon: Sparkles, description: "Pull and compare quotes" },
-          { title: "Sales", url: "/sales", icon: FileStack, description: "Your sales and policies" },
         ],
       },
     ],
