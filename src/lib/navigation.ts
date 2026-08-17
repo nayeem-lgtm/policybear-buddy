@@ -67,7 +67,7 @@ export interface NavSection {
 export const navSections: NavSection[] = [
   {
     id: "operation",
-    label: "Operation",
+    label: "Admin",
     tagline: "Company-wide admin overview",
     icon: Activity,
     home: "/operations",

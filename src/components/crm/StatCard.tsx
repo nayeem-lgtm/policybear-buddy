@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { ArrowDownRight, ArrowUpRight } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { ArrowDownRight, ArrowUpRight, ArrowUpRight as GoIcon } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +12,7 @@ export function StatCard({
   tone = "default",
   icon,
   className,
+  to,
 }: {
   label: string;
   value: ReactNode;
@@ -19,6 +21,8 @@ export function StatCard({
   tone?: "default" | "brand" | "success" | "warning" | "danger" | "info";
   icon?: ReactNode;
   className?: string;
+  /** When set, the whole card becomes a link to this route. */
+  to?: string;
 }) {
   const toneRing: Record<string, string> = {
     default: "before:bg-border",
@@ -38,10 +42,11 @@ export function StatCard({
     info: "bg-brand-cyan/25 text-brand-teal",
   };
 
-  return (
+  const card = (
     <Card
       className={cn(
-        "relative gap-0 overflow-hidden rounded-2xl border-border/70 p-5 shadow-card transition-shadow duration-200 hover:shadow-raised",
+        "relative h-full gap-0 overflow-hidden rounded-2xl border-border/70 p-5 shadow-card transition-all duration-200 hover:shadow-raised",
+        to && "group cursor-pointer hover:-translate-y-0.5 hover:border-brand/40",
         "before:absolute before:inset-y-0 before:left-0 before:w-1 before:content-['']",
         toneRing[tone],
         className,
@@ -83,6 +88,16 @@ export function StatCard({
         )}
         {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
       </div>
+      {to && (
+        <GoIcon className="absolute right-4 bottom-4 size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+      )}
     </Card>
+  );
+
+  if (!to) return card;
+  return (
+    <Link to={to as never} className="block focus-visible:outline-none">
+      {card}
+    </Link>
   );
 }
