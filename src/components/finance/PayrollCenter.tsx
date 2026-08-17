@@ -528,13 +528,10 @@ export function PayrollCenter() {
           <p className="text-[0.7rem] font-semibold tracking-[0.12em] text-muted-foreground uppercase">Run summary</p>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between"><span className="text-muted-foreground">Period</span><span className="font-medium">{mode === "weekly" ? `${fmtDay(rangeFrom)} – ${fmtDay(rangeTo)}` : fmtDayLong(rangeFrom)}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Agents paid</span><span className="tabular">{lines.filter((l) => l.gross > 0).length}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Agents paid</span><span className="tabular">{lines.filter((l) => l.totalPay > 0).length}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Base + OT</span><span className="tabular">{money(totals.basePay)}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Commission + incentive</span><span className="tabular">{money(totals.commission)}</span></div>
-            <Separator />
-            <div className="flex justify-between"><span className="text-muted-foreground">Gross payroll</span><span className="tabular font-medium">{money(totals.gross)}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Employer taxes (7.65%)</span><span className="tabular text-brand-tan">{money(totals.employerTaxes)}</span></div>
-            <div className="flex justify-between text-base font-semibold"><span>Cash outflow</span><span className="tabular">{money(totals.outflow)}</span></div>
+            <div className="flex justify-between text-base font-semibold"><span>Total pay</span><span className="tabular">{money(totals.totalPay)}</span></div>
           </div>
           <Button className="w-full" onClick={generateRun} disabled={visible.length === 0}>
             <Download className="size-4" />
