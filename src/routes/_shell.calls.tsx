@@ -1,7 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { PhoneCall, Clock, PlayCircle, DollarSign } from "lucide-react";
 
+import { recordCalculationOnce } from "@/lib/audit-log";
+import { useAuth } from "@/context/AuthContext";
 import { PageHeader } from "@/components/crm/PageHeader";
 import { StatCard } from "@/components/crm/StatCard";
 import { FilterBar } from "@/components/crm/FilterBar";
@@ -40,6 +42,7 @@ export const Route = createFileRoute("/_shell/calls")({
 const dateRanges = ["Today", "Yesterday", "Last 7 Days", "Last 30 Days"];
 
 function CallsPage() {
+  const { user } = useAuth();
   const [selected, setSelected] = useState<CallRecord | null>(null);
 
   const { search, setSearch, values, setValue, reset, filtered } = useFilters(calls, {
@@ -59,6 +62,23 @@ function CallsPage() {
     const totalCost = calls.reduce((a, c) => a + Number(c.cost.replace("$", "")), 0);
     return { total, paid, avgSeconds, totalCost };
   }, []);
+
+  useEffect(() => {
+    recordCalculationOnce(`calls:${stats.total}:${stats.paid}`, {
+      actor: user?.name ?? null,
+      actorEmail: user?.email ?? null,
+      category: "Calls",
+      action: "Recalculated call log totals",
+      recordType: "Calls",
+      recordId: `calls-${stats.total}`,
+      detail: {
+        calls: stats.total,
+        paidCalls: stats.paid,
+        avgBillableSeconds: stats.avgSeconds,
+        totalCost: Number(stats.totalCost.toFixed(2)),
+      },
+    });
+  }, [stats, user?.name, user?.email]);
 
   const columns: Column<CallRecord>[] = [
     {

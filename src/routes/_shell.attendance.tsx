@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -14,6 +14,8 @@ import {
   Users,
   UtensilsCrossed,
 } from "lucide-react";
+import { recordCalculationOnce } from "@/lib/audit-log";
+import { useAuth } from "@/context/AuthContext";
 import { StatusBadge } from "@/components/crm/StatusBadge";
 import { DataTable } from "@/components/crm/DataTable";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -231,6 +233,25 @@ function AttendancePage() {
   }, [query.data]);
 
   const teams = useMemo(() => Array.from(new Set(rows.map((r) => r.team))).sort(), [rows]);
+
+  const { user: auditUser } = useAuth();
+  useEffect(() => {
+    if (rows.length === 0) return;
+    const worked = rows.reduce((s, r) => s + r.worked, 0);
+    recordCalculationOnce(`attendance:${from}_${to}:${rows.length}`, {
+      actor: auditUser?.name ?? null,
+      actorEmail: auditUser?.email ?? null,
+      category: "Attendance",
+      action: "Recalculated attendance register",
+      recordType: "Attendance",
+      recordId: `${from}_${to}`,
+      detail: {
+        sessions: rows.length,
+        employees: new Set(rows.map((r) => r.user_id)).size,
+        workedHours: Number((worked / 3600).toFixed(2)),
+      },
+    });
+  }, [rows, from, to, auditUser?.name, auditUser?.email]);
 
   const filtered = rows.filter((r) => {
     const matchesSearch =

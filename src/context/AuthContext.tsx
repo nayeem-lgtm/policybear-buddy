@@ -9,6 +9,7 @@ import {
 } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
+import { recordAudit } from "@/lib/audit-log";
 import { provisionStaffAccounts } from "@/lib/auth.functions";
 import { recordStatusChange } from "@/lib/shift.functions";
 import type { Role } from "@/lib/mock-data";
@@ -151,12 +152,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (result.error || !result.data.user) {
+      recordAudit({
+        actor: trimmed,
+        actorEmail: trimmed,
+        category: "Auth",
+        action: "Sign-in failed",
+        recordType: "Session",
+        recordId: trimmed,
+        reason: result.error?.message ?? "Sign in failed.",
+      });
       return { ok: false, error: result.error?.message ?? "Sign in failed." };
     }
 
     const next = await loadSessionUser(result.data.user.id, result.data.user.email ?? trimmed);
     setUser(next);
     await supabase.from("profiles").update({ presence: "online" }).eq("id", result.data.user.id);
+    recordAudit({
+      actor: next?.name ?? trimmed,
+      actorEmail: trimmed,
+      category: "Auth",
+      action: "Signed in",
+      recordType: "Session",
+      recordId: result.data.user.id,
+      detail: { role: next?.role ?? "Agent", landing: next?.landing ?? "/dashboard" },
+    });
     return { ok: true, user: next ?? undefined };
   }, []);
 
@@ -169,6 +188,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         /* stale sessions are auto-closed server-side */
       }
       await supabase.from("profiles").update({ presence: "offline" }).eq("id", user.id);
+    }
+    if (user) {
+      recordAudit({
+        actor: user.name,
+        actorEmail: user.email,
+        category: "Auth",
+        action: "Signed out",
+        recordType: "Session",
+        recordId: user.id,
+      });
     }
     await supabase.auth.signOut();
     setUser(null);

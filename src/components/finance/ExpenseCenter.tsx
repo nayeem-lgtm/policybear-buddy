@@ -47,6 +47,8 @@ import {
   setExpenseStatus,
   useExpenseLedger,
 } from "@/lib/expense-store";
+import { recordAudit } from "@/lib/audit-log";
+import { useAuth } from "@/context/AuthContext";
 
 const MEMO_CATEGORIES = new Set(["Employee Tax Withheld (Memo)", "Employer Taxes"]);
 const MANUAL_CATEGORIES = COST_CATEGORIES.filter((c) => !MEMO_CATEGORIES.has(c));
@@ -69,6 +71,7 @@ function SectionHead({ icon, title, subtitle }: { icon: React.ReactNode; title: 
 }
 
 export function ExpenseCenter() {
+  const { user } = useAuth();
   const ledger = useExpenseLedger();
   const [sel, setSel] = useState<DateSelection>({ preset: "year" });
   const [selected, setSelected] = useState<PayableRow | null>(null);
@@ -149,6 +152,15 @@ export function ExpenseCenter() {
       dueDate,
       status,
       notes: notes.trim() || null,
+    });
+    recordAudit({
+      actor: user?.name ?? null,
+      actorEmail: user?.email ?? null,
+      category: "Expense",
+      action: "Added company expense",
+      recordType: "Expense",
+      recordId: row.id,
+      detail: { vendor: row.vendor, category: row.category, amount: row.amount, costDate: row.costDate, status: row.status },
     });
     toast.success(`${row.vendor} — ${money(row.amount)} added to company finance`);
     setAddOpen(false);
@@ -348,11 +360,12 @@ export function ExpenseCenter() {
                     <Trash2 className="size-4" /> Delete
                   </Button>
                 )}
-                <Button variant="outline" disabled={selected.status === "Hold"} onClick={() => { setExpenseStatus(selected.id, "Hold"); setSelected({ ...selected, status: "Hold" }); }}>Hold</Button>
+                <Button variant="outline" disabled={selected.status === "Hold"} onClick={() => { setExpenseStatus(selected.id, "Hold"); recordAudit({ actor: user?.name ?? null, actorEmail: user?.email ?? null, category: "Expense", action: "Expense placed on hold", recordType: "Expense", recordId: selected.id, detail: { vendor: selected.vendor, amount: selected.amount } }); setSelected({ ...selected, status: "Hold" }); }}>Hold</Button>
                 <Button
                   disabled={selected.status === "Paid"}
                   onClick={() => {
                     setExpenseStatus(selected.id, "Paid");
+                    recordAudit({ actor: user?.name ?? null, actorEmail: user?.email ?? null, category: "Expense", action: "Expense marked paid", recordType: "Expense", recordId: selected.id, detail: { vendor: selected.vendor, amount: selected.amount } });
                     setSelected({ ...selected, status: "Paid", paidDate: today() });
                   }}
                 >
