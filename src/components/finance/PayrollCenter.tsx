@@ -178,10 +178,7 @@ export function PayrollCenter() {
       const commission = validSales * perSale;
       const incentive = agentSales.reduce((s, r) => s + (r.personalLeadIncentive ?? 0), 0);
 
-      const gross = basePay + otPay + commission + incentive;
-      const employeeTaxes = gross * EMPLOYEE_TAX_RATE;
-      const employerTaxes = gross * EMPLOYER_TAX_RATE;
-      const netPay = gross - employeeTaxes;
+      const totalPay = basePay + otPay + commission + incentive;
 
       out.push({
         userId: p.id,
@@ -201,14 +198,10 @@ export function PayrollCenter() {
         perSale,
         commission,
         incentive,
-        gross,
-        employeeTaxes,
-        employerTaxes,
-        netPay,
-        cashOutflow: netPay + employeeTaxes + employerTaxes,
+        totalPay,
       });
     }
-    return out.sort((a, b) => b.gross - a.gross || a.name.localeCompare(b.name));
+    return out.sort((a, b) => b.totalPay - a.totalPay || a.name.localeCompare(b.name));
   }, [sessions, profiles, weekDays, rangeFrom, rangeTo, mode]);
 
   const visible = useMemo(() => {
