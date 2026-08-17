@@ -255,11 +255,7 @@ export function PayrollCenter() {
       "Per sale",
       "Commission",
       "Incentive",
-      "Gross",
-      "Employee taxes",
-      "Employer taxes",
-      "Net pay",
-      "Company outflow",
+      "Total pay",
     ];
     const rows = visible.map((l) => [
       mode === "weekly" ? "Weekly" : "Daily",
@@ -278,11 +274,7 @@ export function PayrollCenter() {
       l.perSale,
       l.commission.toFixed(2),
       l.incentive.toFixed(2),
-      l.gross.toFixed(2),
-      l.employeeTaxes.toFixed(2),
-      l.employerTaxes.toFixed(2),
-      l.netPay.toFixed(2),
-      l.cashOutflow.toFixed(2),
+      l.totalPay.toFixed(2),
     ]);
     csvDownload(`payroll-${mode}-${rangeFrom}${mode === "weekly" ? `_${rangeTo}` : ""}.csv`, [header, ...rows]);
   }
