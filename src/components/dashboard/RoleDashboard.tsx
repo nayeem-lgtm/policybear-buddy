@@ -370,12 +370,42 @@ const CONFIGS: Record<Role, RoleConfig> = {
 export function RoleDashboard({ role, name }: { role: Role; name: string }) {
   const [period, setPeriod] = useState("today");
   const [team, setTeam] = useState("all");
+  const [view, setView] = useState<"role" | "agent">(role === "Agent" ? "agent" : "role");
   const config = useMemo(() => CONFIGS[role] ?? CONFIGS.Agent, [role]);
 
-  if (role === "Agent") {
-    return <AgentDashboard name={name} />;
-  }
+  const viewSwitch = role === "Agent" ? null : (
+    <div className="inline-flex rounded-lg border border-border p-0.5">
+      <button
+        type="button"
+        onClick={() => setView("role")}
+        className={
+          "rounded-md px-3 py-1.5 text-xs font-medium transition-colors " +
+          (view === "role" ? "bg-brand text-brand-foreground" : "text-muted-foreground hover:text-foreground")
+        }
+      >
+        {role} view
+      </button>
+      <button
+        type="button"
+        onClick={() => setView("agent")}
+        className={
+          "rounded-md px-3 py-1.5 text-xs font-medium transition-colors " +
+          (view === "agent" ? "bg-brand text-brand-foreground" : "text-muted-foreground hover:text-foreground")
+        }
+      >
+        Agent scorecard
+      </button>
+    </div>
+  );
 
+  if (view === "agent") {
+    return (
+      <div className="space-y-4">
+        {viewSwitch && <div className="flex justify-end">{viewSwitch}</div>}
+        <AgentDashboard name={name} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -384,6 +414,8 @@ export function RoleDashboard({ role, name }: { role: Role; name: string }) {
           {name} · <span className="text-foreground">{role}</span> view · placeholder data
         </p>
         <div className="flex flex-wrap items-center gap-2">
+          {viewSwitch}
+
           <Select value={period} onValueChange={setPeriod}>
             <SelectTrigger className="h-9 w-36">
               <SelectValue />
