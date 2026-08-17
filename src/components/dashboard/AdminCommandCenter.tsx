@@ -47,6 +47,38 @@ import { sales, payrollWeeks } from "@/lib/company-data";
 import { attendanceExceptions, hourRequests, leaveRequestsHr } from "@/lib/hr-data";
 import { calls, callbacks, employees, qaReviews } from "@/lib/mock-data";
 
+/** Shared table chrome so every admin table scans identically. */
+const THEAD_ROW =
+  "sticky top-0 z-10 border-b border-border bg-muted/60 text-left text-[0.66rem] font-semibold tracking-[0.09em] text-muted-foreground uppercase backdrop-blur";
+const TABLE = "w-full min-w-[760px] text-sm";
+
+function SectionHead({
+  icon,
+  title,
+  subtitle,
+  action,
+}: {
+  icon?: React.ReactNode;
+  title: string;
+  subtitle?: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="mb-4 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:justify-between">
+      <div className="flex min-w-0 items-center gap-2">
+        {icon && <span className="shrink-0">{icon}</span>}
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold tracking-tight text-foreground">{title}</p>
+          {subtitle && (
+            <p className="truncate text-xs text-muted-foreground">{subtitle}</p>
+          )}
+        </div>
+      </div>
+      {action}
+    </div>
+  );
+}
+
 const money = (n: number) =>
   `$${n.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
 const money2 = (n: number) =>
@@ -275,18 +307,22 @@ export function AdminCommandCenter() {
   const todoCount = pendingLeave.length + pendingHours.length + view.qaIssues.length;
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <BadgeCheck className="size-4 text-brand" />
-          Showing <span className="font-semibold text-foreground">{label}</span> across the
-          whole company
+    <div className="space-y-6">
+      <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-card p-3 shadow-card lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
+          <BadgeCheck className="size-4 shrink-0 text-brand" />
+          <span className="truncate">
+            Showing <span className="font-semibold text-foreground">{label}</span> across the
+            whole company
+          </span>
         </div>
-        <DateRangeTabs value={sel} onChange={setSel} />
+        <div className="overflow-x-auto">
+          <DateRangeTabs value={sel} onChange={setSel} />
+        </div>
       </div>
 
       {/* headline metrics */}
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Calls received"
           value={view.callRows.length}
@@ -355,18 +391,19 @@ export function AdminCommandCenter() {
 
       {/* charts + approvals */}
       <div className="grid gap-4 xl:grid-cols-3">
-        <Card className="p-4 shadow-card xl:col-span-2">
-          <div className="mb-3 flex items-center justify-between">
-            <div>
-              <p className="text-sm font-semibold text-foreground">Call & sale flow</p>
-              <p className="text-xs text-muted-foreground">{label} · billable vs total volume</p>
-            </div>
-            <Button asChild variant="outline" size="sm">
-              <Link to="/reporting">
-                Full report <ArrowRight className="ml-1 size-3.5" />
-              </Link>
-            </Button>
-          </div>
+        <Card className="rounded-2xl border-border/70 p-5 shadow-card xl:col-span-2">
+          <SectionHead
+            icon={<TrendingUp className="size-4 text-brand" />}
+            title="Call & sale flow"
+            subtitle={`${label} · billable vs total volume`}
+            action={
+              <Button asChild variant="outline" size="sm">
+                <Link to="/reporting">
+                  Full report <ArrowRight className="ml-1 size-3.5" />
+                </Link>
+              </Button>
+            }
+          />
           <div className="h-[220px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={view.trend}>
@@ -424,11 +461,15 @@ export function AdminCommandCenter() {
           </div>
         </Card>
 
-        <Card className="p-4 shadow-card">
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-sm font-semibold text-foreground">Needs your approval</p>
-            <StatusBadge status={`${todoCount} open`} tone={todoCount ? "warning" : "success"} />
-          </div>
+        <Card className="rounded-2xl border-border/70 p-5 shadow-card">
+          <SectionHead
+            icon={<ClipboardCheck className="size-4 text-brand" />}
+            title="Needs your approval"
+            subtitle="Leave, extra hours and QA escalations"
+            action={
+              <StatusBadge status={`${todoCount} open`} tone={todoCount ? "warning" : "success"} />
+            }
+          />
           <ScrollArea className="h-[400px] pr-2">
             <div className="space-y-2">
               {pendingLeave.map((l) => (
@@ -510,23 +551,19 @@ export function AdminCommandCenter() {
 
       {/* agent health */}
       <div className="grid gap-4 xl:grid-cols-3">
-        <Card className="p-4 shadow-card xl:col-span-2">
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <HeartPulse className="size-4 text-destructive" />
-              <div>
-                <p className="text-sm font-semibold text-foreground">Agent health — active alerts</p>
-                <p className="text-xs text-muted-foreground">
-                  {agentHealth.alerts.length} live alert{agentHealth.alerts.length === 1 ? "" : "s"} on the floor
-                </p>
-              </div>
-            </div>
-            <Button asChild variant="outline" size="sm">
-              <Link to="/live-operations">
-                Live floor <ArrowRight className="ml-1 size-3.5" />
-              </Link>
-            </Button>
-          </div>
+        <Card className="rounded-2xl border-border/70 p-5 shadow-card xl:col-span-2">
+          <SectionHead
+            icon={<HeartPulse className="size-4 text-destructive" />}
+            title="Agent health — active alerts"
+            subtitle={`${agentHealth.alerts.length} live alert${agentHealth.alerts.length === 1 ? "" : "s"} on the floor`}
+            action={
+              <Button asChild variant="outline" size="sm">
+                <Link to="/live-operations">
+                  Live floor <ArrowRight className="ml-1 size-3.5" />
+                </Link>
+              </Button>
+            }
+          />
           <ScrollArea className="h-[300px] pr-2">
             <div className="space-y-2">
               {agentHealth.alerts.length === 0 && (
@@ -558,11 +595,12 @@ export function AdminCommandCenter() {
           </ScrollArea>
         </Card>
 
-        <Card className="p-4 shadow-card">
-          <div className="mb-3 flex items-center gap-2">
-            <Activity className="size-4 text-brand" />
-            <p className="text-sm font-semibold text-foreground">Health signals</p>
-          </div>
+        <Card className="rounded-2xl border-border/70 p-5 shadow-card">
+          <SectionHead
+            icon={<Activity className="size-4 text-brand" />}
+            title="Health signals"
+            subtitle="Floor coverage and workload pressure"
+          />
           <div className="space-y-3">
             {agentHealth.signals.map((sig) => (
               <Link
@@ -587,26 +625,26 @@ export function AdminCommandCenter() {
 
       {/* tabs: agents / finance / people */}
       <Tabs defaultValue="agents" className="space-y-4">
-        <TabsList>
+        <TabsList className="w-full justify-start overflow-x-auto sm:w-auto">
           <TabsTrigger value="agents">Agent scoreboard</TabsTrigger>
           <TabsTrigger value="finance">Finance</TabsTrigger>
           <TabsTrigger value="people">People & attendance</TabsTrigger>
         </TabsList>
 
         <TabsContent value="agents" className="space-y-4">
-          <Card className="overflow-hidden shadow-card">
-            <div className="flex items-center justify-between border-b border-border px-4 py-3">
-              <p className="text-sm font-semibold text-foreground">
+          <Card className="overflow-hidden rounded-2xl border-border/70 shadow-card">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-4 py-3 sm:flex sm:justify-between">
+              <p className="truncate text-sm font-semibold tracking-tight text-foreground">
                 Agent performance — {label}
               </p>
               <Button asChild variant="outline" size="sm">
                 <Link to="/employees">All employees</Link>
               </Button>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+              <table className={TABLE}>
                 <thead>
-                  <tr className="border-b border-border bg-muted/40 text-left text-[0.68rem] font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+                  <tr className={THEAD_ROW}>
                     <th className="px-4 py-2.5">Agent</th>
                     <th className="px-3 py-2.5">Calls</th>
                     <th className="px-3 py-2.5">Sales</th>
@@ -661,7 +699,7 @@ export function AdminCommandCenter() {
         </TabsContent>
 
         <TabsContent value="finance" className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard
               label="Total revenue"
               value={money(finance.revenue)}
@@ -697,24 +735,21 @@ export function AdminCommandCenter() {
           </div>
 
           <div className="grid gap-4 xl:grid-cols-3">
-            <Card className="p-4 shadow-card xl:col-span-2">
-              <div className="mb-3 flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-foreground">
-                    Payroll for next week
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Week starting {finance.nextWeek || "—"} · {finance.nextRows.length} people
-                  </p>
-                </div>
-                <Button asChild variant="outline" size="sm">
-                  <Link to="/payroll">Open payroll</Link>
-                </Button>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+            <Card className="rounded-2xl border-border/70 p-5 shadow-card xl:col-span-2">
+              <SectionHead
+                icon={<Banknote className="size-4 text-brand" />}
+                title="Payroll for next week"
+                subtitle={`Week starting ${finance.nextWeek || "—"} · ${finance.nextRows.length} people`}
+                action={
+                  <Button asChild variant="outline" size="sm">
+                    <Link to="/payroll">Open payroll</Link>
+                  </Button>
+                }
+              />
+              <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+                <table className={TABLE}>
                   <thead>
-                    <tr className="border-b border-border bg-muted/40 text-left text-[0.68rem] font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+                    <tr className={THEAD_ROW}>
                       <th className="px-3 py-2.5">Agent</th>
                       <th className="px-3 py-2.5">Hours</th>
                       <th className="px-3 py-2.5">Base</th>
@@ -768,8 +803,12 @@ export function AdminCommandCenter() {
               </div>
             </Card>
 
-            <Card className="p-4 shadow-card">
-              <p className="mb-3 text-sm font-semibold text-foreground">Money at a glance</p>
+            <Card className="rounded-2xl border-border/70 p-5 shadow-card">
+              <SectionHead
+                icon={<Wallet className="size-4 text-brand" />}
+                title="Money at a glance"
+                subtitle="Range vs all-time position"
+              />
               <dl className="space-y-3 text-sm">
                 {[
                   ["Premium written (all time)", money2(finance.premiumWritten)],
@@ -802,11 +841,12 @@ export function AdminCommandCenter() {
 
         <TabsContent value="people" className="space-y-4">
           <div className="grid gap-4 xl:grid-cols-3">
-            <Card className="p-4 shadow-card">
-              <div className="mb-3 flex items-center gap-2">
-                <CalendarClock className="size-4 text-warning" />
-                <p className="text-sm font-semibold text-foreground">Agents on leave</p>
-              </div>
+            <Card className="rounded-2xl border-border/70 p-5 shadow-card">
+              <SectionHead
+                icon={<CalendarClock className="size-4 text-brand-tan" />}
+                title="Agents on leave"
+                subtitle="Approved absences in this window"
+              />
               <div className="space-y-2">
                 {onLeaveNow.length === 0 && (
                   <p className="text-sm text-muted-foreground">Full floor today.</p>
@@ -829,20 +869,21 @@ export function AdminCommandCenter() {
               </div>
             </Card>
 
-            <Card className="p-4 shadow-card xl:col-span-2">
-              <div className="mb-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Clock className="size-4 text-destructive" />
-                  <p className="text-sm font-semibold text-foreground">Late & attendance issues</p>
-                </div>
-                <Button asChild variant="outline" size="sm">
-                  <Link to="/attendance">Attendance</Link>
-                </Button>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+            <Card className="rounded-2xl border-border/70 p-5 shadow-card xl:col-span-2">
+              <SectionHead
+                icon={<Clock className="size-4 text-destructive" />}
+                title="Late & attendance issues"
+                subtitle="Sign-in exceptions with payroll impact"
+                action={
+                  <Button asChild variant="outline" size="sm">
+                    <Link to="/attendance">Attendance</Link>
+                  </Button>
+                }
+              />
+              <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+                <table className={TABLE}>
                   <thead>
-                    <tr className="border-b border-border bg-muted/40 text-left text-[0.68rem] font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+                    <tr className={THEAD_ROW}>
                       <th className="px-3 py-2.5">Employee</th>
                       <th className="px-3 py-2.5">Date</th>
                       <th className="px-3 py-2.5">Type</th>
@@ -881,16 +922,17 @@ export function AdminCommandCenter() {
             </Card>
           </div>
 
-          <Card className="p-4 shadow-card">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Users className="size-4 text-brand" />
-                <p className="text-sm font-semibold text-foreground">Floor coverage right now</p>
-              </div>
-              <span className="text-xs text-muted-foreground">
-                {employees.filter((e) => e.status !== "Signed Out").length}/{employees.length} signed in
-              </span>
-            </div>
+          <Card className="rounded-2xl border-border/70 p-5 shadow-card">
+            <SectionHead
+              icon={<Users className="size-4 text-brand" />}
+              title="Floor coverage right now"
+              subtitle="Signed-in headcount per team"
+              action={
+                <span className="text-xs text-muted-foreground">
+                  {employees.filter((e) => e.status !== "Signed Out").length}/{employees.length} signed in
+                </span>
+              }
+            />
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
               {[...new Set(employees.map((e) => e.team))].map((team) => {
                 const members = employees.filter((e) => e.team === team);
