@@ -212,15 +212,64 @@ export function PayrollCenter() {
     return out.sort((a, b) => b.totalPay - a.totalPay || a.name.localeCompare(b.name));
   }, [sessions, profiles, weekDays, rangeFrom, rangeTo, mode]);
 
+  /**
+   * Attendance fallback: when the live shift register has nothing recorded for
+   * the selected period we fall back to the payroll workbook for that week so
+   * hours, commission and pay still reconcile with the rest of the platform.
+   */
+  const recordedLines = useMemo<PayrollLine[]>(() => {
+    const rows = payrollWeeks.filter((w) => w.weekStart === weekStart);
+    if (rows.length === 0) return [];
+    const dayShare = mode === "weekly" ? 1 : 1 / 5;
+    return rows
+      .map((w) => {
+        const hours = Math.round(w.paidHours * dayShare * 100) / 100;
+        const regularHours = Math.min(hours, mode === "weekly" ? WEEK_HOURS_TARGET : DAY_HOURS_TARGET);
+        const otHours = Math.max(0, Math.round((hours - regularHours) * 100) / 100);
+        const basePay = regularHours * HOURLY_RATE;
+        const otPay = otHours * HOURLY_RATE * 1.5;
+        const validSales = Math.round(w.validSales * dayShare);
+        const perSale = commissionPerSale(validSales);
+        const commission = Math.round(validSales * perSale * 100) / 100;
+        const incentive = Math.round(w.incentiveDue * dayShare * 100) / 100;
+        const perDaySeconds = weekDays.map((_, i) =>
+          mode === "weekly" || i === dayIndex ? (hours / (mode === "weekly" ? 5 : 1)) * 3600 : 0,
+        );
+        return {
+          userId: `${w.id}`,
+          name: w.agent,
+          team: "Sales Floor",
+          initials: w.agent.slice(0, 2).toUpperCase(),
+          perDaySeconds,
+          workedSeconds: hours * 3600,
+          daysWorked: mode === "weekly" ? 5 : 1,
+          hours,
+          regularHours,
+          otHours,
+          rate: HOURLY_RATE,
+          basePay,
+          otPay,
+          validSales,
+          perSale,
+          commission,
+          incentive,
+          totalPay: basePay + otPay + commission + incentive,
+        } satisfies PayrollLine;
+      })
+      .sort((a, b) => b.totalPay - a.totalPay || a.name.localeCompare(b.name));
+  }, [weekStart, weekDays, mode, dayIndex]);
+
+  const effectiveLines = lines.some((l) => l.workedSeconds > 0) ? lines : recordedLines;
+
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return lines;
-    return lines.filter((l) => l.name.toLowerCase().includes(q) || l.team.toLowerCase().includes(q));
-  }, [lines, query]);
+    if (!q) return effectiveLines;
+    return effectiveLines.filter((l) => l.name.toLowerCase().includes(q) || l.team.toLowerCase().includes(q));
+  }, [effectiveLines, query]);
 
   const totals = useMemo(
     () =>
-      lines.reduce(
+      effectiveLines.reduce(
         (acc, l) => ({
           hours: acc.hours + l.hours,
           basePay: acc.basePay + l.basePay + l.otPay,
@@ -230,7 +279,7 @@ export function PayrollCenter() {
         }),
         { hours: 0, basePay: 0, commission: 0, totalPay: 0, ot: 0 },
       ),
-    [lines],
+    [effectiveLines],
   );
 
   const dayTotals = useMemo(
@@ -238,10 +287,10 @@ export function PayrollCenter() {
       weekDays.map((d, i) => ({
         date: d,
         label: DAY_LABELS[i]!,
-        hours: hoursOf(lines.reduce((s, l) => s + (l.perDaySeconds[i] ?? 0), 0)),
-        headcount: lines.filter((l) => (l.perDaySeconds[i] ?? 0) > 0).length,
+        hours: hoursOf(effectiveLines.reduce((s, l) => s + (l.perDaySeconds[i] ?? 0), 0)),
+        headcount: effectiveLines.filter((l) => (l.perDaySeconds[i] ?? 0) > 0).length,
       })),
-    [weekDays, lines],
+    [weekDays, effectiveLines],
   );
   const maxDayHours = Math.max(...dayTotals.map((d) => d.hours), 1);
 
@@ -396,7 +445,7 @@ export function PayrollCenter() {
       <PageHeader
         eyebrow="Accounting"
         title="Payroll"
-        description="Mon–Fri payroll built straight from attendance. Hours count themselves; commission and taxes roll in automatically."
+        description="Mon–Fri payroll built straight from attendance. Hours count themselves and commission rolls in automatically."
         actions={
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => register.refetch()} disabled={register.isFetching}>
