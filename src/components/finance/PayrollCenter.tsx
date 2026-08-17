@@ -347,19 +347,12 @@ export function PayrollCenter() {
         </div>
       ),
     },
-    { key: "gross", header: "Gross", align: "right", cell: (l) => <span className="tabular font-semibold">{money(l.gross)}</span> },
     {
-      key: "taxes",
-      header: "Taxes",
+      key: "totalPay",
+      header: "Total pay",
       align: "right",
-      cell: (l) => (
-        <div className="text-right text-xs">
-          <p className="tabular text-muted-foreground">EE {money(l.employeeTaxes)}</p>
-          <p className="tabular text-brand-tan">ER {money(l.employerTaxes)}</p>
-        </div>
-      ),
+      cell: (l) => <span className="tabular font-semibold text-foreground">{money(l.totalPay)}</span>,
     },
-    { key: "net", header: "Net pay", align: "right", cell: (l) => <span className="tabular font-semibold text-foreground">{money(l.netPay)}</span> },
     {
       key: "status",
       header: "Status",
