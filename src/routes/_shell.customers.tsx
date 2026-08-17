@@ -1,15 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 
 import { CustomerBook, type BookTab } from "@/components/crm/CustomerBook";
 
 const searchSchema = z.object({
-  tab: fallback(z.string(), "customers").default("customers"),
+  tab: z.string().optional(),
 });
 
 export const Route = createFileRoute("/_shell/customers")({
-  validateSearch: zodValidator(searchSchema),
+  validateSearch: (search) => searchSchema.parse(search),
   head: () => ({
     meta: [
       { title: "Customers & Sales — Policy Bear CRM" },
