@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   Banknote,
@@ -26,6 +26,8 @@ import {
   YAxis,
 } from "recharts";
 
+import { recordCalculationOnce } from "@/lib/audit-log";
+import { useAuth } from "@/context/AuthContext";
 import { PageHeader } from "@/components/crm/PageHeader";
 import { StatCard } from "@/components/crm/StatCard";
 import { StatusBadge } from "@/components/crm/StatusBadge";
@@ -79,6 +81,7 @@ function SectionHead({
 }
 
 export function RevenueCenter() {
+  const { user } = useAuth();
   const [sel, setSel] = useState<DateSelection>({ preset: "year" });
   const [search, setSearch] = useState("");
   const [values, setValues] = useState<Record<string, string>>({});
@@ -116,6 +119,27 @@ export function RevenueCenter() {
   const carrierBooked = scopedSales.reduce((s, r) => s + expectedCarrierRevenue(r), 0);
   const companyCost = scopedWeeks.reduce((s, r) => s + r.totalCompanyCost, 0);
   const netCash = scopedWeeks.reduce((s, r) => s + r.netCash, 0);
+
+  useEffect(() => {
+    const period = `${bounds.from ?? "all"}_${bounds.to ?? "all"}`;
+    recordCalculationOnce(`revenue:${period}`, {
+      actor: user?.name ?? null,
+      actorEmail: user?.email ?? null,
+      category: "Revenue",
+      action: "Recalculated finance overview",
+      recordType: "Revenue",
+      recordId: period,
+      detail: {
+        sales: salesCounted,
+        monthlyPremium: Number(monthlyPremium.toFixed(2)),
+        policyAmount: Number(policyAmount.toFixed(2)),
+        carrierBooked: Number(carrierBooked.toFixed(2)),
+        carrierReceived: Number(carrierReceived.toFixed(2)),
+        companyCost: Number(companyCost.toFixed(2)),
+        netCash: Number(netCash.toFixed(2)),
+      },
+    });
+  }, [bounds.from, bounds.to, salesCounted, monthlyPremium, policyAmount, carrierBooked, carrierReceived, companyCost, netCash, user?.name, user?.email]);
 
   /* ---------- commission view ---------- */
   const annualizedPremium = monthlyPremium * 12;
