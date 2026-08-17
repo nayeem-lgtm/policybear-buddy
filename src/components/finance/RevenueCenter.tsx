@@ -201,10 +201,10 @@ export function RevenueCenter() {
     const q = search.trim().toLowerCase();
     return scopedSales.filter((r) => {
       if (q && ![r.customer, r.agent, r.id, r.carrier ?? ""].some((f) => f.toLowerCase().includes(q))) return false;
-      if (values.agent && r.agent !== values.agent) return false;
-      if (values.paymentStatus && (r.paymentStatus ?? "") !== values.paymentStatus) return false;
-      if (values.carrier && (r.carrier ?? "") !== values.carrier) return false;
-      if (values.revenueReceived && r.revenueReceived !== values.revenueReceived) return false;
+      if (values["agent"] && r.agent !== values["agent"]) return false;
+      if (values["paymentStatus"] && (r.paymentStatus ?? "") !== values["paymentStatus"]) return false;
+      if (values["carrier"] && (r.carrier ?? "") !== values["carrier"]) return false;
+      if (values["revenueReceived"] && r.revenueReceived !== values["revenueReceived"]) return false;
       return true;
     });
   }, [scopedSales, search, values]);
