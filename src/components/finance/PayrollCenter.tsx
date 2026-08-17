@@ -553,7 +553,7 @@ export function PayrollCenter() {
             </div>
             <Badge variant="outline" className="gap-1 text-xs">
               <Users className="size-3" />
-              {lines.length} on payroll
+              {effectiveLines.length} on payroll
             </Badge>
           </div>
           <div className="space-y-2.5">
@@ -585,7 +585,7 @@ export function PayrollCenter() {
           <p className="text-[0.7rem] font-semibold tracking-[0.12em] text-muted-foreground uppercase">Run summary</p>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between"><span className="text-muted-foreground">Period</span><span className="font-medium">{mode === "weekly" ? `${fmtDay(rangeFrom)} – ${fmtDay(rangeTo)}` : fmtDayLong(rangeFrom)}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Agents paid</span><span className="tabular">{lines.filter((l) => l.totalPay > 0).length}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Agents paid</span><span className="tabular">{effectiveLines.filter((l) => l.totalPay > 0).length}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Base + OT</span><span className="tabular">{money(totals.basePay)}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Commission + incentive</span><span className="tabular">{money(totals.commission)}</span></div>
             <div className="flex justify-between text-base font-semibold"><span>Total pay</span><span className="tabular">{money(totals.totalPay)}</span></div>
