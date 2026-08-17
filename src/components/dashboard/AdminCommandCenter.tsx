@@ -363,6 +363,195 @@ export function AdminCommandCenter() {
         />
       </div>
 
+      {/* financial summary — full P&L position, same date window */}
+      <Card className="rounded-2xl border-border/70 p-5 shadow-card">
+        <SectionHead
+          icon={<Banknote className="size-4 text-brand" />}
+          title="Financial summary"
+          subtitle={`${label} · revenue, payout, profit and commission position`}
+          action={
+            <Button asChild variant="outline" size="sm">
+              <Link to="/revenue">
+                Finance overview <ArrowRight className="ml-1 size-3.5" />
+              </Link>
+            </Button>
+          }
+        />
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard
+            label="Total revenue"
+            value={money(finance.revenue)}
+            hint={`${money(finance.booked)} booked with carriers`}
+            tone="success"
+            to="/revenue"
+            icon={<TrendingUp className="size-4" />}
+          />
+          <StatCard
+            label="Total payout"
+            value={money(finance.cost)}
+            hint={`Payroll ${money(finance.basePayroll)} · commission ${money(finance.commissionDue)}`}
+            tone="warning"
+            to="/payroll"
+            icon={<Wallet className="size-4" />}
+          />
+          <StatCard
+            label="Net profit"
+            value={money(finance.net)}
+            hint={`Margin ${finance.margin.toFixed(1)}% · projected ${money(finance.netProjected)}`}
+            tone={finance.net >= 0 ? "success" : "danger"}
+            to="/expenses"
+            icon={<Activity className="size-4" />}
+          />
+          <StatCard
+            label="Commission earned"
+            value={money(view.commission)}
+            hint="Agent commission + incentives in range"
+            tone="brand"
+            to="/commissions"
+            icon={<Banknote className="size-4" />}
+          />
+          <StatCard
+            label="Carrier commission"
+            value={money(view.carrierRevenue)}
+            hint="Advance booked on written business"
+            tone="info"
+            to="/revenue"
+            icon={<CreditCard className="size-4" />}
+          />
+          <StatCard
+            label="Receivable commission"
+            value={money(finance.receivable)}
+            hint="Awaiting carrier settlement"
+            tone="warning"
+            to="/call-reconciliation"
+            icon={<Clock className="size-4" />}
+          />
+          <StatCard
+            label="Premium written"
+            value={money(view.premium)}
+            hint={`${money(view.policyAmount)} face amount`}
+            tone="brand"
+            to="/customers"
+            icon={<CheckCircle2 className="size-4" />}
+          />
+          <StatCard
+            label="Operating expenses"
+            value={money(finance.expenses)}
+            hint={`Traffic ${money(finance.traffic)} · seats ${money(finance.seats)}`}
+            tone="danger"
+            to="/expenses"
+            icon={<AlertTriangle className="size-4" />}
+          />
+        </div>
+
+        <Separator className="my-5" />
+
+        <div className="grid gap-4 lg:grid-cols-3">
+          <div className="rounded-xl border border-border bg-muted/25 p-4">
+            <p className="text-[0.68rem] font-semibold tracking-[0.09em] text-muted-foreground uppercase">
+              Money in
+            </p>
+            <dl className="mt-3 space-y-2 text-sm">
+              {[
+                ["Revenue collected", money2(finance.revenue)],
+                ["Revenue booked", money2(finance.booked)],
+                ["Receivable from carriers", money2(finance.receivable)],
+                ["Premium written", money2(view.premium)],
+              ].map(([k, v]) => (
+                <div key={k} className="flex items-center justify-between gap-3">
+                  <dt className="text-muted-foreground">{k}</dt>
+                  <dd className="tabular font-semibold text-foreground">{v}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          <div className="rounded-xl border border-border bg-muted/25 p-4">
+            <p className="text-[0.68rem] font-semibold tracking-[0.09em] text-muted-foreground uppercase">
+              Money out
+            </p>
+            <dl className="mt-3 space-y-2 text-sm">
+              {[
+                ["Base payroll", money2(finance.basePayroll)],
+                ["Agent commission", money2(finance.commissionDue)],
+                ["Call traffic", money2(finance.traffic)],
+                ["Seats & tooling", money2(finance.seats)],
+                ["Manual expenses", money2(manualExpenseTotal)],
+                ["Total payout", money2(finance.cost)],
+              ].map(([k, v]) => (
+                <div key={k} className="flex items-center justify-between gap-3">
+                  <dt className="text-muted-foreground">{k}</dt>
+                  <dd className="tabular font-semibold text-foreground">{v}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          <div className="rounded-xl border border-border bg-gradient-to-br from-brand/10 to-transparent p-4">
+            <p className="text-[0.68rem] font-semibold tracking-[0.09em] text-muted-foreground uppercase">
+              Bottom line
+            </p>
+            <p
+              className={`tabular mt-3 font-display text-3xl font-semibold ${
+                finance.net >= 0 ? "text-success" : "text-destructive"
+              }`}
+            >
+              {money2(finance.net)}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Net profit on collected revenue · margin {finance.margin.toFixed(1)}%
+            </p>
+            <Separator className="my-3" />
+            <dl className="space-y-2 text-sm">
+              {[
+                ["Projected net (booked)", money2(finance.netProjected)],
+                ["Revenue per sale", money2(finance.revenuePerSale)],
+                ["Revenue per call", money2(finance.revenuePerCall)],
+                ["Payout ratio", `${finance.payoutRatio.toFixed(1)}%`],
+              ].map(([k, v]) => (
+                <div key={k} className="flex items-center justify-between gap-3">
+                  <dt className="text-muted-foreground">{k}</dt>
+                  <dd className="tabular font-semibold text-foreground">{v}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </div>
+      </Card>
+
+      {/* platform summary A→Z */}
+      <Card className="rounded-2xl border-border/70 p-5 shadow-card">
+        <SectionHead
+          icon={<Activity className="size-4 text-brand" />}
+          title="Platform summary"
+          subtitle={`${label} · every desk on one line — click any tile to drill in`}
+        />
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {platformSummary.map((group) => (
+            <div key={group.title} className="rounded-xl border border-border bg-muted/20 p-4">
+              <p className="text-[0.68rem] font-semibold tracking-[0.09em] text-muted-foreground uppercase">
+                {group.title}
+              </p>
+              <dl className="mt-3 space-y-2 text-sm">
+                {group.rows.map((row) => (
+                  <button
+                    key={row.label}
+                    type="button"
+                    onClick={() => go(row.to)}
+                    className="flex w-full items-center justify-between gap-3 rounded-md px-1 py-0.5 text-left transition-colors hover:bg-accent/50"
+                  >
+                    <dt className="truncate text-muted-foreground">{row.label}</dt>
+                    <dd className="tabular shrink-0 font-semibold text-foreground">{row.value}</dd>
+                  </button>
+                ))}
+              </dl>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+
+
       {/* charts + approvals */}
       <div className="grid gap-4 xl:grid-cols-3">
         <Card className="rounded-2xl border-border/70 p-5 shadow-card xl:col-span-2">
