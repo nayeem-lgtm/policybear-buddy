@@ -94,10 +94,10 @@ export function ExpenseCenter() {
     const q = search.trim().toLowerCase();
     return scoped.filter((r) => {
       if (q && ![r.vendor, r.id, r.notes ?? "", r.category].some((f) => f.toLowerCase().includes(q))) return false;
-      if (values.category && r.category !== values.category) return false;
-      if (values.status && r.status !== values.status) return false;
-      if (values.vendor && r.vendor !== values.vendor) return false;
-      if (values.source && (values.source === "Manual") !== isManualExpense(r.id)) return false;
+      if (values["category"] && r.category !== values["category"]) return false;
+      if (values["status"] && r.status !== values["status"]) return false;
+      if (values["vendor"] && r.vendor !== values["vendor"]) return false;
+      if (values["source"] && (values["source"] === "Manual") !== isManualExpense(r.id)) return false;
       return true;
     });
   }, [scoped, search, values]);
