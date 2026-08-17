@@ -191,7 +191,6 @@ export const ROUTE_ACCESS: { prefix: string; roles: Role[] }[] = [
   // Finance
   { prefix: "/payroll", roles: ["Accounting", "HR"] },
   { prefix: "/commissions", roles: ["Accounting", "Operations"] },
-  { prefix: "/chargebacks", roles: ["Accounting", "QC"] },
   { prefix: "/expenses", roles: ["Accounting"] },
   { prefix: "/revenue", roles: ["Accounting"] },
 

@@ -21,7 +21,6 @@ import { Route as ShellCallReconciliationRouteImport } from './routes/_shell.cal
 import { Route as ShellCallbacksRouteImport } from './routes/_shell.callbacks'
 import { Route as ShellCallsRouteImport } from './routes/_shell.calls'
 import { Route as ShellCampaignsRouteImport } from './routes/_shell.campaigns'
-import { Route as ShellChargebacksRouteImport } from './routes/_shell.chargebacks'
 import { Route as ShellCommissionsRouteImport } from './routes/_shell.commissions'
 import { Route as ShellComplaintsRouteImport } from './routes/_shell.complaints'
 import { Route as ShellCustomersRouteImport } from './routes/_shell.customers'
@@ -131,11 +130,6 @@ const ShellCallsRoute = ShellCallsRouteImport.update({
 const ShellCampaignsRoute = ShellCampaignsRouteImport.update({
   id: '/campaigns',
   path: '/campaigns',
-  getParentRoute: () => ShellRoute,
-} as any)
-const ShellChargebacksRoute = ShellChargebacksRouteImport.update({
-  id: '/chargebacks',
-  path: '/chargebacks',
   getParentRoute: () => ShellRoute,
 } as any)
 const ShellCommissionsRoute = ShellCommissionsRouteImport.update({
@@ -409,7 +403,6 @@ export interface FileRoutesByFullPath {
   '/callbacks': typeof ShellCallbacksRouteWithChildren
   '/calls': typeof ShellCallsRoute
   '/campaigns': typeof ShellCampaignsRoute
-  '/chargebacks': typeof ShellChargebacksRoute
   '/commissions': typeof ShellCommissionsRoute
   '/complaints': typeof ShellComplaintsRoute
   '/customers': typeof ShellCustomersRoute
@@ -474,7 +467,6 @@ export interface FileRoutesByTo {
   '/callbacks': typeof ShellCallbacksRouteWithChildren
   '/calls': typeof ShellCallsRoute
   '/campaigns': typeof ShellCampaignsRoute
-  '/chargebacks': typeof ShellChargebacksRoute
   '/commissions': typeof ShellCommissionsRoute
   '/complaints': typeof ShellComplaintsRoute
   '/customers': typeof ShellCustomersRoute
@@ -541,7 +533,6 @@ export interface FileRoutesById {
   '/_shell/callbacks': typeof ShellCallbacksRouteWithChildren
   '/_shell/calls': typeof ShellCallsRoute
   '/_shell/campaigns': typeof ShellCampaignsRoute
-  '/_shell/chargebacks': typeof ShellChargebacksRoute
   '/_shell/commissions': typeof ShellCommissionsRoute
   '/_shell/complaints': typeof ShellComplaintsRoute
   '/_shell/customers': typeof ShellCustomersRoute
@@ -608,7 +599,6 @@ export interface FileRouteTypes {
     | '/callbacks'
     | '/calls'
     | '/campaigns'
-    | '/chargebacks'
     | '/commissions'
     | '/complaints'
     | '/customers'
@@ -673,7 +663,6 @@ export interface FileRouteTypes {
     | '/callbacks'
     | '/calls'
     | '/campaigns'
-    | '/chargebacks'
     | '/commissions'
     | '/complaints'
     | '/customers'
@@ -739,7 +728,6 @@ export interface FileRouteTypes {
     | '/_shell/callbacks'
     | '/_shell/calls'
     | '/_shell/campaigns'
-    | '/_shell/chargebacks'
     | '/_shell/commissions'
     | '/_shell/complaints'
     | '/_shell/customers'
@@ -885,13 +873,6 @@ declare module '@tanstack/react-router' {
       path: '/campaigns'
       fullPath: '/campaigns'
       preLoaderRoute: typeof ShellCampaignsRouteImport
-      parentRoute: typeof ShellRoute
-    }
-    '/_shell/chargebacks': {
-      id: '/_shell/chargebacks'
-      path: '/chargebacks'
-      fullPath: '/chargebacks'
-      preLoaderRoute: typeof ShellChargebacksRouteImport
       parentRoute: typeof ShellRoute
     }
     '/_shell/commissions': {
@@ -1289,7 +1270,6 @@ interface ShellRouteChildren {
   ShellCallbacksRoute: typeof ShellCallbacksRouteWithChildren
   ShellCallsRoute: typeof ShellCallsRoute
   ShellCampaignsRoute: typeof ShellCampaignsRoute
-  ShellChargebacksRoute: typeof ShellChargebacksRoute
   ShellCommissionsRoute: typeof ShellCommissionsRoute
   ShellComplaintsRoute: typeof ShellComplaintsRoute
   ShellCustomersRoute: typeof ShellCustomersRoute
@@ -1349,7 +1329,6 @@ const ShellRouteChildren: ShellRouteChildren = {
   ShellCallbacksRoute: ShellCallbacksRouteWithChildren,
   ShellCallsRoute: ShellCallsRoute,
   ShellCampaignsRoute: ShellCampaignsRoute,
-  ShellChargebacksRoute: ShellChargebacksRoute,
   ShellCommissionsRoute: ShellCommissionsRoute,
   ShellComplaintsRoute: ShellComplaintsRoute,
   ShellCustomersRoute: ShellCustomersRoute,
