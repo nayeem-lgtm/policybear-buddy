@@ -582,9 +582,7 @@ export function PayrollCenter() {
                 { key: "agents", header: "Agents", align: "right", cell: (r) => <span className="tabular">{r.agents}</span> },
                 { key: "base", header: "Base", align: "right", cell: (r) => <span className="tabular">{money(r.base)}</span> },
                 { key: "commission", header: "Commission", align: "right", cell: (r) => <span className="tabular">{money(r.commission)}</span> },
-                { key: "net", header: "Net pay", align: "right", cell: (r) => <span className="tabular font-medium">{money(r.net)}</span> },
-                { key: "outflow", header: "Cash outflow", align: "right", cell: (r) => <span className="tabular">{money(r.outflow)}</span> },
-                { key: "cost", header: "Company cost", align: "right", cell: (r) => <span className="tabular font-semibold">{money(r.cost)}</span> },
+                { key: "totalPay", header: "Total pay", align: "right", cell: (r) => <span className="tabular font-medium">{money(r.totalPay)}</span> },
                 { key: "status", header: "Status", cell: (r) => <StatusBadge status={r.status} /> },
               ]}
               rows={recordedWeeks}
