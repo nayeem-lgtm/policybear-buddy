@@ -103,11 +103,7 @@ interface PayrollLine {
   perSale: number;
   commission: number;
   incentive: number;
-  gross: number;
-  employeeTaxes: number;
-  employerTaxes: number;
-  netPay: number;
-  cashOutflow: number;
+  totalPay: number;
 }
 
 function csvDownload(filename: string, rows: (string | number)[][]) {
