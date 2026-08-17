@@ -474,7 +474,7 @@ export function PayrollCenter() {
       </Card>
 
       {/* KPIs */}
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <StatCard
           label="Paid hours"
           value={`${totals.hours.toFixed(2)}h`}
@@ -485,7 +485,6 @@ export function PayrollCenter() {
         />
         <StatCard label="Base + overtime" value={money(totals.basePay)} hint={`${money(HOURLY_RATE)}/hr · 1.5× over ${mode === "weekly" ? "40h" : "8h"}`} icon={<Wallet className="size-4" />} tone="info" />
         <StatCard label="Commission + incentive" value={money(totals.commission)} hint="tiered per valid sale" icon={<Coins className="size-4" />} tone="success" to="/commissions" />
-        <StatCard label="Company cash outflow" value={money(totals.outflow)} hint={`net ${money(totals.net)} + taxes`} icon={<Banknote className="size-4" />} tone="warning" />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-3">
