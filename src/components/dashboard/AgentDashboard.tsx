@@ -28,19 +28,13 @@ import {
 } from "lucide-react";
 
 import { StatCard } from "@/components/crm/StatCard";
+import { DateRangeTabs, presetLabel, type DateSelection } from "@/components/crm/DateRangeTabs";
 import { StatusBadge } from "@/components/crm/StatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
   callbacks,
@@ -141,7 +135,7 @@ const attendance = [
 /* --------------------------------------------------------------------- view */
 
 export function AgentDashboard({ name }: { name: string }) {
-  const [period, setPeriod] = useState("today");
+  const [selection, setSelection] = useState<DateSelection>({ preset: "today" });
 
   const myCallbacks = useMemo(
     () =>
@@ -188,17 +182,6 @@ export function AgentDashboard({ name }: { name: string }) {
             <Badge variant="secondary" className="gap-1">
               <Trophy className="size-3.5 text-brand" /> Rank 3 of 24
             </Badge>
-            <Select value={period} onValueChange={setPeriod}>
-              <SelectTrigger className="h-9 w-36">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="today">Today</SelectItem>
-                <SelectItem value="week">This week</SelectItem>
-                <SelectItem value="month">This month</SelectItem>
-                <SelectItem value="cycle">Pay cycle</SelectItem>
-              </SelectContent>
-            </Select>
             <Button asChild size="sm">
               <Link to="/agent-desk">
                 <PhoneOutgoing className="size-4" /> Open dialer
@@ -206,6 +189,15 @@ export function AgentDashboard({ name }: { name: string }) {
             </Button>
           </div>
         </div>
+      </Card>
+
+      {/* date range */}
+      <Card className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border-border/70 p-3 shadow-card">
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-muted-foreground">Showing</span>
+          <Badge variant="secondary" className="font-medium">{presetLabel(selection)}</Badge>
+        </div>
+        <DateRangeTabs value={selection} onChange={setSelection} />
       </Card>
 
       {/* headline stats */}
