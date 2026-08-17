@@ -114,6 +114,8 @@ interface PayrollLine {
   totalPay: number;
 }
 
+import { recordAudit } from "@/lib/audit-log";
+
 function csvDownload(filename: string, rows: (string | number)[][]) {
   const body = rows
     .map((r) => r.map((c) => (typeof c === "string" && /[",\n]/.test(c) ? `"${c.replace(/"/g, '""')}"` : c)).join(","))
@@ -334,6 +336,21 @@ export function PayrollCenter() {
       l.totalPay.toFixed(2),
     ]);
     csvDownload(`payroll-${mode}-${rangeFrom}${mode === "weekly" ? `_${rangeTo}` : ""}.csv`, [header, ...rows]);
+    recordAudit({
+      actor: auditActor,
+      actorEmail: auditEmail,
+      category: "Payroll",
+      action: `Exported ${mode} payroll CSV`,
+      recordType: "Payroll",
+      recordId: `${rangeFrom}_${rangeTo}`,
+      detail: {
+        mode,
+        agents: rows.length,
+        totalPay: Number(visible.reduce((s, l) => s + l.totalPay, 0).toFixed(2)),
+        totalHours: Number(visible.reduce((s, l) => s + l.hours, 0).toFixed(2)),
+        commission: Number(visible.reduce((s, l) => s + l.commission, 0).toFixed(2)),
+      },
+    });
   }
 
   const columns: Column<PayrollLine>[] = [
