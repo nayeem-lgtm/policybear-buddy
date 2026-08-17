@@ -2,14 +2,12 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  Banknote,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
   Clock3,
   Coins,
   Download,
-  Info,
   RefreshCw,
   ShieldCheck,
   Users,
@@ -39,7 +37,6 @@ import { getAttendanceRegister } from "@/lib/shift.functions";
 import { formatHm, pacificDate, workedSeconds, type ShiftSessionRow } from "@/lib/shift-shared";
 import {
   HOURLY_RATE,
-  PAYROLL_TAX_RULE,
   commissionPerSale,
   money,
   payrollWeeks,
@@ -51,8 +48,6 @@ import { cn } from "@/lib/utils";
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri"] as const;
 const WEEK_HOURS_TARGET = 40;
 const DAY_HOURS_TARGET = 8;
-const EMPLOYER_TAX_RATE = 0.0765;
-const EMPLOYEE_TAX_RATE = 0.12;
 
 /* ---------- date helpers (Pacific calendar strings) ---------- */
 
@@ -116,11 +111,7 @@ interface PayrollLine {
   perSale: number;
   commission: number;
   incentive: number;
-  gross: number;
-  employeeTaxes: number;
-  employerTaxes: number;
-  netPay: number;
-  cashOutflow: number;
+  totalPay: number;
 }
 
 function csvDownload(filename: string, rows: (string | number)[][]) {
@@ -195,10 +186,7 @@ export function PayrollCenter() {
       const commission = validSales * perSale;
       const incentive = agentSales.reduce((s, r) => s + (r.personalLeadIncentive ?? 0), 0);
 
-      const gross = basePay + otPay + commission + incentive;
-      const employeeTaxes = gross * EMPLOYEE_TAX_RATE;
-      const employerTaxes = gross * EMPLOYER_TAX_RATE;
-      const netPay = gross - employeeTaxes;
+      const totalPay = basePay + otPay + commission + incentive;
 
       out.push({
         userId: p.id,
@@ -218,14 +206,10 @@ export function PayrollCenter() {
         perSale,
         commission,
         incentive,
-        gross,
-        employeeTaxes,
-        employerTaxes,
-        netPay,
-        cashOutflow: netPay + employeeTaxes + employerTaxes,
+        totalPay,
       });
     }
-    return out.sort((a, b) => b.gross - a.gross || a.name.localeCompare(b.name));
+    return out.sort((a, b) => b.totalPay - a.totalPay || a.name.localeCompare(b.name));
   }, [sessions, profiles, weekDays, rangeFrom, rangeTo, mode]);
 
   const visible = useMemo(() => {
@@ -241,13 +225,10 @@ export function PayrollCenter() {
           hours: acc.hours + l.hours,
           basePay: acc.basePay + l.basePay + l.otPay,
           commission: acc.commission + l.commission + l.incentive,
-          gross: acc.gross + l.gross,
-          employerTaxes: acc.employerTaxes + l.employerTaxes,
-          net: acc.net + l.netPay,
-          outflow: acc.outflow + l.cashOutflow,
+          totalPay: acc.totalPay + l.totalPay,
           ot: acc.ot + l.otHours,
         }),
-        { hours: 0, basePay: 0, commission: 0, gross: 0, employerTaxes: 0, net: 0, outflow: 0, ot: 0 },
+        { hours: 0, basePay: 0, commission: 0, totalPay: 0, ot: 0 },
       ),
     [lines],
   );
@@ -282,11 +263,7 @@ export function PayrollCenter() {
       "Per sale",
       "Commission",
       "Incentive",
-      "Gross",
-      "Employee taxes",
-      "Employer taxes",
-      "Net pay",
-      "Company outflow",
+      "Total pay",
     ];
     const rows = visible.map((l) => [
       mode === "weekly" ? "Weekly" : "Daily",
@@ -305,11 +282,7 @@ export function PayrollCenter() {
       l.perSale,
       l.commission.toFixed(2),
       l.incentive.toFixed(2),
-      l.gross.toFixed(2),
-      l.employeeTaxes.toFixed(2),
-      l.employerTaxes.toFixed(2),
-      l.netPay.toFixed(2),
-      l.cashOutflow.toFixed(2),
+      l.totalPay.toFixed(2),
     ]);
     csvDownload(`payroll-${mode}-${rangeFrom}${mode === "weekly" ? `_${rangeTo}` : ""}.csv`, [header, ...rows]);
   }
@@ -382,19 +355,12 @@ export function PayrollCenter() {
         </div>
       ),
     },
-    { key: "gross", header: "Gross", align: "right", cell: (l) => <span className="tabular font-semibold">{money(l.gross)}</span> },
     {
-      key: "taxes",
-      header: "Taxes",
+      key: "totalPay",
+      header: "Total pay",
       align: "right",
-      cell: (l) => (
-        <div className="text-right text-xs">
-          <p className="tabular text-muted-foreground">EE {money(l.employeeTaxes)}</p>
-          <p className="tabular text-brand-tan">ER {money(l.employerTaxes)}</p>
-        </div>
-      ),
+      cell: (l) => <span className="tabular font-semibold text-foreground">{money(l.totalPay)}</span>,
     },
-    { key: "net", header: "Net pay", align: "right", cell: (l) => <span className="tabular font-semibold text-foreground">{money(l.netPay)}</span> },
     {
       key: "status",
       header: "Status",
@@ -420,9 +386,7 @@ export function PayrollCenter() {
         agents: rows.length,
         base: rows.reduce((s, r) => s + r.basePayroll, 0),
         commission: rows.reduce((s, r) => s + r.commissionDue + r.incentiveDue, 0),
-        net: rows.reduce((s, r) => s + r.netPay, 0),
-        outflow: rows.reduce((s, r) => s + r.gustoOutflow, 0),
-        cost: rows.reduce((s, r) => s + r.totalCompanyCost, 0),
+        totalPay: rows.reduce((s, r) => s + r.netPay, 0),
         status: rows.every((r) => r.baseStatus === "Paid") ? "Paid" : "Payable",
       }));
   }, []);
@@ -518,7 +482,7 @@ export function PayrollCenter() {
       </Card>
 
       {/* KPIs */}
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <StatCard
           label="Paid hours"
           value={`${totals.hours.toFixed(2)}h`}
@@ -529,7 +493,6 @@ export function PayrollCenter() {
         />
         <StatCard label="Base + overtime" value={money(totals.basePay)} hint={`${money(HOURLY_RATE)}/hr · 1.5× over ${mode === "weekly" ? "40h" : "8h"}`} icon={<Wallet className="size-4" />} tone="info" />
         <StatCard label="Commission + incentive" value={money(totals.commission)} hint="tiered per valid sale" icon={<Coins className="size-4" />} tone="success" to="/commissions" />
-        <StatCard label="Company cash outflow" value={money(totals.outflow)} hint={`net ${money(totals.net)} + taxes`} icon={<Banknote className="size-4" />} tone="warning" />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-3">
@@ -573,13 +536,10 @@ export function PayrollCenter() {
           <p className="text-[0.7rem] font-semibold tracking-[0.12em] text-muted-foreground uppercase">Run summary</p>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between"><span className="text-muted-foreground">Period</span><span className="font-medium">{mode === "weekly" ? `${fmtDay(rangeFrom)} – ${fmtDay(rangeTo)}` : fmtDayLong(rangeFrom)}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Agents paid</span><span className="tabular">{lines.filter((l) => l.gross > 0).length}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Agents paid</span><span className="tabular">{lines.filter((l) => l.totalPay > 0).length}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Base + OT</span><span className="tabular">{money(totals.basePay)}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Commission + incentive</span><span className="tabular">{money(totals.commission)}</span></div>
-            <Separator />
-            <div className="flex justify-between"><span className="text-muted-foreground">Gross payroll</span><span className="tabular font-medium">{money(totals.gross)}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Employer taxes (7.65%)</span><span className="tabular text-brand-tan">{money(totals.employerTaxes)}</span></div>
-            <div className="flex justify-between text-base font-semibold"><span>Cash outflow</span><span className="tabular">{money(totals.outflow)}</span></div>
+            <div className="flex justify-between text-base font-semibold"><span>Total pay</span><span className="tabular">{money(totals.totalPay)}</span></div>
           </div>
           <Button className="w-full" onClick={generateRun} disabled={visible.length === 0}>
             <Download className="size-4" />
@@ -588,10 +548,6 @@ export function PayrollCenter() {
         </Card>
       </div>
 
-      <Card className="flex items-start gap-3 rounded-2xl border-border/70 p-4 shadow-card">
-        <Info className="mt-0.5 size-4 shrink-0 text-brand" />
-        <p className="text-sm text-muted-foreground">{PAYROLL_TAX_RULE}</p>
-      </Card>
 
       {/* Register */}
       <Tabs defaultValue="run">
@@ -634,9 +590,7 @@ export function PayrollCenter() {
                 { key: "agents", header: "Agents", align: "right", cell: (r) => <span className="tabular">{r.agents}</span> },
                 { key: "base", header: "Base", align: "right", cell: (r) => <span className="tabular">{money(r.base)}</span> },
                 { key: "commission", header: "Commission", align: "right", cell: (r) => <span className="tabular">{money(r.commission)}</span> },
-                { key: "net", header: "Net pay", align: "right", cell: (r) => <span className="tabular font-medium">{money(r.net)}</span> },
-                { key: "outflow", header: "Cash outflow", align: "right", cell: (r) => <span className="tabular">{money(r.outflow)}</span> },
-                { key: "cost", header: "Company cost", align: "right", cell: (r) => <span className="tabular font-semibold">{money(r.cost)}</span> },
+                { key: "totalPay", header: "Total pay", align: "right", cell: (r) => <span className="tabular font-medium">{money(r.totalPay)}</span> },
                 { key: "status", header: "Status", cell: (r) => <StatusBadge status={r.status} /> },
               ]}
               rows={recordedWeeks}
@@ -674,10 +628,7 @@ export function PayrollCenter() {
                 <div className="flex justify-between"><span className="text-muted-foreground">Commission ({detail.validSales} × {money(detail.perSale)})</span><span className="tabular">{money(detail.commission)}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Personal-lead incentive</span><span className="tabular">{money(detail.incentive)}</span></div>
                 <Separator />
-                <div className="flex justify-between"><span className="text-muted-foreground">Gross</span><span className="tabular font-medium">{money(detail.gross)}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Employee taxes (memo)</span><span className="tabular">{money(detail.employeeTaxes)}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Employer taxes</span><span className="tabular text-brand-tan">{money(detail.employerTaxes)}</span></div>
-                <div className="flex justify-between text-base font-semibold"><span>Net pay</span><span className="tabular">{money(detail.netPay)}</span></div>
+                <div className="flex justify-between text-base font-semibold"><span>Total pay</span><span className="tabular">{money(detail.totalPay)}</span></div>
               </div>
             </>
           )}
