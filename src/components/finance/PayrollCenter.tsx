@@ -628,10 +628,7 @@ export function PayrollCenter() {
                 <div className="flex justify-between"><span className="text-muted-foreground">Commission ({detail.validSales} × {money(detail.perSale)})</span><span className="tabular">{money(detail.commission)}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Personal-lead incentive</span><span className="tabular">{money(detail.incentive)}</span></div>
                 <Separator />
-                <div className="flex justify-between"><span className="text-muted-foreground">Gross</span><span className="tabular font-medium">{money(detail.gross)}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Employee taxes (memo)</span><span className="tabular">{money(detail.employeeTaxes)}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Employer taxes</span><span className="tabular text-brand-tan">{money(detail.employerTaxes)}</span></div>
-                <div className="flex justify-between text-base font-semibold"><span>Net pay</span><span className="tabular">{money(detail.netPay)}</span></div>
+                <div className="flex justify-between text-base font-semibold"><span>Total pay</span><span className="tabular">{money(detail.totalPay)}</span></div>
               </div>
             </>
           )}
