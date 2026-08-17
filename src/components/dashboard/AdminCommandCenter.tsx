@@ -168,6 +168,8 @@ export function AdminCommandCenter() {
       (s, w) => s + (w.commissionDue || 0) + (w.incentiveDue || 0),
       0,
     );
+    const saleCount = view.salesRows.length;
+    const callCount = view.callRows.length;
     return {
       revenue: f.revenueCollected,
       booked: f.revenueBooked,
@@ -177,13 +179,22 @@ export function AdminCommandCenter() {
       netProjected: f.netProjected,
       premiumWritten: f.premiumWritten,
       commissionDue: f.commission,
+      basePayroll: f.basePayroll,
+      traffic: f.trafficCost,
+      seats: f.seatCost,
+      expenses: f.trafficCost + f.seatCost + f.otherCost + f.manualExpenses,
+      margin: f.margin,
+      revenuePerSale: saleCount ? f.revenueBooked / saleCount : 0,
+      revenuePerCall: callCount ? f.revenueBooked / callCount : 0,
+      payoutRatio: f.revenueBooked ? (f.totalCost / f.revenueBooked) * 100 : 0,
       nextWeek,
       nextRows,
       nextBase,
       nextCommission,
       nextTotal: nextBase + nextCommission,
     };
-  }, [sel, manualExpenseTotal]);
+  }, [sel, manualExpenseTotal, view.salesRows.length, view.callRows.length]);
+
 
   /* ------------------------------------------------------------- agent scores */
   const scoreboard = useMemo(() => {
