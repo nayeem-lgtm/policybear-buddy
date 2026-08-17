@@ -540,10 +540,6 @@ export function PayrollCenter() {
         </Card>
       </div>
 
-      <Card className="flex items-start gap-3 rounded-2xl border-border/70 p-4 shadow-card">
-        <Info className="mt-0.5 size-4 shrink-0 text-brand" />
-        <p className="text-sm text-muted-foreground">{PAYROLL_TAX_RULE}</p>
-      </Card>
 
       {/* Register */}
       <Tabs defaultValue="run">
