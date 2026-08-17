@@ -204,6 +204,57 @@ export function AdminCommandCenter() {
       .sort((a, b) => b.score - a.score);
   }, [view]);
 
+  /* -------------------------------------------------------------- agent health */
+  const agentHealth = useMemo(() => {
+    const agents = employees.filter((e) => e.role === "Agent");
+    const alerts = employees.filter((e) => e.alert);
+    const signedIn = agents.filter((e) => e.status !== "Signed Out");
+    const onBreak = agents.filter((e) => /break|lunch/i.test(e.status));
+    const cbDue = agents.reduce((sum, e) => sum + (e.callbacksDue || 0), 0);
+    const postCall = agents.reduce((sum, e) => sum + (e.postCallPending || 0), 0);
+    const pct = (n: number, d: number) => (d ? Math.round((n / d) * 100) : 0);
+    return {
+      alerts,
+      signals: [
+        {
+          label: "Signed in",
+          value: `${signedIn.length}/${agents.length}`,
+          pct: pct(signedIn.length, agents.length),
+          hint: "Agents currently on the floor",
+          to: "/live-operations",
+        },
+        {
+          label: "On break / lunch",
+          value: `${onBreak.length}`,
+          pct: pct(onBreak.length, Math.max(1, agents.length)),
+          hint: "Watch for extended breaks",
+          to: "/break-alarm",
+        },
+        {
+          label: "Callbacks due",
+          value: `${cbDue}`,
+          pct: Math.min(100, cbDue * 4),
+          hint: "Across every agent queue",
+          to: "/callbacks",
+        },
+        {
+          label: "Post-call pending",
+          value: `${postCall}`,
+          pct: Math.min(100, postCall * 6),
+          hint: "Wrap-ups not yet submitted",
+          to: "/tasks",
+        },
+        {
+          label: "Alert load",
+          value: `${alerts.length}`,
+          pct: pct(alerts.length, Math.max(1, employees.length)),
+          hint: "Live coaching interventions needed",
+          to: "/live-operations",
+        },
+      ],
+    };
+  }, []);
+
   /* ---------------------------------------------------------------- approvals */
   const pendingLeave = leaveRequestsHr.filter(
     (l) => l.status === "Pending" && !handled[l.id],
