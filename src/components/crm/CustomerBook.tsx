@@ -48,6 +48,8 @@ import {
 } from "@/lib/company-data";
 import { useFilters, unique } from "@/lib/use-filters";
 import { inSelection } from "@/lib/date-range";
+import { expectedCarrierRevenue, isRevenueCollected } from "@/lib/metrics-engine";
+
 import { cn } from "@/lib/utils";
 
 export type BookTab = "customers" | "sales";
