@@ -34,13 +34,13 @@ import { FilterBar } from "@/components/crm/FilterBar";
 import { DateRangeTabs, presetLabel, type DateSelection } from "@/components/crm/DateRangeTabs";
 import { selectionBounds, inSelection } from "@/lib/date-range";
 import { unique } from "@/lib/use-filters";
+import { useExpenseLedger } from "@/lib/expense-store";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   sales,
   payrollWeeks,
-  payables,
   trafficByDay,
   AGENT_NAMES,
   money,
@@ -83,6 +83,7 @@ export function RevenueCenter() {
   const [values, setValues] = useState<Record<string, string>>({});
 
   const bounds = selectionBounds(sel);
+  const payables = useExpenseLedger();
 
   const scopedSales = useMemo(
     () => sales.filter((s) => inSelection(s.saleDate, sel)),
@@ -96,7 +97,7 @@ export function RevenueCenter() {
 
   const scopedPayables = useMemo(
     () => payables.filter((p) => inSelection(p.costDate ?? `${p.month}-01`, sel)),
-    [sel],
+    [payables, sel],
   );
 
   const scopedTraffic = useMemo(

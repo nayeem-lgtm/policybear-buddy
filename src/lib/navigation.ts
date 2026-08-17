@@ -152,10 +152,9 @@ export const navSections: NavSection[] = [
       {
         label: "Money",
         items: [
-          { title: "Revenue", url: "/revenue", icon: BarChart3, description: "Income overview" },
+          { title: "Overview", url: "/revenue", icon: BarChart3, description: "Company finance overview" },
           { title: "Payroll", url: "/payroll", icon: Wallet, description: "Staff pay runs" },
           { title: "Commissions", url: "/commissions", icon: Banknote, description: "Agent commissions" },
-          { title: "Chargebacks", url: "/chargebacks", icon: CreditCard, description: "Reversed payments" },
           { title: "Expenses", url: "/expenses", icon: ReceiptText, description: "Company spending" },
         ],
       },
