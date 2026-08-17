@@ -457,6 +457,83 @@ export function AdminCommandCenter() {
         </Card>
       </div>
 
+      {/* agent health */}
+      <div className="grid gap-4 xl:grid-cols-3">
+        <Card className="p-4 shadow-card xl:col-span-2">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <HeartPulse className="size-4 text-destructive" />
+              <div>
+                <p className="text-sm font-semibold text-foreground">Agent health — active alerts</p>
+                <p className="text-xs text-muted-foreground">
+                  {agentHealth.alerts.length} live alert{agentHealth.alerts.length === 1 ? "" : "s"} on the floor
+                </p>
+              </div>
+            </div>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/live-operations">
+                Live floor <ArrowRight className="ml-1 size-3.5" />
+              </Link>
+            </Button>
+          </div>
+          <ScrollArea className="h-[300px] pr-2">
+            <div className="space-y-2">
+              {agentHealth.alerts.length === 0 && (
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  Every agent is healthy right now.
+                </p>
+              )}
+              {agentHealth.alerts.map((e) => (
+                <Link
+                  key={e.id}
+                  to="/live-operations"
+                  className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-3 transition-all hover:-translate-y-0.5 hover:border-destructive/40 hover:bg-destructive/5"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex size-9 items-center justify-center rounded-xl bg-brand/10 text-[0.7rem] font-semibold text-brand">
+                      {e.avatarInitials}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-foreground">{e.name}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {e.team} · {e.status} · {e.callsToday} calls · {e.callbacksDue} callbacks due
+                      </p>
+                    </div>
+                  </div>
+                  <StatusBadge status={e.alert ?? "Alert"} tone="danger" />
+                </Link>
+              ))}
+            </div>
+          </ScrollArea>
+        </Card>
+
+        <Card className="p-4 shadow-card">
+          <div className="mb-3 flex items-center gap-2">
+            <Activity className="size-4 text-brand" />
+            <p className="text-sm font-semibold text-foreground">Health signals</p>
+          </div>
+          <div className="space-y-3">
+            {agentHealth.signals.map((sig) => (
+              <Link
+                key={sig.label}
+                to={sig.to as never}
+                className="block rounded-xl border border-border p-3 transition-colors hover:border-brand/40 hover:bg-accent/40"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-semibold tracking-[0.06em] text-muted-foreground uppercase">
+                    {sig.label}
+                  </p>
+                  <span className="tabular text-sm font-semibold text-foreground">{sig.value}</span>
+                </div>
+                <Progress value={sig.pct} className="mt-2 h-1.5" />
+                <p className="mt-1 text-xs text-muted-foreground">{sig.hint}</p>
+              </Link>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+
       {/* tabs: agents / finance / people */}
       <Tabs defaultValue="agents" className="space-y-4">
         <TabsList>
