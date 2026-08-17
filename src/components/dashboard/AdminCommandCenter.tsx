@@ -46,6 +46,13 @@ import { selectionBounds } from "@/lib/date-range";
 import { sales, payrollWeeks } from "@/lib/company-data";
 import { attendanceExceptions, hourRequests, leaveRequestsHr } from "@/lib/hr-data";
 import { calls, callbacks, employees, qaReviews } from "@/lib/mock-data";
+import {
+  agentMetrics,
+  companyMetrics,
+  financeMetrics,
+  openCallbackQueue,
+} from "@/lib/metrics-engine";
+import { useExpenseLedger, isManualExpense } from "@/lib/expense-store";
 
 /** Shared table chrome so every admin table scans identically. */
 const THEAD_ROW =
@@ -109,78 +116,50 @@ export function AdminCommandCenter() {
 
   const label = presetLabel(sel);
 
+  const expenseLedger = useExpenseLedger();
+  const manualExpenseTotal = useMemo(
+    () =>
+      expenseLedger
+        .filter((e) => isManualExpense(e.id))
+        .reduce((sum, e) => sum + (e.amount || 0), 0),
+    [expenseLedger],
+  );
+
   const view = useMemo(() => {
-    const salesRows = cohort(sales, sel);
-    const callRows = cohort(calls, sel);
-    const qaRows = cohort(qaReviews, sel);
-
-    const premium = salesRows.reduce((s, r) => s + (r.premium || 0), 0);
-    const policyAmount = salesRows.reduce((s, r) => s + (r.policyAmount || 0), 0);
-    const carrierRevenue = salesRows.reduce((s, r) => s + (r.carrierRevenue || 0), 0);
-    const receivable = salesRows
-      .filter((r) => (r.revenueReceived || "").toLowerCase() !== "yes")
-      .reduce((s, r) => s + (r.carrierRevenue || 0), 0);
-    const validSales = salesRows.reduce((s, r) => s + (r.countSale || 0), 0);
-    const commissionEligible = salesRows.filter((r) => r.commissionEligible).length;
-    const commission = commissionEligible * 30 +
-      salesRows.reduce((s, r) => s + (r.personalLeadIncentive || 0), 0);
-
-    const paidCalls = callRows.filter((c) => c.paid).length;
-    const qaIssues = qaRows.filter((r) =>
-      ["Invalid", "Returned", "Disputed"].includes(r.outcome),
-    );
-    const avgQa = qaRows.length
-      ? Math.round(qaRows.reduce((s, r) => s + r.score, 0) / qaRows.length)
-      : 0;
-
-    const openCallbacks = callbacks.filter((c) =>
-      ["Due", "Scheduled", "Overdue"].includes(c.status),
-    );
-    const doneCallbacks = callbacks.filter((c) => c.status === "Completed");
-    const overdueCallbacks = callbacks.filter((c) =>
-      ["Overdue", "Missed"].includes(c.status),
-    );
-
-    const trend = Array.from({ length: Math.min(7, rangeDays(sel)) }, (_, i) => {
-      const slice = callRows.filter((_, idx) => idx % Math.min(7, rangeDays(sel)) === i);
-      return {
-        day: `D${i + 1}`,
-        calls: slice.length,
-        paid: slice.filter((c) => c.paid).length,
-        sales: Math.max(0, Math.round(slice.length * 0.22)),
-      };
-    });
-
+    const m = companyMetrics(sel);
     return {
-      salesRows,
-      callRows,
-      qaRows,
-      premium,
-      policyAmount,
-      carrierRevenue,
-      receivable,
-      validSales,
-      commission,
-      paidCalls,
-      qaIssues,
-      avgQa,
-      openCallbacks,
-      doneCallbacks,
-      overdueCallbacks,
-      trend,
+      salesRows: m.saleRows,
+      callRows: m.callRows,
+      qaRows: m.qaRows,
+      premium: m.sales.premium,
+      policyAmount: m.sales.policyAmount,
+      carrierRevenue: m.sales.carrierRevenue,
+      receivable: m.sales.receivable,
+      validSales: m.sales.validSales,
+      commission: m.commission.total,
+      paidCalls: m.calls.paid,
+      qaIssues: m.qaRows.filter((r) =>
+        ["Invalid", "Returned", "Disputed"].includes(r.outcome),
+      ),
+      avgQa: m.qa.avgScore,
+      openCallbacks: openCallbackQueue(),
+      doneCallbacks: m.callbackRows.filter((c) => c.status === "Completed"),
+      overdueCallbacks: openCallbackQueue().filter((c) =>
+        ["Overdue", "Missed"].includes(c.status),
+      ),
+      trend: m.trend.map((d) => ({
+        day: d.label,
+        calls: d.calls,
+        paid: d.paid,
+        sales: d.sales,
+      })),
+      metrics: m,
     };
   }, [sel]);
 
   /* ------------------------------------------------------------------ finance */
   const finance = useMemo(() => {
-    const revenue = payrollWeeks.reduce((s, w) => s + (w.carrierRevenue || 0), 0) +
-      view.carrierRevenue;
-    const cost = payrollWeeks.reduce((s, w) => s + (w.totalCompanyCost || 0), 0);
-    const premiumWritten = payrollWeeks.reduce((s, w) => s + (w.premiumWritten || 0), 0);
-    const commissionDue = payrollWeeks.reduce(
-      (s, w) => s + (w.commissionDue || 0) + (w.incentiveDue || 0),
-      0,
-    );
+    const f = financeMetrics(sel, manualExpenseTotal);
     const weeks = [...new Set(payrollWeeks.map((w) => w.weekStart))].sort();
     const nextWeek = weeks[weeks.length - 1] ?? "";
     const nextRows = payrollWeeks.filter((w) => w.weekStart === nextWeek);
@@ -189,52 +168,47 @@ export function AdminCommandCenter() {
       (s, w) => s + (w.commissionDue || 0) + (w.incentiveDue || 0),
       0,
     );
-    const nextTaxes = nextRows.reduce(
-      (s, w) => s + (w.employerTaxes || 0) + (w.employeeTaxes || 0),
-      0,
-    );
     return {
-      revenue,
-      cost,
-      net: revenue - cost,
-      premiumWritten,
-      commissionDue,
+      revenue: f.revenueCollected,
+      booked: f.revenueBooked,
+      receivable: f.receivable,
+      cost: f.totalCost,
+      net: f.netProfit,
+      netProjected: f.netProjected,
+      premiumWritten: f.premiumWritten,
+      commissionDue: f.commission,
       nextWeek,
       nextRows,
       nextBase,
       nextCommission,
-      nextTaxes,
-      nextTotal: nextBase + nextCommission + nextTaxes,
+      nextTotal: nextBase + nextCommission,
     };
-  }, [view.carrierRevenue]);
+  }, [sel, manualExpenseTotal]);
 
   /* ------------------------------------------------------------- agent scores */
   const scoreboard = useMemo(() => {
-    const names = [...new Set(view.callRows.map((c) => c.agent))].slice(0, 10);
+    const names = [
+      ...new Set([
+        ...view.callRows.map((c) => c.agent),
+        ...view.salesRows.map((s) => s.agent),
+      ]),
+    ];
     return names
       .map((name) => {
-        const agentCalls = view.callRows.filter((c) => c.agent === name);
-        const agentSales = view.salesRows.filter((s) => s.agent === name);
-        const agentQa = view.qaRows.filter((r) => r.agent === name);
-        const cb = callbacks.filter((c) => c.agent === name);
-        const score = agentQa.length
-          ? Math.round(agentQa.reduce((s, r) => s + r.score, 0) / agentQa.length)
-          : 70 + ((name.length * 3) % 28);
+        const a = agentMetrics(name, sel);
         return {
           name,
-          calls: agentCalls.length,
-          sales: agentSales.length || Math.max(0, Math.round(agentCalls.length * 0.18)),
-          conv: agentCalls.length
-            ? Math.round((Math.max(1, Math.round(agentCalls.length * 0.18)) / agentCalls.length) * 100)
-            : 0,
-          score,
-          cbDone: cb.filter((c) => c.status === "Completed").length,
-          cbTodo: cb.filter((c) => ["Due", "Scheduled", "Overdue"].includes(c.status)).length,
-          commission: (agentSales.length || Math.round(agentCalls.length * 0.18)) * 30,
+          calls: a.calls.total,
+          sales: a.sales.count,
+          conv: Math.round(a.conversion),
+          score: a.qaScore,
+          cbDone: a.callbacks.done,
+          cbTodo: openCallbackQueue(name).length,
+          commission: a.commission.total,
         };
       })
-      .sort((a, b) => b.score - a.score);
-  }, [view]);
+      .sort((a, b) => b.sales - a.sales || b.score - a.score);
+  }, [sel, view.callRows, view.salesRows]);
 
   /* -------------------------------------------------------------- agent health */
   const agentHealth = useMemo(() => {
@@ -711,7 +685,7 @@ export function AdminCommandCenter() {
             <StatCard
               label="Net profit"
               value={money(finance.net)}
-              hint={`Company cost ${money(finance.cost)}`}
+              hint={`Cost ${money(finance.cost)} · projected ${money(finance.netProjected)}`}
               tone={finance.net >= 0 ? "success" : "danger"}
               to="/expenses"
               icon={<Wallet className="size-4" />}
@@ -754,7 +728,6 @@ export function AdminCommandCenter() {
                       <th className="px-3 py-2.5">Hours</th>
                       <th className="px-3 py-2.5">Base</th>
                       <th className="px-3 py-2.5">Commission</th>
-                      <th className="px-3 py-2.5">Taxes</th>
                       <th className="px-3 py-2.5">Status</th>
                       <th className="px-3 py-2.5 text-right">Total</th>
                     </tr>
@@ -772,16 +745,11 @@ export function AdminCommandCenter() {
                         <td className="tabular px-3 py-2.5">
                           {money2(w.commissionDue + w.incentiveDue)}
                         </td>
-                        <td className="tabular px-3 py-2.5">
-                          {money2(w.employeeTaxes + w.employerTaxes)}
-                        </td>
                         <td className="px-3 py-2.5">
                           <StatusBadge status={w.baseStatus} />
                         </td>
                         <td className="tabular px-3 py-2.5 text-right font-semibold text-foreground">
-                          {money2(
-                            w.basePayroll + w.commissionDue + w.incentiveDue + w.employeeTaxes + w.employerTaxes,
-                          )}
+                          {money2(w.basePayroll + w.commissionDue + w.incentiveDue)}
                         </td>
                       </tr>
                     ))}
@@ -792,7 +760,6 @@ export function AdminCommandCenter() {
                       <td />
                       <td className="tabular px-3 py-2.5">{money2(finance.nextBase)}</td>
                       <td className="tabular px-3 py-2.5">{money2(finance.nextCommission)}</td>
-                      <td className="tabular px-3 py-2.5">{money2(finance.nextTaxes)}</td>
                       <td />
                       <td className="tabular px-3 py-2.5 text-right text-brand">
                         {money2(finance.nextTotal)}
@@ -816,6 +783,8 @@ export function AdminCommandCenter() {
                   ["Commission owed to agents", money2(finance.commissionDue)],
                   ["Commission earned in range", money2(view.commission)],
                   ["Receivable from carriers", money2(view.receivable)],
+                  ["Revenue collected", money2(finance.revenue)],
+                  ["Receivable from carrier", money2(finance.receivable)],
                   ["Total company cost", money2(finance.cost)],
                 ].map(([k, v]) => (
                   <div key={k} className="flex items-center justify-between gap-3">

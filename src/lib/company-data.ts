@@ -3,6 +3,8 @@
 // PolicyBear_Buyer_Call_Report.xlsx, Nexora_Service.xlsx, FE_Sale_Report.xlsx
 // Real company data — used by the HR, Accounting, Sales and Traffic modules.
 
+import { rebaseRows } from "@/lib/data-clock";
+
 export const COMPANY = {
   name: "Policy Bear",
   carrier: "American Amicable",
@@ -6709,8 +6711,19 @@ export const trafficByDay: TrafficDay[] = [
   }
 ];
 
+// Align every workbook date with the live calendar so the "Today / Yesterday /
+// Last 7 days" filters used across the CRM resolve against real activity.
+rebaseRows(sales);
+rebaseRows(payrollWeeks);
+rebaseRows(payables);
+rebaseRows(qaCalls);
+rebaseRows(trafficCalls);
+rebaseRows(trafficByDay);
+
 export const weekStarts = Array.from(new Set(payrollWeeks.map((p) => p.weekStart))).sort();
 export const months = Array.from(new Set(payables.map((p) => p.month))).sort();
+
+
 
 export function money(n: number) {
   return n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 });

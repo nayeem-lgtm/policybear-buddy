@@ -4,6 +4,9 @@
  * the relational database map so wiring real endpoints later is a swap, not a rewrite.
  */
 
+import { rebaseRows } from "@/lib/data-clock";
+import { AGENT_NAMES } from "@/lib/company-data";
+
 export type Role =
   | "Agent"
   | "QC"
@@ -378,7 +381,7 @@ export const calls: CallRecord[] = Array.from({ length: 60 }, (_, i) => ({
   callId: `CT-${480000 + i * 17}`,
   customer: pick(customers, i % customers.length).name,
   phone: pick(customers, i % customers.length).phone,
-  agent: pick(employees, i % 14).name,
+  agent: pick(AGENT_NAMES, i),
   publisher: pick(["BlueRock Media", "Northline Leads", "Sunbelt Direct", "Vertex Ads"], i),
   campaign: pick(["ACA Q3 Inbound", "U65 Retarget", "Medicare Spanish", "Open Enrollment"], i),
   direction: i % 5 === 0 ? "Outbound" : "Inbound",
@@ -416,7 +419,7 @@ export const callbacks: Callback[] = Array.from({ length: 28 }, (_, i) => ({
   id: `CB-${3100 + i}`,
   customer: pick(customers, (i * 3) % customers.length).name,
   phone: pick(customers, (i * 3) % customers.length).phone,
-  agent: pick(employees, i % 12).name,
+  agent: pick(AGENT_NAMES, i),
   scheduledFor: `2026-08-0${(i % 6) + 3} ${9 + (i % 7)}:${i % 2 ? "30" : "00"}`,
   timeZone: pick(["PT", "CT", "ET", "MT"], i),
   reason: pick(
@@ -476,7 +479,7 @@ export const policies: Policy[] = Array.from({ length: 46 }, (_, i) => ({
   id: `POL-${7400 + i}`,
   policyNumber: `PB-${2026}-${40000 + i * 13}`,
   customer: pick(customers, i % customers.length).name,
-  agent: pick(employees, i % 12).name,
+  agent: pick(AGENT_NAMES, i),
   carrier: pick(carriers, i),
   plan: pick(
     ["Silver 94 HMO", "Bronze Essential PPO", "Gold Select HMO", "Silver Value+", "Bronze Standard"],
@@ -575,7 +578,7 @@ export interface QAReview {
 export const qaReviews: QAReview[] = Array.from({ length: 34 }, (_, i) => ({
   id: `QA-${2200 + i}`,
   callId: pick(calls, i % calls.length).callId,
-  agent: pick(employees, i % 12).name,
+  agent: pick(AGENT_NAMES, i),
   reviewer: pick(employees, 4).name,
   customer: pick(customers, i % customers.length).name,
   publisher: pick(["BlueRock Media", "Northline Leads", "Sunbelt Direct", "Vertex Ads"], i),
@@ -1135,3 +1138,13 @@ export const revenueTrend = [
   { month: "Jul", revenue: 268000, cost: 152000 },
   { month: "Aug", revenue: 291000, cost: 158000 },
 ];
+
+// Keep the demo dataset aligned with the live calendar (see data-clock.ts) so
+// every "Today / Yesterday / Last 7 days" filter resolves against real rows.
+rebaseRows(calls);
+rebaseRows(callbacks);
+rebaseRows(policies);
+rebaseRows(qaReviews);
+rebaseRows(customers);
+rebaseRows(employees);
+rebaseRows(tasks);

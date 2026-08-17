@@ -1,4 +1,6 @@
 import type { DateSelection } from "@/components/crm/DateRangeTabs";
+import { parseLocalDate } from "@/lib/data-clock";
+
 
 function startOfDay(d: Date) {
   const x = new Date(d);
@@ -45,11 +47,36 @@ export function selectionBounds(sel: DateSelection): { from: Date; to: Date } {
   }
 }
 
-/** True when an ISO-ish date string falls inside the selection. */
+/** True when an ISO-ish date string falls inside the selection (local time). */
 export function inSelection(dateStr: string | null | undefined, sel: DateSelection) {
   if (!dateStr) return false;
-  const d = new Date(dateStr);
-  if (Number.isNaN(d.getTime())) return false;
+  const d = parseLocalDate(dateStr);
+  if (!d || Number.isNaN(d.getTime())) return false;
   const { from, to } = selectionBounds(sel);
   return d >= from && d <= to;
 }
+
+/** Days covered by a selection (inclusive). */
+export function selectionDays(sel: DateSelection) {
+  const { from, to } = selectionBounds(sel);
+  return Math.max(1, Math.round((to.getTime() - from.getTime()) / 86_400_000) + 1);
+}
+
+/** Every day inside the selection as `YYYY-MM-DD`, capped for chart sanity. */
+export function selectionDayList(sel: DateSelection, cap = 31): string[] {
+  const { from, to } = selectionBounds(sel);
+  const days: string[] = [];
+  const cursor = new Date(from);
+  while (cursor <= to && days.length < 400) {
+    days.push(
+      `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(
+        cursor.getDate(),
+      ).padStart(2, "0")}`,
+    );
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  if (days.length <= cap) return days;
+  const step = Math.ceil(days.length / cap);
+  return days.filter((_, i) => i % step === 0 || i === days.length - 1);
+}
+
