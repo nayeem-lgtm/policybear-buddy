@@ -360,11 +360,12 @@ export function ExpenseCenter() {
                     <Trash2 className="size-4" /> Delete
                   </Button>
                 )}
-                <Button variant="outline" disabled={selected.status === "Hold"} onClick={() => { setExpenseStatus(selected.id, "Hold"); setSelected({ ...selected, status: "Hold" }); }}>Hold</Button>
+                <Button variant="outline" disabled={selected.status === "Hold"} onClick={() => { setExpenseStatus(selected.id, "Hold"); recordAudit({ actor: user?.name ?? null, actorEmail: user?.email ?? null, category: "Expense", action: "Expense placed on hold", recordType: "Expense", recordId: selected.id, detail: { vendor: selected.vendor, amount: selected.amount } }); setSelected({ ...selected, status: "Hold" }); }}>Hold</Button>
                 <Button
                   disabled={selected.status === "Paid"}
                   onClick={() => {
                     setExpenseStatus(selected.id, "Paid");
+                    recordAudit({ actor: user?.name ?? null, actorEmail: user?.email ?? null, category: "Expense", action: "Expense marked paid", recordType: "Expense", recordId: selected.id, detail: { vendor: selected.vendor, amount: selected.amount } });
                     setSelected({ ...selected, status: "Paid", paidDate: today() });
                   }}
                 >

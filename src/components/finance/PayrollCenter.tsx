@@ -115,6 +115,7 @@ interface PayrollLine {
 }
 
 import { recordAudit } from "@/lib/audit-log";
+import { useAuth } from "@/context/AuthContext";
 
 function csvDownload(filename: string, rows: (string | number)[][]) {
   const body = rows
@@ -129,6 +130,9 @@ function csvDownload(filename: string, rows: (string | number)[][]) {
 }
 
 export function PayrollCenter() {
+  const { user } = useAuth();
+  const auditActor = user?.name ?? null;
+  const auditEmail = user?.email ?? null;
   const [weekStart, setWeekStart] = useState(() => mondayOf(pacificDate()));
   const [mode, setMode] = useState<"weekly" | "daily">("weekly");
   const [dayIndex, setDayIndex] = useState(() => {
