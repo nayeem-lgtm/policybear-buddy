@@ -168,6 +168,8 @@ export function AdminCommandCenter() {
       (s, w) => s + (w.commissionDue || 0) + (w.incentiveDue || 0),
       0,
     );
+    const saleCount = view.salesRows.length;
+    const callCount = view.callRows.length;
     return {
       revenue: f.revenueCollected,
       booked: f.revenueBooked,
@@ -177,13 +179,22 @@ export function AdminCommandCenter() {
       netProjected: f.netProjected,
       premiumWritten: f.premiumWritten,
       commissionDue: f.commission,
+      basePayroll: f.basePayroll,
+      traffic: f.trafficCost,
+      seats: f.seatCost,
+      expenses: f.trafficCost + f.seatCost + f.otherCost + f.manualExpenses,
+      margin: f.margin,
+      revenuePerSale: saleCount ? f.revenueBooked / saleCount : 0,
+      revenuePerCall: callCount ? f.revenueBooked / callCount : 0,
+      payoutRatio: f.revenueBooked ? (f.totalCost / f.revenueBooked) * 100 : 0,
       nextWeek,
       nextRows,
       nextBase,
       nextCommission,
       nextTotal: nextBase + nextCommission,
     };
-  }, [sel, manualExpenseTotal]);
+  }, [sel, manualExpenseTotal, view.salesRows.length, view.callRows.length]);
+
 
   /* ------------------------------------------------------------- agent scores */
   const scoreboard = useMemo(() => {
@@ -280,6 +291,95 @@ export function AdminCommandCenter() {
 
   const todoCount = pendingLeave.length + pendingHours.length + view.qaIssues.length;
 
+  /* --------------------------------------------------- whole-platform summary */
+  const m = view.metrics;
+  const platformSummary: {
+    title: string;
+    rows: { label: string; value: string; to: string }[];
+  }[] = [
+    {
+      title: "Telephony",
+      rows: [
+        { label: "Total calls", value: `${m.calls.total}`, to: "/calls" },
+        { label: "Inbound", value: `${m.calls.inbound}`, to: "/calls" },
+        { label: "Outbound", value: `${m.calls.outbound}`, to: "/calls" },
+        { label: "Billable calls", value: `${m.calls.paid}`, to: "/call-reconciliation" },
+        { label: "Conversion", value: `${m.conversion.toFixed(1)}%`, to: "/reporting" },
+      ],
+    },
+    {
+      title: "Sales & customers",
+      rows: [
+        { label: "Sales written", value: `${m.sales.count}`, to: "/customers" },
+        { label: "Valid sales", value: `${m.sales.validSales}`, to: "/customers" },
+        { label: "Issued", value: `${m.sales.issued}`, to: "/customers" },
+        { label: "Pending", value: `${m.sales.pending}`, to: "/customers" },
+        { label: "Avg premium", value: money2(m.sales.avgPremium), to: "/customers" },
+      ],
+    },
+    {
+      title: "Finance",
+      rows: [
+        { label: "Revenue collected", value: money(finance.revenue), to: "/revenue" },
+        { label: "Total payout", value: money(finance.cost), to: "/payroll" },
+        { label: "Net profit", value: money(finance.net), to: "/expenses" },
+        { label: "Receivable", value: money(finance.receivable), to: "/call-reconciliation" },
+        { label: "Expenses", value: money(finance.expenses), to: "/expenses" },
+      ],
+    },
+    {
+      title: "Callbacks",
+      rows: [
+        { label: "Open queue", value: `${view.openCallbacks.length}`, to: "/callbacks" },
+        { label: "Overdue", value: `${view.overdueCallbacks.length}`, to: "/callbacks" },
+        { label: "Completed", value: `${view.doneCallbacks.length}`, to: "/callbacks" },
+        {
+          label: "Completion rate",
+          value: `${m.callbacks.completionRate.toFixed(0)}%`,
+          to: "/callbacks",
+        },
+      ],
+    },
+    {
+      title: "Quality & escalations",
+      rows: [
+        { label: "QA reviews", value: `${m.qa.reviews}`, to: "/qa" },
+        { label: "Avg QA score", value: `${m.qa.avgScore}`, to: "/qa" },
+        { label: "Escalations", value: `${m.qa.escalations}`, to: "/qa/escalations" },
+        { label: "Disputes", value: `${m.qa.disputes}`, to: "/qa/escalations" },
+      ],
+    },
+    {
+      title: "People & attendance",
+      rows: [
+        { label: "Agents on floor", value: `${agentHealth.signals[0]?.value ?? "0"}`, to: "/live-operations" },
+        { label: "On break", value: `${agentHealth.signals[1]?.value ?? "0"}`, to: "/break-alarm" },
+
+        { label: "On leave", value: `${onLeaveNow.length}`, to: "/leave" },
+        { label: "Attendance flags", value: `${lateAttendance.length}`, to: "/attendance" },
+      ],
+    },
+    {
+      title: "Payroll",
+      rows: [
+        { label: "Next run total", value: money(finance.nextTotal), to: "/payroll" },
+        { label: "Base payroll", value: money(finance.nextBase), to: "/payroll" },
+        { label: "Commission due", value: money(finance.nextCommission), to: "/payroll" },
+        { label: "People paid", value: `${finance.nextRows.length}`, to: "/payroll" },
+      ],
+    },
+    {
+      title: "Admin to-dos",
+      rows: [
+        { label: "Leave approvals", value: `${pendingLeave.length}`, to: "/leave" },
+        { label: "Hour requests", value: `${pendingHours.length}`, to: "/attendance" },
+        { label: "Escalations open", value: `${view.qaIssues.length}`, to: "/qa/escalations" },
+        { label: "Live alerts", value: `${agentHealth.alerts.length}`, to: "/live-operations" },
+      ],
+    },
+  ];
+
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-card p-3 shadow-card lg:flex-row lg:items-center lg:justify-between">
@@ -362,6 +462,195 @@ export function AdminCommandCenter() {
           icon={<ClipboardCheck className="size-4" />}
         />
       </div>
+
+      {/* financial summary — full P&L position, same date window */}
+      <Card className="rounded-2xl border-border/70 p-5 shadow-card">
+        <SectionHead
+          icon={<Banknote className="size-4 text-brand" />}
+          title="Financial summary"
+          subtitle={`${label} · revenue, payout, profit and commission position`}
+          action={
+            <Button asChild variant="outline" size="sm">
+              <Link to="/revenue">
+                Finance overview <ArrowRight className="ml-1 size-3.5" />
+              </Link>
+            </Button>
+          }
+        />
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard
+            label="Total revenue"
+            value={money(finance.revenue)}
+            hint={`${money(finance.booked)} booked with carriers`}
+            tone="success"
+            to="/revenue"
+            icon={<TrendingUp className="size-4" />}
+          />
+          <StatCard
+            label="Total payout"
+            value={money(finance.cost)}
+            hint={`Payroll ${money(finance.basePayroll)} · commission ${money(finance.commissionDue)}`}
+            tone="warning"
+            to="/payroll"
+            icon={<Wallet className="size-4" />}
+          />
+          <StatCard
+            label="Net profit"
+            value={money(finance.net)}
+            hint={`Margin ${finance.margin.toFixed(1)}% · projected ${money(finance.netProjected)}`}
+            tone={finance.net >= 0 ? "success" : "danger"}
+            to="/expenses"
+            icon={<Activity className="size-4" />}
+          />
+          <StatCard
+            label="Commission earned"
+            value={money(view.commission)}
+            hint="Agent commission + incentives in range"
+            tone="brand"
+            to="/commissions"
+            icon={<Banknote className="size-4" />}
+          />
+          <StatCard
+            label="Carrier commission"
+            value={money(view.carrierRevenue)}
+            hint="Advance booked on written business"
+            tone="info"
+            to="/revenue"
+            icon={<CreditCard className="size-4" />}
+          />
+          <StatCard
+            label="Receivable commission"
+            value={money(finance.receivable)}
+            hint="Awaiting carrier settlement"
+            tone="warning"
+            to="/call-reconciliation"
+            icon={<Clock className="size-4" />}
+          />
+          <StatCard
+            label="Premium written"
+            value={money(view.premium)}
+            hint={`${money(view.policyAmount)} face amount`}
+            tone="brand"
+            to="/customers"
+            icon={<CheckCircle2 className="size-4" />}
+          />
+          <StatCard
+            label="Operating expenses"
+            value={money(finance.expenses)}
+            hint={`Traffic ${money(finance.traffic)} · seats ${money(finance.seats)}`}
+            tone="danger"
+            to="/expenses"
+            icon={<AlertTriangle className="size-4" />}
+          />
+        </div>
+
+        <Separator className="my-5" />
+
+        <div className="grid gap-4 lg:grid-cols-3">
+          <div className="rounded-xl border border-border bg-muted/25 p-4">
+            <p className="text-[0.68rem] font-semibold tracking-[0.09em] text-muted-foreground uppercase">
+              Money in
+            </p>
+            <dl className="mt-3 space-y-2 text-sm">
+              {[
+                ["Revenue collected", money2(finance.revenue)],
+                ["Revenue booked", money2(finance.booked)],
+                ["Receivable from carriers", money2(finance.receivable)],
+                ["Premium written", money2(view.premium)],
+              ].map(([k, v]) => (
+                <div key={k} className="flex items-center justify-between gap-3">
+                  <dt className="text-muted-foreground">{k}</dt>
+                  <dd className="tabular font-semibold text-foreground">{v}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          <div className="rounded-xl border border-border bg-muted/25 p-4">
+            <p className="text-[0.68rem] font-semibold tracking-[0.09em] text-muted-foreground uppercase">
+              Money out
+            </p>
+            <dl className="mt-3 space-y-2 text-sm">
+              {[
+                ["Base payroll", money2(finance.basePayroll)],
+                ["Agent commission", money2(finance.commissionDue)],
+                ["Call traffic", money2(finance.traffic)],
+                ["Seats & tooling", money2(finance.seats)],
+                ["Manual expenses", money2(manualExpenseTotal)],
+                ["Total payout", money2(finance.cost)],
+              ].map(([k, v]) => (
+                <div key={k} className="flex items-center justify-between gap-3">
+                  <dt className="text-muted-foreground">{k}</dt>
+                  <dd className="tabular font-semibold text-foreground">{v}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          <div className="rounded-xl border border-border bg-gradient-to-br from-brand/10 to-transparent p-4">
+            <p className="text-[0.68rem] font-semibold tracking-[0.09em] text-muted-foreground uppercase">
+              Bottom line
+            </p>
+            <p
+              className={`tabular mt-3 font-display text-3xl font-semibold ${
+                finance.net >= 0 ? "text-success" : "text-destructive"
+              }`}
+            >
+              {money2(finance.net)}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Net profit on collected revenue · margin {finance.margin.toFixed(1)}%
+            </p>
+            <Separator className="my-3" />
+            <dl className="space-y-2 text-sm">
+              {[
+                ["Projected net (booked)", money2(finance.netProjected)],
+                ["Revenue per sale", money2(finance.revenuePerSale)],
+                ["Revenue per call", money2(finance.revenuePerCall)],
+                ["Payout ratio", `${finance.payoutRatio.toFixed(1)}%`],
+              ].map(([k, v]) => (
+                <div key={k} className="flex items-center justify-between gap-3">
+                  <dt className="text-muted-foreground">{k}</dt>
+                  <dd className="tabular font-semibold text-foreground">{v}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </div>
+      </Card>
+
+      {/* platform summary A→Z */}
+      <Card className="rounded-2xl border-border/70 p-5 shadow-card">
+        <SectionHead
+          icon={<Activity className="size-4 text-brand" />}
+          title="Platform summary"
+          subtitle={`${label} · every desk on one line — click any tile to drill in`}
+        />
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {platformSummary.map((group) => (
+            <div key={group.title} className="rounded-xl border border-border bg-muted/20 p-4">
+              <p className="text-[0.68rem] font-semibold tracking-[0.09em] text-muted-foreground uppercase">
+                {group.title}
+              </p>
+              <dl className="mt-3 space-y-2 text-sm">
+                {group.rows.map((row) => (
+                  <button
+                    key={row.label}
+                    type="button"
+                    onClick={() => go(row.to)}
+                    className="flex w-full items-center justify-between gap-3 rounded-md px-1 py-0.5 text-left transition-colors hover:bg-accent/50"
+                  >
+                    <dt className="truncate text-muted-foreground">{row.label}</dt>
+                    <dd className="tabular shrink-0 font-semibold text-foreground">{row.value}</dd>
+                  </button>
+                ))}
+              </dl>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+
 
       {/* charts + approvals */}
       <div className="grid gap-4 xl:grid-cols-3">
