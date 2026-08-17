@@ -27,6 +27,8 @@ import {
 } from "lucide-react";
 
 import { StatCard } from "@/components/crm/StatCard";
+import { AgentDashboard } from "@/components/dashboard/AgentDashboard";
+
 import { StatusBadge } from "@/components/crm/StatusBadge";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
