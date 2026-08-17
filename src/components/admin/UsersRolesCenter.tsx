@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import {
   Check,
   Code2,
@@ -664,8 +664,8 @@ export function UsersRolesCenter() {
             </thead>
             <tbody>
               {groups.map((group) => (
-                <>
-                  <tr key={group.group} className="bg-muted/25">
+                <Fragment key={group.group}>
+                  <tr className="bg-muted/25">
                     <td
                       colSpan={ROLE_ORDER.length + 1}
                       className="px-4 py-1.5 text-[0.65rem] font-medium tracking-[0.14em] uppercase text-muted-foreground"
@@ -693,7 +693,7 @@ export function UsersRolesCenter() {
                       ))}
                     </tr>
                   ))}
-                </>
+                </Fragment>
               ))}
             </tbody>
           </table>
