@@ -208,10 +208,10 @@ export const navSections: NavSection[] = [
             description: "Carriers, Ringba and webhooks",
           },
           {
-            title: "Import Center",
+            title: "Data & Import Center",
             url: "/admin/imports",
             icon: Database,
-            description: "Bulk data imports",
+            description: "Import, export, sync connectors and data quality checks",
           },
           {
             title: "System Health",

@@ -205,8 +205,8 @@ function DataCenterPage() {
   const [activeTab, setActiveTab] = useState("imports");
   const [importOpen, setImportOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState(mappingTemplates[0]!.id);
-  const [selectedScope, setSelectedScope] = useState(exportScopes[0]);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>(mappingTemplates[0]!.id);
+  const [selectedScope, setSelectedScope] = useState<string>(exportScopes[0]);
   const [selectedFormat, setSelectedFormat] = useState<ExportJob["format"]>("CSV");
 
   const totalRows = importJobs.reduce((s, j) => s + j.rows, 0);
