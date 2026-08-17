@@ -370,6 +370,11 @@ export function RoleDashboard({ role, name }: { role: Role; name: string }) {
   const [team, setTeam] = useState("all");
   const config = useMemo(() => CONFIGS[role] ?? CONFIGS.Agent, [role]);
 
+  if (role === "Agent") {
+    return <AgentDashboard name={name} />;
+  }
+
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
