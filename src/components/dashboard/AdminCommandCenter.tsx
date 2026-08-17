@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import {
   AlertTriangle,
   ArrowRight,
@@ -12,6 +12,8 @@ import {
   CreditCard,
   PhoneCall,
   PhoneForwarded,
+  Activity,
+  HeartPulse,
   ShieldAlert,
   TrendingUp,
   Users,
@@ -70,6 +72,8 @@ function cohort<T>(rows: T[], sel: DateSelection) {
 export function AdminCommandCenter() {
   const [sel, setSel] = useState<DateSelection>({ preset: "today" });
   const [handled, setHandled] = useState<Record<string, "approved" | "denied">>({});
+  const navigate = useNavigate();
+  const go = (to: string) => navigate({ to: to as never });
 
   const label = presetLabel(sel);
 
@@ -200,6 +204,57 @@ export function AdminCommandCenter() {
       .sort((a, b) => b.score - a.score);
   }, [view]);
 
+  /* -------------------------------------------------------------- agent health */
+  const agentHealth = useMemo(() => {
+    const agents = employees.filter((e) => e.role === "Agent");
+    const alerts = employees.filter((e) => e.alert);
+    const signedIn = agents.filter((e) => e.status !== "Signed Out");
+    const onBreak = agents.filter((e) => /break|lunch/i.test(e.status));
+    const cbDue = agents.reduce((sum, e) => sum + (e.callbacksDue || 0), 0);
+    const postCall = agents.reduce((sum, e) => sum + (e.postCallPending || 0), 0);
+    const pct = (n: number, d: number) => (d ? Math.round((n / d) * 100) : 0);
+    return {
+      alerts,
+      signals: [
+        {
+          label: "Signed in",
+          value: `${signedIn.length}/${agents.length}`,
+          pct: pct(signedIn.length, agents.length),
+          hint: "Agents currently on the floor",
+          to: "/live-operations",
+        },
+        {
+          label: "On break / lunch",
+          value: `${onBreak.length}`,
+          pct: pct(onBreak.length, Math.max(1, agents.length)),
+          hint: "Watch for extended breaks",
+          to: "/break-alarm",
+        },
+        {
+          label: "Callbacks due",
+          value: `${cbDue}`,
+          pct: Math.min(100, cbDue * 4),
+          hint: "Across every agent queue",
+          to: "/callbacks",
+        },
+        {
+          label: "Post-call pending",
+          value: `${postCall}`,
+          pct: Math.min(100, postCall * 6),
+          hint: "Wrap-ups not yet submitted",
+          to: "/tasks",
+        },
+        {
+          label: "Alert load",
+          value: `${alerts.length}`,
+          pct: pct(alerts.length, Math.max(1, employees.length)),
+          hint: "Live coaching interventions needed",
+          to: "/live-operations",
+        },
+      ],
+    };
+  }, []);
+
   /* ---------------------------------------------------------------- approvals */
   const pendingLeave = leaveRequestsHr.filter(
     (l) => l.status === "Pending" && !handled[l.id],
@@ -237,6 +292,7 @@ export function AdminCommandCenter() {
           value={view.callRows.length}
           hint={`${view.paidCalls} billable`}
           tone="brand"
+          to="/calls"
           icon={<PhoneCall className="size-4" />}
         />
         <StatCard
@@ -244,13 +300,15 @@ export function AdminCommandCenter() {
           value={view.salesRows.length}
           hint={`${view.validSales} valid · ${money(view.premium)} premium`}
           tone="success"
+          to="/customers"
           icon={<TrendingUp className="size-4" />}
         />
         <StatCard
-          label="QA issues raised"
+          label="Escalations raised"
           value={view.qaIssues.length}
-          hint={`Avg QA score ${view.avgQa}`}
+          hint={`Avg QA score ${view.avgQa} · open escalations`}
           tone="danger"
+          to="/qa/escalations"
           icon={<ShieldAlert className="size-4" />}
         />
         <StatCard
@@ -258,6 +316,7 @@ export function AdminCommandCenter() {
           value={money(view.commission)}
           hint={`${view.salesRows.filter((s) => s.commissionEligible).length} eligible sales`}
           tone="warning"
+          to="/commissions"
           icon={<Banknote className="size-4" />}
         />
         <StatCard
@@ -265,6 +324,7 @@ export function AdminCommandCenter() {
           value={money(view.policyAmount)}
           hint="Face amount written"
           tone="info"
+          to="/revenue"
           icon={<Wallet className="size-4" />}
         />
         <StatCard
@@ -272,6 +332,7 @@ export function AdminCommandCenter() {
           value={view.openCallbacks.length}
           hint={`${view.overdueCallbacks.length} overdue · ${view.doneCallbacks.length} done`}
           tone={view.overdueCallbacks.length ? "danger" : "info"}
+          to="/callbacks"
           icon={<PhoneForwarded className="size-4" />}
         />
         <StatCard
@@ -279,6 +340,7 @@ export function AdminCommandCenter() {
           value={onLeaveNow.length}
           hint={onLeaveNow.map((l) => l.employee.split(" ")[0]).join(", ") || "Full floor"}
           tone="warning"
+          to="/leave"
           icon={<CalendarClock className="size-4" />}
         />
         <StatCard
@@ -286,6 +348,7 @@ export function AdminCommandCenter() {
           value={todoCount}
           hint={`${pendingLeave.length} leave · ${pendingHours.length} hours · ${view.qaIssues.length} QA`}
           tone={todoCount ? "danger" : "success"}
+          to="/leave"
           icon={<ClipboardCheck className="size-4" />}
         />
       </div>
@@ -430,7 +493,7 @@ export function AdminCommandCenter() {
                     {q.callId} · {q.reason} · score {q.score}
                   </p>
                   <Button asChild size="sm" variant="outline" className="mt-2 h-7 px-2 text-xs">
-                    <Link to="/qa/escalations">Review escalation</Link>
+                    <Link to="/qa/escalations">Open escalation</Link>
                   </Button>
                 </div>
               ))}
@@ -444,6 +507,83 @@ export function AdminCommandCenter() {
           </ScrollArea>
         </Card>
       </div>
+
+      {/* agent health */}
+      <div className="grid gap-4 xl:grid-cols-3">
+        <Card className="p-4 shadow-card xl:col-span-2">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <HeartPulse className="size-4 text-destructive" />
+              <div>
+                <p className="text-sm font-semibold text-foreground">Agent health — active alerts</p>
+                <p className="text-xs text-muted-foreground">
+                  {agentHealth.alerts.length} live alert{agentHealth.alerts.length === 1 ? "" : "s"} on the floor
+                </p>
+              </div>
+            </div>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/live-operations">
+                Live floor <ArrowRight className="ml-1 size-3.5" />
+              </Link>
+            </Button>
+          </div>
+          <ScrollArea className="h-[300px] pr-2">
+            <div className="space-y-2">
+              {agentHealth.alerts.length === 0 && (
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  Every agent is healthy right now.
+                </p>
+              )}
+              {agentHealth.alerts.map((e) => (
+                <Link
+                  key={e.id}
+                  to="/live-operations"
+                  className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-3 transition-all hover:-translate-y-0.5 hover:border-destructive/40 hover:bg-destructive/5"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex size-9 items-center justify-center rounded-xl bg-brand/10 text-[0.7rem] font-semibold text-brand">
+                      {e.avatarInitials}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-foreground">{e.name}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {e.team} · {e.status} · {e.callsToday} calls · {e.callbacksDue} callbacks due
+                      </p>
+                    </div>
+                  </div>
+                  <StatusBadge status={e.alert ?? "Alert"} tone="danger" />
+                </Link>
+              ))}
+            </div>
+          </ScrollArea>
+        </Card>
+
+        <Card className="p-4 shadow-card">
+          <div className="mb-3 flex items-center gap-2">
+            <Activity className="size-4 text-brand" />
+            <p className="text-sm font-semibold text-foreground">Health signals</p>
+          </div>
+          <div className="space-y-3">
+            {agentHealth.signals.map((sig) => (
+              <Link
+                key={sig.label}
+                to={sig.to as never}
+                className="block rounded-xl border border-border p-3 transition-colors hover:border-brand/40 hover:bg-accent/40"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-semibold tracking-[0.06em] text-muted-foreground uppercase">
+                    {sig.label}
+                  </p>
+                  <span className="tabular text-sm font-semibold text-foreground">{sig.value}</span>
+                </div>
+                <Progress value={sig.pct} className="mt-2 h-1.5" />
+                <p className="mt-1 text-xs text-muted-foreground">{sig.hint}</p>
+              </Link>
+            ))}
+          </div>
+        </Card>
+      </div>
+
 
       {/* tabs: agents / finance / people */}
       <Tabs defaultValue="agents" className="space-y-4">
@@ -479,7 +619,11 @@ export function AdminCommandCenter() {
                 </thead>
                 <tbody>
                   {scoreboard.map((row) => (
-                    <tr key={row.name} className="border-b border-border/60 last:border-0 hover:bg-accent/40">
+                    <tr
+                      key={row.name}
+                      onClick={() => go("/employees")}
+                      className="cursor-pointer border-b border-border/60 last:border-0 transition-colors hover:bg-accent/40"
+                    >
                       <td className="px-4 py-2.5">
                         <div className="flex items-center gap-2">
                           <span className="flex size-7 items-center justify-center rounded-lg bg-brand/10 text-[0.7rem] font-semibold text-brand">
@@ -523,6 +667,7 @@ export function AdminCommandCenter() {
               value={money(finance.revenue)}
               hint="Carrier revenue booked"
               tone="success"
+              to="/revenue"
               icon={<TrendingUp className="size-4" />}
             />
             <StatCard
@@ -530,6 +675,7 @@ export function AdminCommandCenter() {
               value={money(finance.net)}
               hint={`Company cost ${money(finance.cost)}`}
               tone={finance.net >= 0 ? "success" : "danger"}
+              to="/expenses"
               icon={<Wallet className="size-4" />}
             />
             <StatCard
@@ -537,6 +683,7 @@ export function AdminCommandCenter() {
               value={money(view.carrierRevenue)}
               hint={`${label} booked`}
               tone="brand"
+              to="/commissions"
               icon={<Banknote className="size-4" />}
             />
             <StatCard
@@ -544,6 +691,7 @@ export function AdminCommandCenter() {
               value={money(view.receivable)}
               hint="Awaiting carrier payment"
               tone="warning"
+              to="/call-reconciliation"
               icon={<CreditCard className="size-4" />}
             />
           </div>
@@ -578,7 +726,11 @@ export function AdminCommandCenter() {
                   </thead>
                   <tbody>
                     {finance.nextRows.map((w) => (
-                      <tr key={w.id} className="border-b border-border/60 last:border-0">
+                      <tr
+                        key={w.id}
+                        onClick={() => go("/payroll")}
+                        className="cursor-pointer border-b border-border/60 last:border-0 transition-colors hover:bg-accent/40"
+                      >
                         <td className="px-3 py-2.5 font-medium text-foreground">{w.agent}</td>
                         <td className="tabular px-3 py-2.5">{w.paidHours}h</td>
                         <td className="tabular px-3 py-2.5">{money2(w.basePayroll)}</td>
@@ -660,9 +812,10 @@ export function AdminCommandCenter() {
                   <p className="text-sm text-muted-foreground">Full floor today.</p>
                 )}
                 {onLeaveNow.map((l) => (
-                  <div
+                  <Link
                     key={l.id}
-                    className="flex items-center justify-between gap-2 rounded-xl border border-border p-2.5"
+                    to="/leave"
+                    className="flex items-center justify-between gap-2 rounded-xl border border-border p-2.5 transition-colors hover:border-brand/40 hover:bg-accent/40"
                   >
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-foreground">{l.employee}</p>
@@ -671,7 +824,7 @@ export function AdminCommandCenter() {
                       </p>
                     </div>
                     <StatusBadge status={l.type} tone="info" />
-                  </div>
+                  </Link>
                 ))}
               </div>
             </Card>
@@ -700,7 +853,11 @@ export function AdminCommandCenter() {
                   </thead>
                   <tbody>
                     {lateAttendance.slice(0, 8).map((e) => (
-                      <tr key={e.id} className="border-b border-border/60 last:border-0">
+                      <tr
+                        key={e.id}
+                        onClick={() => go("/attendance")}
+                        className="cursor-pointer border-b border-border/60 last:border-0 transition-colors hover:bg-accent/40"
+                      >
                         <td className="px-3 py-2.5 font-medium text-foreground">{e.employee}</td>
                         <td className="px-3 py-2.5 text-muted-foreground">{e.date}</td>
                         <td className="px-3 py-2.5">
@@ -740,7 +897,11 @@ export function AdminCommandCenter() {
                 const active = members.filter((m) => m.status !== "Signed Out").length;
                 const alerts = members.filter((m) => m.alert).length;
                 return (
-                  <div key={team} className="rounded-xl border border-border p-3">
+                  <Link
+                    key={team}
+                    to="/live-operations"
+                    className="block rounded-xl border border-border p-3 transition-colors hover:border-brand/40 hover:bg-accent/40"
+                  >
                     <p className="text-[0.68rem] font-semibold tracking-[0.08em] text-muted-foreground uppercase">
                       {team}
                     </p>
@@ -753,7 +914,7 @@ export function AdminCommandCenter() {
                         <AlertTriangle className="size-3.5" /> {alerts} alert{alerts > 1 ? "s" : ""}
                       </p>
                     )}
-                  </div>
+                  </Link>
                 );
               })}
             </div>
