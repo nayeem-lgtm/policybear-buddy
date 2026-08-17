@@ -48,6 +48,8 @@ import {
 } from "@/lib/company-data";
 import { useFilters, unique } from "@/lib/use-filters";
 import { inSelection } from "@/lib/date-range";
+import { expectedCarrierRevenue, isRevenueCollected } from "@/lib/metrics-engine";
+
 import { cn } from "@/lib/utils";
 
 export type BookTab = "customers" | "sales";
@@ -618,8 +620,11 @@ export function CustomerBook({
                   <Field label="Monthly premium" value={money(selectedSale.premium)} />
                   <Field label="Payment method" value={selectedSale.paymentMethod ?? "—"} />
                   <Field label="Draft date" value={selectedSale.draftDate ?? "—"} />
-                  <Field label="Carrier revenue" value={money(selectedSale.carrierRevenue)} />
-                  <Field label="Revenue received" value={selectedSale.revenueReceived} />
+                  <Field label="Carrier revenue" value={money(expectedCarrierRevenue(selectedSale))} />
+                  <Field
+                    label="Revenue status"
+                    value={isRevenueCollected(selectedSale) ? "Collected" : "Receivable"}
+                  />
                   <Field label="Personal lead incentive" value={money(selectedSale.personalLeadIncentive)} />
                   <Field label="Publisher" value={selectedSale.publisher ?? "—"} />
                 </div>

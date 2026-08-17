@@ -35,6 +35,7 @@ import { DateRangeTabs, presetLabel, type DateSelection } from "@/components/crm
 import { selectionBounds, inSelection } from "@/lib/date-range";
 import { unique } from "@/lib/use-filters";
 import { useExpenseLedger } from "@/lib/expense-store";
+import { expectedCarrierRevenue, isRevenueCollected } from "@/lib/metrics-engine";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -110,9 +111,9 @@ export function RevenueCenter() {
   const monthlyPremium = scopedSales.reduce((s, r) => s + r.premium, 0);
   const policyAmount = scopedSales.reduce((s, r) => s + r.policyAmount, 0);
   const carrierReceived = scopedSales
-    .filter((r) => r.revenueReceived === "Yes")
-    .reduce((s, r) => s + r.carrierRevenue, 0);
-  const carrierBooked = scopedSales.reduce((s, r) => s + r.carrierRevenue, 0);
+    .filter(isRevenueCollected)
+    .reduce((s, r) => s + expectedCarrierRevenue(r), 0);
+  const carrierBooked = scopedSales.reduce((s, r) => s + expectedCarrierRevenue(r), 0);
   const companyCost = scopedWeeks.reduce((s, r) => s + r.totalCompanyCost, 0);
   const netCash = scopedWeeks.reduce((s, r) => s + r.netCash, 0);
 
@@ -175,7 +176,7 @@ export function RevenueCenter() {
     for (const s of scopedSales) {
       const cur = map.get(s.saleDate) ?? { date: s.saleDate, premium: 0, carrier: 0 };
       cur.premium += s.premium;
-      if (s.revenueReceived === "Yes") cur.carrier += s.carrierRevenue;
+      if (isRevenueCollected(s)) cur.carrier += expectedCarrierRevenue(s);
       map.set(s.saleDate, cur);
     }
     return Array.from(map.values())
@@ -190,8 +191,8 @@ export function RevenueCenter() {
       const cur = map.get(key) ?? { carrier: key, count: 0, premium: 0, received: 0, booked: 0 };
       cur.count += 1;
       cur.premium += s.premium;
-      cur.booked += s.carrierRevenue;
-      if (s.revenueReceived === "Yes") cur.received += s.carrierRevenue;
+      cur.booked += expectedCarrierRevenue(s);
+      if (isRevenueCollected(s)) cur.received += expectedCarrierRevenue(s);
       map.set(key, cur);
     }
     return Array.from(map.values()).sort((a, b) => b.premium - a.premium);
@@ -251,11 +252,11 @@ export function RevenueCenter() {
       align: "right",
       cell: (r) => (
         <div className="text-right">
-          <p className={`tabular ${r.revenueReceived === "Yes" ? "font-medium text-success" : "text-muted-foreground"}`}>
-            {money(r.carrierRevenue)}
+          <p className={`tabular ${isRevenueCollected(r) ? "font-medium text-success" : "text-muted-foreground"}`}>
+            {money(expectedCarrierRevenue(r))}
           </p>
           <p className="text-xs text-muted-foreground">
-            {r.revenueReceived === "Yes" ? (r.revenueReceivedDate ?? "received") : "receivable"}
+            {isRevenueCollected(r) ? (r.revenueReceivedDate ?? "collected") : "receivable"}
           </p>
         </div>
       ),

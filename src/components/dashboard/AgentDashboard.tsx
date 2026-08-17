@@ -36,15 +36,15 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { notifications, shiftTimeline, tasks } from "@/lib/mock-data";
 import {
-  callbacks,
-  notifications,
-  policies,
-  qaReviews,
-  salesTrend,
-  shiftTimeline,
-  tasks,
-} from "@/lib/mock-data";
+  agentMetrics,
+  formatHm,
+  openCallbackQueue,
+  resolveAgentName,
+  commissionPerSaleLabel,
+} from "@/lib/metrics-engine";
+import { commissionPerSale, money } from "@/lib/company-data";
 
 /* --------------------------------------------------------------- primitives */
 
@@ -118,45 +118,95 @@ const URGENCY_TONE: Record<string, string> = {
   Low: "bg-muted text-muted-foreground",
 };
 
-const commissionLines = [
-  { label: "Submitted applications", detail: "18 × $65", amount: 1170 },
-  { label: "Effectuated bonus", detail: "9 × $40", amount: 360 },
-  { label: "Retention bonus", detail: "Aug 1–15 cycle", amount: 220 },
-  { label: "Chargeback clawback", detail: "1 policy", amount: -85 },
-];
-
-const attendance = [
-  { label: "Sign-in", value: "07:02", tone: "success" as const },
-  { label: "Talk time", value: "3h 12m", tone: "brand" as const },
-  { label: "Break used", value: "16 / 15 min", tone: "danger" as const },
-  { label: "Lunch used", value: "29 / 30 min", tone: "success" as const },
-];
-
 /* --------------------------------------------------------------------- view */
 
 export function AgentDashboard({ name }: { name: string }) {
   const [selection, setSelection] = useState<DateSelection>({ preset: "today" });
 
-  const myCallbacks = useMemo(
-    () =>
-      callbacks
-        .filter((c) => c.status !== "Completed")
-        .slice(0, 6)
-        .sort((a, b) => (a.status === "Overdue" ? -1 : b.status === "Overdue" ? 1 : 0)),
-    [],
-  );
+  const agentName = useMemo(() => resolveAgentName(name), [name]);
+  const m = useMemo(() => agentMetrics(agentName, selection), [agentName, selection]);
 
-  const myDisputes = useMemo(
-    () => qaReviews.filter((q) => q.outcome === "Disputed" || q.outcome === "Returned").slice(0, 5),
-    [],
-  );
+  const myCallbacks = useMemo(() => {
+    const scoped = m.openCallbacks;
+    const queue = scoped.length ? scoped : openCallbackQueue(agentName);
+    return [...queue]
+      .sort((a, b) =>
+        a.status === "Overdue" ? -1 : b.status === "Overdue" ? 1 : a.scheduledFor.localeCompare(b.scheduledFor),
+      )
+      .slice(0, 6);
+  }, [m.openCallbacks, agentName]);
 
+  const myDisputes = useMemo(() => m.disputes.slice(0, 5), [m.disputes]);
   const myTasks = useMemo(() => tasks.filter((t) => t.status !== "Completed").slice(0, 5), []);
   const alerts = useMemo(() => notifications.slice(0, 5), []);
-  const recentSales = useMemo(() => policies.slice(0, 5), []);
+  const recentSales = useMemo(
+    () => [...m.saleRows].sort((a, b) => b.saleDate.localeCompare(a.saleDate)).slice(0, 5),
+    [m.saleRows],
+  );
 
-  const commissionTotal = commissionLines.reduce((sum, l) => sum + l.amount, 0);
-  const overdue = myCallbacks.filter((c) => c.status === "Overdue").length;
+  const commissionLines = useMemo(() => {
+    const rate = commissionPerSale(m.commission.eligibleSales);
+    const incentives = m.commission.incentives;
+    const chargebacks = m.saleRows.filter((s) =>
+      ["Chargeback", "Cancelled", "Rejected"].includes(s.saleStatus ?? ""),
+    ).length;
+    return [
+      {
+        label: "Valid sales commission",
+        detail: `${m.commission.eligibleSales} × ${money(rate)} (${commissionPerSaleLabel(rate)})`,
+        amount: m.commission.commission,
+      },
+      {
+        label: "Personal lead incentive",
+        detail: "Self-generated business",
+        amount: incentives,
+      },
+      {
+        label: "Not commission eligible",
+        detail: `${m.saleRows.filter((s) => !s.commissionEligible).length} sale(s) pending QC`,
+        amount: 0,
+      },
+      {
+        label: "Cancelled / chargeback",
+        detail: `${chargebacks} policy(ies)`,
+        amount: 0,
+      },
+    ];
+  }, [m.commission, m.saleRows]);
+
+  const commissionTotal = m.commission.total;
+  const overdue = myCallbacks.filter((c) => ["Overdue", "Missed"].includes(c.status)).length;
+  const talkGoalSeconds = 4 * 3600;
+  const goals = [
+    {
+      label: "Submitted applications",
+      value: Math.min(100, Math.round((m.sales.count / 6) * 100)),
+      note: `${m.sales.count} of 6`,
+    },
+    {
+      label: "Talk time target",
+      value: Math.min(100, Math.round((m.calls.talkSeconds / talkGoalSeconds) * 100)),
+      note: `${formatHm(m.calls.talkSeconds)} of 4h`,
+    },
+    {
+      label: "Dials completed",
+      value: Math.min(100, Math.round((m.calls.total / 50) * 100)),
+      note: `${m.calls.total} of 50`,
+    },
+    {
+      label: "Callbacks cleared",
+      value: Math.round(m.callbacks.completionRate),
+      note: `${m.callbacks.done} of ${m.callbacks.done + m.callbacks.open}`,
+    },
+  ];
+
+  const attendance = [
+    { label: "Hours paid", value: `${m.hoursWorked.toFixed(1)}h`, tone: "success" },
+    { label: "Talk time", value: formatHm(m.calls.talkSeconds), tone: "brand" },
+    { label: "Base pay", value: money(m.basePay), tone: "info" },
+    { label: "Total pay", value: money(m.totalPay), tone: "success" },
+  ] as { label: string; value: string; tone: string }[];
+
 
   return (
     <div className="space-y-5">
@@ -180,7 +230,7 @@ export function AgentDashboard({ name }: { name: string }) {
               <Flame className="size-3.5 text-warning" /> 5-day sales streak
             </Badge>
             <Badge variant="secondary" className="gap-1">
-              <Trophy className="size-3.5 text-brand" /> Rank 3 of 24
+              <Trophy className="size-3.5 text-brand" /> Rank {m.rank} of {m.agentCount}
             </Badge>
             <Button asChild size="sm">
               <Link to="/agent-desk">
@@ -204,26 +254,23 @@ export function AgentDashboard({ name }: { name: string }) {
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Sales you made"
-          value="4"
-          hint="18 this pay cycle"
+          value={String(m.sales.count)}
+          hint={`${m.sales.issued} issued · ${m.commission.eligibleSales} commissionable`}
           tone="success"
-          delta={{ value: "+2 vs yesterday", direction: "up" }}
           icon={<BadgeCheck className="size-4" />}
         />
         <StatCard
-          label="Calls handled today"
-          value="38"
-          hint="26 outbound · 12 inbound"
+          label="Calls handled"
+          value={String(m.calls.total)}
+          hint={`${m.calls.outbound} outbound · ${m.calls.inbound} inbound`}
           tone="brand"
-          delta={{ value: "+6", direction: "up" }}
           icon={<PhoneCall className="size-4" />}
         />
         <StatCard
           label="Your commission"
-          value={`$${commissionTotal.toLocaleString()}`}
-          hint="Aug 1–15 · pays Aug 20"
+          value={money(commissionTotal)}
+          hint={`${presetLabel(selection)} · ${money(m.totalPay)} total pay`}
           tone="info"
-          delta={{ value: "+$310", direction: "up" }}
           icon={<DollarSign className="size-4" />}
         />
         <StatCard
@@ -236,10 +283,27 @@ export function AgentDashboard({ name }: { name: string }) {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Talk time" value="3h 12m" hint="Goal 4h" tone="info" icon={<Headphones className="size-4" />} />
-        <StatCard label="Avg handle time" value="4m 48s" hint="Floor avg 5m 20s" tone="success" icon={<Timer className="size-4" />} />
-        <StatCard label="QA score" value="93%" hint={`${myDisputes.length} open reviews`} tone="brand" icon={<Target className="size-4" />} />
-        <StatCard label="Conversion" value="10.5%" hint="4 of 38 calls" tone="warning" delta={{ value: "+1.4%", direction: "up" }} />
+        <StatCard label="Talk time" value={formatHm(m.calls.talkSeconds)} hint="Goal 4h" tone="info" icon={<Headphones className="size-4" />} />
+        <StatCard
+          label="Avg handle time"
+          value={formatHm(m.calls.avgHandleSeconds)}
+          hint={`${m.calls.paid} paid call(s)`}
+          tone="success"
+          icon={<Timer className="size-4" />}
+        />
+        <StatCard
+          label="QA score"
+          value={`${m.qaScore}%`}
+          hint={`${m.disputes.length} open review(s)`}
+          tone="brand"
+          icon={<Target className="size-4" />}
+        />
+        <StatCard
+          label="Conversion"
+          value={`${m.conversion.toFixed(1)}%`}
+          hint={`${m.sales.count} of ${m.calls.total} calls`}
+          tone="warning"
+        />
       </div>
 
       {/* performance + goals */}
@@ -257,9 +321,9 @@ export function AgentDashboard({ name }: { name: string }) {
           }
         >
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={salesTrend}>
+            <BarChart data={m.trend}>
               <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
-              <XAxis dataKey="day" {...axis} />
+              <XAxis dataKey="label" {...axis} />
               <YAxis {...axis} />
               <Tooltip contentStyle={tooltipStyle} />
               <Bar dataKey="sales" radius={[4, 4, 0, 0]} fill="var(--color-brand, #0247e2)" />
@@ -269,12 +333,7 @@ export function AgentDashboard({ name }: { name: string }) {
 
         <Panel title="Daily goals" hint="Resets at midnight">
           <div className="space-y-4 pt-1">
-            {[
-              { label: "Submitted applications", value: 68, note: "4 of 6" },
-              { label: "Talk time target", value: 81, note: "3h 12m of 4h" },
-              { label: "Dials completed", value: 76, note: "38 of 50" },
-              { label: "Callbacks cleared", value: 45, note: "5 of 11" },
-            ].map((g) => (
+            {goals.map((g) => (
               <div key={g.label} className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">{g.label}</span>
@@ -348,7 +407,7 @@ export function AgentDashboard({ name }: { name: string }) {
                     l.amount < 0 ? "text-destructive" : "text-foreground",
                   )}
                 >
-                  {l.amount < 0 ? "-" : ""}${Math.abs(l.amount).toLocaleString()}
+                  {l.amount < 0 ? "-" : ""}{money(Math.abs(l.amount))}
                 </span>
               </div>
             ))}
@@ -358,7 +417,7 @@ export function AgentDashboard({ name }: { name: string }) {
                 Estimated payout
               </span>
               <span className="tabular font-display text-lg font-semibold text-success">
-                ${commissionTotal.toLocaleString()}
+                {money(commissionTotal)}
               </span>
             </div>
             <Button asChild variant="outline" size="sm" className="mt-1 w-full">
@@ -456,14 +515,14 @@ export function AgentDashboard({ name }: { name: string }) {
         }>
           <div className="divide-y divide-border">
             {recentSales.map((p) => (
-              <div key={p.id} className="flex items-center justify-between gap-2 py-2.5 first:pt-0 last:pb-0">
+              <div key={p.policyNumber || p.customer} className="flex items-center justify-between gap-2 py-2.5 first:pt-0 last:pb-0">
                 <div className="min-w-0">
                   <p className="truncate text-sm text-foreground">{p.customer}</p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {p.carrier} · {p.policyNumber}
+                    {p.carrier} · {money(p.premium)}/mo · {p.saleDate}
                   </p>
                 </div>
-                <StatusBadge status={p.status} />
+                <StatusBadge status={p.saleStatus ?? "Issued"} />
               </div>
             ))}
           </div>
@@ -514,9 +573,9 @@ export function AgentDashboard({ name }: { name: string }) {
       {/* weekly trend */}
       <Panel title="Your call volume vs paid calls" hint="Last 7 days">
         <ResponsiveContainer width="100%" height={200}>
-          <AreaChart data={salesTrend}>
+          <AreaChart data={m.trend}>
             <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
-            <XAxis dataKey="day" {...axis} />
+            <XAxis dataKey="label" {...axis} />
             <YAxis {...axis} />
             <Tooltip contentStyle={tooltipStyle} />
             <Area
