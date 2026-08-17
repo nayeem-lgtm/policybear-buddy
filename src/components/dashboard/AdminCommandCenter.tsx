@@ -352,8 +352,9 @@ export function AdminCommandCenter() {
     {
       title: "People & attendance",
       rows: [
-        { label: "Agents on floor", value: `${agentHealth.signals[0].value}`, to: "/live-operations" },
-        { label: "On break", value: `${agentHealth.signals[1].value}`, to: "/break-alarm" },
+        { label: "Agents on floor", value: `${agentHealth.signals[0]?.value ?? "0"}`, to: "/live-operations" },
+        { label: "On break", value: `${agentHealth.signals[1]?.value ?? "0"}`, to: "/break-alarm" },
+
         { label: "On leave", value: `${onLeaveNow.length}`, to: "/leave" },
         { label: "Attendance flags", value: `${lateAttendance.length}`, to: "/attendance" },
       ],
