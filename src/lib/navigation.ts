@@ -11,7 +11,6 @@ import {
   CalendarDays,
   ClipboardCheck,
   Contact,
-  CreditCard,
   Database,
   FileText,
   Gauge,
