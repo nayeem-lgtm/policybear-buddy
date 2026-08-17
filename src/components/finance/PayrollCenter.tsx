@@ -2,14 +2,12 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  Banknote,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
   Clock3,
   Coins,
   Download,
-  Info,
   RefreshCw,
   ShieldCheck,
   Users,
@@ -27,19 +25,10 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { getAttendanceRegister } from "@/lib/shift.functions";
 import { formatHm, pacificDate, workedSeconds, type ShiftSessionRow } from "@/lib/shift-shared";
 import {
   HOURLY_RATE,
-  PAYROLL_TAX_RULE,
   commissionPerSale,
   money,
   payrollWeeks,
@@ -51,8 +40,6 @@ import { cn } from "@/lib/utils";
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri"] as const;
 const WEEK_HOURS_TARGET = 40;
 const DAY_HOURS_TARGET = 8;
-const EMPLOYER_TAX_RATE = 0.0765;
-const EMPLOYEE_TAX_RATE = 0.12;
 
 /* ---------- date helpers (Pacific calendar strings) ---------- */
 
