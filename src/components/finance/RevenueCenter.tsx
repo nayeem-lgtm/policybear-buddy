@@ -277,7 +277,7 @@ export function RevenueCenter() {
     <div className="space-y-6">
       <PageHeader
         eyebrow="Finance"
-        title="Revenue & Cash Position"
+        title="Overview"
         description="Premium written, carrier revenue, commission receivable, and net cash — all scoped to the period you pick."
       />
 
