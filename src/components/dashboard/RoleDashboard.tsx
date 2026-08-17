@@ -27,6 +27,8 @@ import {
 } from "lucide-react";
 
 import { StatCard } from "@/components/crm/StatCard";
+import { AgentDashboard } from "@/components/dashboard/AgentDashboard";
+
 import { StatusBadge } from "@/components/crm/StatusBadge";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -369,6 +371,11 @@ export function RoleDashboard({ role, name }: { role: Role; name: string }) {
   const [period, setPeriod] = useState("today");
   const [team, setTeam] = useState("all");
   const config = useMemo(() => CONFIGS[role] ?? CONFIGS.Agent, [role]);
+
+  if (role === "Agent") {
+    return <AgentDashboard name={name} />;
+  }
+
 
   return (
     <div className="space-y-5">
