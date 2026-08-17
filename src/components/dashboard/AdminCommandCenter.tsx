@@ -291,6 +291,94 @@ export function AdminCommandCenter() {
 
   const todoCount = pendingLeave.length + pendingHours.length + view.qaIssues.length;
 
+  /* --------------------------------------------------- whole-platform summary */
+  const m = view.metrics;
+  const platformSummary: {
+    title: string;
+    rows: { label: string; value: string; to: string }[];
+  }[] = [
+    {
+      title: "Telephony",
+      rows: [
+        { label: "Total calls", value: `${m.calls.total}`, to: "/calls" },
+        { label: "Inbound", value: `${m.calls.inbound}`, to: "/calls" },
+        { label: "Outbound", value: `${m.calls.outbound}`, to: "/calls" },
+        { label: "Billable calls", value: `${m.calls.paid}`, to: "/call-reconciliation" },
+        { label: "Conversion", value: `${m.conversion.toFixed(1)}%`, to: "/reporting" },
+      ],
+    },
+    {
+      title: "Sales & customers",
+      rows: [
+        { label: "Sales written", value: `${m.sales.count}`, to: "/customers" },
+        { label: "Valid sales", value: `${m.sales.validSales}`, to: "/customers" },
+        { label: "Issued", value: `${m.sales.issued}`, to: "/customers" },
+        { label: "Pending", value: `${m.sales.pending}`, to: "/customers" },
+        { label: "Avg premium", value: money2(m.sales.avgPremium), to: "/customers" },
+      ],
+    },
+    {
+      title: "Finance",
+      rows: [
+        { label: "Revenue collected", value: money(finance.revenue), to: "/revenue" },
+        { label: "Total payout", value: money(finance.cost), to: "/payroll" },
+        { label: "Net profit", value: money(finance.net), to: "/expenses" },
+        { label: "Receivable", value: money(finance.receivable), to: "/call-reconciliation" },
+        { label: "Expenses", value: money(finance.expenses), to: "/expenses" },
+      ],
+    },
+    {
+      title: "Callbacks",
+      rows: [
+        { label: "Open queue", value: `${view.openCallbacks.length}`, to: "/callbacks" },
+        { label: "Overdue", value: `${view.overdueCallbacks.length}`, to: "/callbacks" },
+        { label: "Completed", value: `${view.doneCallbacks.length}`, to: "/callbacks" },
+        {
+          label: "Completion rate",
+          value: `${m.callbacks.completionRate.toFixed(0)}%`,
+          to: "/callbacks",
+        },
+      ],
+    },
+    {
+      title: "Quality & escalations",
+      rows: [
+        { label: "QA reviews", value: `${m.qa.reviews}`, to: "/qa" },
+        { label: "Avg QA score", value: `${m.qa.avgScore}`, to: "/qa" },
+        { label: "Escalations", value: `${m.qa.escalations}`, to: "/qa/escalations" },
+        { label: "Disputes", value: `${m.qa.disputes}`, to: "/qa/escalations" },
+      ],
+    },
+    {
+      title: "People & attendance",
+      rows: [
+        { label: "Agents on floor", value: `${agentHealth.signals[0].value}`, to: "/live-operations" },
+        { label: "On break", value: `${agentHealth.signals[1].value}`, to: "/break-alarm" },
+        { label: "On leave", value: `${onLeaveNow.length}`, to: "/leave" },
+        { label: "Attendance flags", value: `${lateAttendance.length}`, to: "/attendance" },
+      ],
+    },
+    {
+      title: "Payroll",
+      rows: [
+        { label: "Next run total", value: money(finance.nextTotal), to: "/payroll" },
+        { label: "Base payroll", value: money(finance.nextBase), to: "/payroll" },
+        { label: "Commission due", value: money(finance.nextCommission), to: "/payroll" },
+        { label: "People paid", value: `${finance.nextRows.length}`, to: "/payroll" },
+      ],
+    },
+    {
+      title: "Admin to-dos",
+      rows: [
+        { label: "Leave approvals", value: `${pendingLeave.length}`, to: "/leave" },
+        { label: "Hour requests", value: `${pendingHours.length}`, to: "/attendance" },
+        { label: "Escalations open", value: `${view.qaIssues.length}`, to: "/qa/escalations" },
+        { label: "Live alerts", value: `${agentHealth.alerts.length}`, to: "/live-operations" },
+      ],
+    },
+  ];
+
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-card p-3 shadow-card lg:flex-row lg:items-center lg:justify-between">
