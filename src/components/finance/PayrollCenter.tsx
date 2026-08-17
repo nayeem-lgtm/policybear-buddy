@@ -378,9 +378,7 @@ export function PayrollCenter() {
         agents: rows.length,
         base: rows.reduce((s, r) => s + r.basePayroll, 0),
         commission: rows.reduce((s, r) => s + r.commissionDue + r.incentiveDue, 0),
-        net: rows.reduce((s, r) => s + r.netPay, 0),
-        outflow: rows.reduce((s, r) => s + r.gustoOutflow, 0),
-        cost: rows.reduce((s, r) => s + r.totalCompanyCost, 0),
+        totalPay: rows.reduce((s, r) => s + r.netPay, 0),
         status: rows.every((r) => r.baseStatus === "Paid") ? "Paid" : "Payable",
       }));
   }, []);
