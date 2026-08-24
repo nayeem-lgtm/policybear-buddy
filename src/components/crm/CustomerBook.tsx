@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   BadgeCheck,
   Clock3,
@@ -46,6 +46,11 @@ import {
   money,
   type SaleRecord,
 } from "@/lib/company-data";
+import {
+  CAPTURED_CUSTOMERS_EVENT,
+  loadCapturedCustomers,
+  type CapturedCustomer,
+} from "@/lib/captured-customers";
 import { useFilters, unique } from "@/lib/use-filters";
 import { inSelection } from "@/lib/date-range";
 import { expectedCarrierRevenue, isRevenueCollected } from "@/lib/metrics-engine";
@@ -120,9 +125,24 @@ export function CustomerBook({
     () => sales.filter((s) => inSelection(s.saleDate, selection)),
     [selection],
   );
+  /* agent-captured customers (lead card / call script) merged in live */
+  const [captured, setCaptured] = useState<CapturedCustomer[]>([]);
+  useEffect(() => {
+    const sync = () => setCaptured(loadCapturedCustomers());
+    sync();
+    window.addEventListener(CAPTURED_CUSTOMERS_EVENT, sync);
+    window.addEventListener("focus", sync);
+    return () => {
+      window.removeEventListener(CAPTURED_CUSTOMERS_EVENT, sync);
+      window.removeEventListener("focus", sync);
+    };
+  }, []);
+
+  const allCustomers = useMemo<Customer[]>(() => [...captured, ...customers], [captured]);
+
   const scopedCustomers = useMemo(
-    () => customers.filter((c) => inSelection(c.lastContact, selection)),
-    [selection],
+    () => allCustomers.filter((c) => inSelection(c.lastContact, selection)),
+    [allCustomers, selection],
   );
 
   /** Sales rolled up per customer name so the customer view carries policy money. */
@@ -434,10 +454,10 @@ export function CustomerBook({
             onSearchChange={custFilters.setSearch}
             searchPlaceholder="Search customers by name, phone or ID…"
             filters={[
-              { key: "state", label: "State", options: unique(customers, (r) => r.state) },
-              { key: "status", label: "Status", options: unique(customers, (r) => r.status) },
-              { key: "source", label: "Source", options: unique(customers, (r) => r.source) },
-              { key: "agent", label: "Agent", options: unique(customers, (r) => r.assignedAgent) },
+              { key: "state", label: "State", options: unique(allCustomers, (r) => r.state) },
+              { key: "status", label: "Status", options: unique(allCustomers, (r) => r.status) },
+              { key: "source", label: "Source", options: unique(allCustomers, (r) => r.source) },
+              { key: "agent", label: "Agent", options: unique(allCustomers, (r) => r.assignedAgent) },
             ]}
             values={custFilters.values}
             onChange={custFilters.setValue}
