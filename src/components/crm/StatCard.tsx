@@ -54,7 +54,7 @@ export function StatCard({
   const card = (
     <Card
       className={cn(
-        "group relative h-full gap-0 overflow-hidden rounded-2xl border-white/70 bg-card/70 p-4 shadow-card backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-raised",
+        "group relative h-full gap-0 overflow-hidden rounded-xl border-white/70 bg-card/70 p-3.5 shadow-card backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-raised",
         to && "cursor-pointer",
         className,
       )}
@@ -62,19 +62,19 @@ export function StatCard({
       <span
         aria-hidden
         className={cn(
-          "pointer-events-none absolute -top-8 -right-8 size-24 rounded-full blur-3xl transition-colors duration-300",
+          "pointer-events-none absolute -top-6 -right-6 size-20 rounded-full blur-2xl transition-colors duration-300",
           glowTone[tone],
         )}
       />
 
       <div className="relative flex items-start justify-between gap-3">
-        <p className="max-w-[70%] text-[0.65rem] font-bold tracking-[0.08em] text-muted-foreground uppercase">
+        <p className="max-w-[70%] text-[0.6rem] font-bold tracking-[0.08em] text-muted-foreground uppercase">
           {label}
         </p>
         {icon && (
           <span
             className={cn(
-              "flex size-8 shrink-0 items-center justify-center rounded-lg shadow-sm [&_svg]:size-4",
+              "flex size-7 shrink-0 items-center justify-center rounded-md shadow-sm [&_svg]:size-3.5",
               iconTone[tone],
             )}
           >
@@ -83,7 +83,7 @@ export function StatCard({
         )}
       </div>
 
-      <div className="tabular relative mt-3 font-display text-2xl leading-none font-bold tracking-tight text-foreground">
+      <div className="tabular relative mt-2.5 font-display text-xl leading-none font-bold tracking-tight text-foreground">
         {value}
       </div>
 
@@ -91,7 +91,7 @@ export function StatCard({
         {delta && (
           <span
             className={cn(
-              "inline-flex items-center gap-0.5 text-[0.7rem] font-semibold",
+              "inline-flex items-center gap-0.5 text-[0.65rem] font-semibold",
               delta.direction === "up" ? "text-success" : "text-destructive",
             )}
           >
@@ -107,7 +107,7 @@ export function StatCard({
       </div>
 
       {to && (
-        <GoIcon className="absolute right-4 bottom-4 size-3.5 text-muted-foreground opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+        <GoIcon className="absolute right-3.5 bottom-3.5 size-3 text-muted-foreground opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
       )}
 
       <span
