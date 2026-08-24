@@ -3,7 +3,6 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import {
   AlertTriangle,
   ArrowRight,
-  BadgeCheck,
   Banknote,
   CalendarClock,
   CheckCircle2,
