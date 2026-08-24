@@ -131,23 +131,34 @@ export function CallScriptDialog({
               onClick={() => fileRef.current?.click()}
             >
               <Upload className="size-3.5" />
-              {busy ? "Reading…" : doc ? "Replace script" : "Upload script"}
+              {busy ? "Reading…" : "Upload script"}
             </Button>
-            {doc ? (
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                className="gap-1.5 text-destructive hover:text-destructive"
-                onClick={onDelete}
-              >
-                <Trash2 className="size-3.5" /> Delete uploaded script
-              </Button>
-            ) : (
-              <span className="text-[0.65rem] text-muted-foreground">
-                Accepts .docx, .txt or .md — replaces the script agents read.
-              </span>
-            )}
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="gap-1.5"
+              disabled={busy || !doc}
+              title={doc ? "Upload a new file to replace the current script" : "No uploaded script yet"}
+              onClick={() => fileRef.current?.click()}
+            >
+              <Upload className="size-3.5" /> Replace script
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="gap-1.5 text-destructive hover:text-destructive"
+              disabled={!doc}
+              title={doc ? "Remove the uploaded script" : "No uploaded script yet"}
+              onClick={onDelete}
+            >
+              <Trash2 className="size-3.5" /> Delete script
+            </Button>
+            <span className="text-[0.65rem] text-muted-foreground">
+              Accepts .docx, .txt or .md
+            </span>
+
           </div>
         </DialogHeader>
 
