@@ -300,24 +300,24 @@ export function RevenueCenter() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PageHeader eyebrow="Finance" title="Overview" />
+
+      <PageHero
         eyebrow="Finance"
-        title="Overview"
-        description="Premium written, carrier revenue, commission receivable, and net cash — all scoped to the period you pick."
+        title="Revenue Overview"
+        description="Premium written, carrier revenue, commission receivable and net cash — all scoped to the period you pick."
+        meta={[
+          { label: "Period", value: presetLabel(sel) },
+          {
+            label: "Window",
+            value: `${bounds.from.toLocaleDateString()} – ${bounds.to.toLocaleDateString()}`,
+          },
+          { label: "Sales in view", value: scopedSales.length, tone: "success" },
+          { label: "Payroll rows", value: scopedWeeks.length, tone: "warning" },
+        ]}
+        controls={<DateRangeTabs value={sel} onChange={setSel} />}
       />
 
-      <Card className="flex flex-col gap-3 rounded-2xl border-border/70 p-4 shadow-card lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-foreground">{presetLabel(sel)}</p>
-          <p className="text-xs text-muted-foreground">
-            {bounds.from.toLocaleDateString()} – {bounds.to.toLocaleDateString()} · {scopedSales.length} sales ·{" "}
-            {scopedWeeks.length} payroll rows
-          </p>
-        </div>
-        <div className="-mx-1 overflow-x-auto px-1">
-          <DateRangeTabs value={sel} onChange={setSel} />
-        </div>
-      </Card>
 
       {/* Business snapshot */}
       <section className="space-y-3">
