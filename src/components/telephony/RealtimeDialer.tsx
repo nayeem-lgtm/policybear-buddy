@@ -14,9 +14,11 @@ import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowLeftRight,
   Ban,
+  BookOpenText,
   Bell,
   BellOff,
   CalendarClock,
+  ClipboardList,
   ClipboardPaste,
   Copy,
   Delete,
@@ -94,6 +96,8 @@ import { checkDncNumber, getDncCenter } from "@/lib/dnc.functions";
 import { DNC_ACTION_LABEL, DNC_ACTION_TONE } from "@/lib/dnc-shared";
 import { CallbackDialog } from "@/components/callbacks/CallbackDialog";
 import { AddToDncDialog } from "@/components/compliance/AddToDncDialog";
+import { LeadIntakePanel } from "@/components/telephony/LeadIntakePanel";
+import { CallScriptDialog } from "@/components/telephony/CallScriptDialog";
 import { cn } from "@/lib/utils";
 import { playChirp, playDtmf, playRing } from "@/lib/dialer-tones";
 
@@ -702,6 +706,13 @@ export function RealtimeDialer() {
                     >
                       <CalendarClock className="size-3.5" /> Set callback
                     </Button>
+                    <CallScriptDialog
+                      trigger={
+                        <Button size="sm" variant="ghost" className="h-8 gap-1 text-xs">
+                          <BookOpenText className="size-3.5" /> Script
+                        </Button>
+                      }
+                    />
                     <Button
                       size="sm"
                       variant="ghost"
@@ -1048,6 +1059,13 @@ export function RealtimeDialer() {
                 >
                   <Ban className="mr-2 size-4" /> Add to DNC
                 </Button>
+                <CallScriptDialog
+                  trigger={
+                    <Button variant="outline" className="col-span-2">
+                      <BookOpenText className="mr-2 size-4" /> Open agent script
+                    </Button>
+                  }
+                />
               </div>
 
 
@@ -1108,9 +1126,12 @@ export function RealtimeDialer() {
 
         {/* --------------------------------------------------------------- work area */}
         <Card className="rounded-3xl p-0 shadow-card">
-          <Tabs defaultValue="queue">
+          <Tabs defaultValue="lead">
             <div className="border-b border-border/60 px-4 pt-4">
-              <TabsList>
+              <TabsList className="flex-wrap">
+                <TabsTrigger value="lead">
+                  <ClipboardList className="mr-1.5 size-4" /> Lead card
+                </TabsTrigger>
                 <TabsTrigger value="queue">
                   <PhoneIncoming className="mr-1.5 size-4" /> Queue
                   {(data?.queue.length ?? 0) > 0 ? (
@@ -1139,6 +1160,18 @@ export function RealtimeDialer() {
               </TabsList>
 
             </div>
+
+            {/* ------------------------------------------------------------ lead card */}
+            <TabsContent value="lead" className="m-0 p-4">
+              <ScrollArea className="h-[620px] pr-3">
+                <LeadIntakePanel
+                  phone={active?.phone_e164 ?? digits}
+                  contactName={active?.contact_name ?? lead?.contact_name ?? null}
+                  onAddToDnc={(p: string, n: string | null) => openDnc(p, n)}
+                />
+              </ScrollArea>
+            </TabsContent>
+
 
             {/* -------------------------------------------------------- inbound queue */}
             <TabsContent value="queue" className="m-0 p-4">
