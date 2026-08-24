@@ -50,11 +50,46 @@ export function CallScriptDialog({
 }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(SCRIPT_PHASES[0]?.id ?? "");
+  const [doc, setDoc] = useState<ScriptDoc | null>(null);
+  const [busy, setBusy] = useState(false);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    const sync = () => setDoc(loadScriptDoc());
+    sync();
+    window.addEventListener(SCRIPT_DOC_EVENT, sync);
+    return () => window.removeEventListener(SCRIPT_DOC_EVENT, sync);
+  }, []);
 
   const goTo = (id: string) => {
     setActive(id);
     document.getElementById(`script-phase-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
+
+  const onUpload = async (file?: File | null) => {
+    if (!file) return;
+    setBusy(true);
+    try {
+      const parsed = await parseScriptFile(file);
+      saveScriptDoc(parsed);
+      toast.success(`Script uploaded — ${parsed.name}`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not read that file.");
+    } finally {
+      setBusy(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  const onDelete = () => {
+    deleteScriptDoc();
+    toast.success("Uploaded script removed — showing the built-in script.");
+  };
+
+  const docHeadings = (doc?.blocks ?? [])
+    .map((b, i) => ({ ...b, i }))
+    .filter((b) => b.kind === "heading");
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
