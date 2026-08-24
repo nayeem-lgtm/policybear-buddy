@@ -29,6 +29,7 @@ import {
 import { recordCalculationOnce } from "@/lib/audit-log";
 import { useAuth } from "@/context/AuthContext";
 import { PageHeader } from "@/components/crm/PageHeader";
+import { PageHero } from "@/components/crm/PageHero";
 import { StatCard } from "@/components/crm/StatCard";
 import { StatusBadge } from "@/components/crm/StatusBadge";
 import { DataTable, type Column } from "@/components/crm/DataTable";

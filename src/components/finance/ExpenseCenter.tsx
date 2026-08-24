@@ -11,6 +11,7 @@ import {
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/crm/PageHeader";
+import { PageHero } from "@/components/crm/PageHero";
 import { StatCard } from "@/components/crm/StatCard";
 import { StatusBadge } from "@/components/crm/StatusBadge";
 import { DataTable, type Column } from "@/components/crm/DataTable";
@@ -200,18 +201,25 @@ export function ExpenseCenter() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        eyebrow="Finance"
-        title="Expenses"
-        description="Log company spending manually and see it flow straight into the company finance cost stack."
-      />
+      <PageHeader eyebrow="Finance" title="Expenses" />
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <DateRangeTabs value={sel} onChange={setSel} />
-        <Button onClick={() => setAddOpen(true)} className="gap-1.5">
-          <Plus className="size-4" /> Add expense
-        </Button>
-      </div>
+      <PageHero
+        eyebrow="Finance"
+        title="Expense Control"
+        description="Log company spending manually and watch it flow straight into the finance cost stack."
+        meta={[
+          { label: "Period", value: presetLabel(sel) },
+          { label: "Total spend", value: money(totalSpend) },
+          { label: "Paid", value: money(paid), tone: "success" },
+          { label: "Outstanding", value: money(outstanding), tone: "warning" },
+        ]}
+        actions={
+          <Button onClick={() => setAddOpen(true)} className="gap-1.5">
+            <Plus className="size-4" /> Add expense
+          </Button>
+        }
+        controls={<DateRangeTabs value={sel} onChange={setSel} />}
+      />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Total spend" value={money(totalSpend)} hint={presetLabel(sel)} icon={<Wallet className="size-4" />} tone="brand" />
