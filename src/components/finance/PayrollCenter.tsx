@@ -463,7 +463,7 @@ export function PayrollCenter() {
   }, []);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHeader eyebrow="Accounting" title="Payroll" />
 
       <PageHero
@@ -573,11 +573,11 @@ export function PayrollCenter() {
         <StatCard label="Commission + incentive" value={money(totals.commission)} hint="tiered per valid sale" icon={<Coins className="size-4" />} tone="success" to="/commissions" />
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-3">
+      <div className="grid gap-3 xl:grid-cols-3">
         <Card className="space-y-3 rounded-2xl border-border/70 p-5 shadow-card xl:col-span-2">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[0.7rem] font-semibold tracking-[0.12em] text-muted-foreground uppercase">Hours by day</p>
+              <p className="text-[0.65rem] font-semibold tracking-[0.1em] text-muted-foreground uppercase">Hours by day</p>
               <p className="text-xs text-muted-foreground/80">Attendance-linked, Monday to Friday</p>
             </div>
             <Badge variant="outline" className="gap-1 text-xs">
@@ -610,14 +610,14 @@ export function PayrollCenter() {
           </div>
         </Card>
 
-        <Card className="space-y-3 rounded-2xl border-border/70 p-5 shadow-card">
-          <p className="text-[0.7rem] font-semibold tracking-[0.12em] text-muted-foreground uppercase">Run summary</p>
+        <Card className="space-y-2 rounded-2xl border-border/70 p-4 shadow-card">
+          <p className="text-[0.65rem] font-semibold tracking-[0.1em] text-muted-foreground uppercase">Run summary</p>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between"><span className="text-muted-foreground">Period</span><span className="font-medium">{mode === "weekly" ? `${fmtDay(rangeFrom)} – ${fmtDay(rangeTo)}` : fmtDayLong(rangeFrom)}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Agents paid</span><span className="tabular">{effectiveLines.filter((l) => l.totalPay > 0).length}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Base + OT</span><span className="tabular">{money(totals.basePay)}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Commission + incentive</span><span className="tabular">{money(totals.commission)}</span></div>
-            <div className="flex justify-between text-base font-semibold"><span>Total pay</span><span className="tabular">{money(totals.totalPay)}</span></div>
+            <div className="flex justify-between text-sm font-semibold"><span>Total pay</span><span className="tabular">{money(totals.totalPay)}</span></div>
           </div>
           <Button className="w-full" onClick={generateRun} disabled={visible.length === 0}>
             <Download className="size-4" />
@@ -635,7 +635,7 @@ export function PayrollCenter() {
         </TabsList>
 
         <TabsContent value="run" className="mt-4">
-          <Card className="space-y-4 rounded-2xl border-border/70 p-5 shadow-card">
+          <Card className="space-y-3 rounded-2xl border-border/70 p-4 shadow-card">
             <div className="flex items-center justify-between gap-2">
               <div>
                 <p className="text-sm font-semibold text-foreground">
@@ -660,7 +660,7 @@ export function PayrollCenter() {
         </TabsContent>
 
         <TabsContent value="history" className="mt-4">
-          <Card className="space-y-4 rounded-2xl border-border/70 p-5 shadow-card">
+          <Card className="space-y-3 rounded-2xl border-border/70 p-4 shadow-card">
             <p className="text-sm font-semibold text-foreground">Recorded weekly runs</p>
             <DataTable
               columns={[
@@ -706,7 +706,7 @@ export function PayrollCenter() {
                 <div className="flex justify-between"><span className="text-muted-foreground">Commission ({detail.validSales} × {money(detail.perSale)})</span><span className="tabular">{money(detail.commission)}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Personal-lead incentive</span><span className="tabular">{money(detail.incentive)}</span></div>
                 <Separator />
-                <div className="flex justify-between text-base font-semibold"><span>Total pay</span><span className="tabular">{money(detail.totalPay)}</span></div>
+                <div className="flex justify-between text-sm font-semibold"><span>Total pay</span><span className="tabular">{money(detail.totalPay)}</span></div>
               </div>
             </>
           )}
