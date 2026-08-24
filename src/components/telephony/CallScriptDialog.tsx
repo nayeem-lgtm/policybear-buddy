@@ -109,10 +109,105 @@ export function CallScriptDialog({
             Inbound Final Expense — Agent Call Script
           </DialogDescription>
           <p className="text-xs text-muted-foreground">
-            CEO Approved · Agent-Ready Version 1.3 · Follow in Order · Do Not Skip Compliance Flags
+            {doc
+              ? `Uploaded script · ${doc.name} · added ${new Date(doc.uploadedAt).toLocaleString()}`
+              : "CEO Approved · Agent-Ready Version 1.3 · Follow in Order · Do Not Skip Compliance Flags"}
           </p>
+
+          <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".docx,.txt,.md,text/plain,text/markdown"
+              className="hidden"
+              onChange={(e) => void onUpload(e.target.files?.[0])}
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="gap-1.5"
+              disabled={busy}
+              onClick={() => fileRef.current?.click()}
+            >
+              <Upload className="size-3.5" />
+              {busy ? "Reading…" : doc ? "Replace script" : "Upload script"}
+            </Button>
+            {doc ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="gap-1.5 text-destructive hover:text-destructive"
+                onClick={onDelete}
+              >
+                <Trash2 className="size-3.5" /> Delete uploaded script
+              </Button>
+            ) : (
+              <span className="text-[0.65rem] text-muted-foreground">
+                Accepts .docx, .txt or .md — replaces the script agents read.
+              </span>
+            )}
+          </div>
         </DialogHeader>
 
+        {doc ? (
+          <div className="grid max-h-[76vh] grid-cols-1 lg:grid-cols-[220px_1fr]">
+            <aside className="hidden border-r border-border/60 bg-surface/40 lg:block">
+              <ScrollArea className="h-[76vh] p-2">
+                <div className="space-y-1">
+                  {docHeadings.map((h) => (
+                    <button
+                      key={`${h.i}-${h.text}`}
+                      type="button"
+                      onClick={() =>
+                        document
+                          .getElementById(`script-doc-${h.i}`)
+                          ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                      }
+                      className="w-full truncate rounded-xl px-3 py-2 text-left text-xs text-muted-foreground transition hover:bg-muted/60"
+                    >
+                      {h.text}
+                    </button>
+                  ))}
+                </div>
+              </ScrollArea>
+            </aside>
+
+            <ScrollArea className="h-[76vh]">
+              <div className="space-y-2.5 p-5">
+                {doc.blocks.map((b, i) =>
+                  b.kind === "heading" ? (
+                    <p
+                      key={`${i}-${b.text}`}
+                      id={`script-doc-${i}`}
+                      className="pt-3 font-display text-base font-semibold uppercase tracking-[0.06em] text-brand"
+                    >
+                      {b.text}
+                    </p>
+                  ) : b.kind === "bullet" ? (
+                    <p
+                      key={`${i}-${b.text}`}
+                      id={`script-doc-${i}`}
+                      className="flex gap-2 pl-1 text-xs text-muted-foreground"
+                    >
+                      <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-border" />
+                      {b.text}
+                    </p>
+                  ) : (
+                    <p
+                      key={`${i}-${b.text}`}
+                      id={`script-doc-${i}`}
+                      className="rounded-xl border border-brand/20 bg-brand/5 p-2.5 text-sm"
+                    >
+                      {b.text}
+                    </p>
+                  ),
+                )}
+              </div>
+            </ScrollArea>
+          </div>
+        ) : (
         <div className="grid max-h-[76vh] grid-cols-1 lg:grid-cols-[220px_1fr]">
           <aside className="hidden border-r border-border/60 bg-surface/40 lg:block">
             <ScrollArea className="h-[76vh] p-2">
