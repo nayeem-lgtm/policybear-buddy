@@ -707,7 +707,7 @@ export function RealtimeDialer() {
                       <CalendarClock className="size-3.5" /> Set callback
                     </Button>
                     <CallScriptDialog
-                      phone={active.phone_e164}
+                      phone={active.phone_e164 ?? ""}
                       contactName={active.contact_name ?? null}
                       trigger={
                         <Button size="sm" variant="ghost" className="h-8 gap-1 text-xs">
