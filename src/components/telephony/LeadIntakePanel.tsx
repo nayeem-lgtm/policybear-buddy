@@ -190,7 +190,7 @@ export function LeadIntakePanel({
     saveLeadCard(phone, values);
     setDirty(false);
     toast.success("Lead card saved", {
-      description: `${filled} field(s) stored for ${phone ? formatPhone(phone) : "this lead"}.`,
+      description: `${filled} field(s) stored for ${phone ? formatPhone(phone) : "this lead"} · synced to Customers.`,
     });
   };
 

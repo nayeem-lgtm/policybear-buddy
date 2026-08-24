@@ -214,7 +214,14 @@ export function CustomerBook({
         <div className="flex items-center gap-2.5">
           <Initials name={r.name} />
           <div className="min-w-0">
-            <p className="truncate font-medium text-foreground">{r.name}</p>
+            <p className="flex items-center gap-1.5 truncate font-medium text-foreground">
+              {r.name}
+              {(r as CapturedCustomer).captured ? (
+                <Badge variant="secondary" className="h-4 px-1.5 text-[0.6rem]">
+                  Agent capture
+                </Badge>
+              ) : null}
+            </p>
             <p className="tabular truncate text-xs text-muted-foreground">{r.phone}</p>
           </div>
         </div>
