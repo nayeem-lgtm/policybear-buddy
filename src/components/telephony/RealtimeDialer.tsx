@@ -707,12 +707,15 @@ export function RealtimeDialer() {
                       <CalendarClock className="size-3.5" /> Set callback
                     </Button>
                     <CallScriptDialog
+                      phone={active.phone_e164 ?? ""}
+                      contactName={active.contact_name ?? null}
                       trigger={
                         <Button size="sm" variant="ghost" className="h-8 gap-1 text-xs">
                           <BookOpenText className="size-3.5" /> Script
                         </Button>
                       }
                     />
+
                     <Button
                       size="sm"
                       variant="ghost"
@@ -1060,6 +1063,9 @@ export function RealtimeDialer() {
                   <Ban className="mr-2 size-4" /> Add to DNC
                 </Button>
                 <CallScriptDialog
+                  phone={digits}
+                  contactName={lead?.contact_name ?? null}
+
                   trigger={
                     <Button variant="outline" className="col-span-2">
                       <BookOpenText className="mr-2 size-4" /> Open agent script
