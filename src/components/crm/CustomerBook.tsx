@@ -51,6 +51,7 @@ import {
   loadCapturedCustomers,
   type CapturedCustomer,
 } from "@/lib/captured-customers";
+import { groupLeadValues } from "@/lib/lead-fields";
 import { useFilters, unique } from "@/lib/use-filters";
 import { inSelection } from "@/lib/date-range";
 import { expectedCarrierRevenue, isRevenueCollected } from "@/lib/metrics-engine";
@@ -409,6 +410,9 @@ export function CustomerBook({
     ? policies.filter((p) => p.customer === selectedCustomer.name)
     : [];
   const customerSales = selectedCustomer ? (salesByCustomer.get(selectedCustomer.name) ?? []) : [];
+  const capturedGroups = groupLeadValues(
+    ((selectedCustomer as CapturedCustomer | null)?.intake ?? {}) as Record<string, string>,
+  );
 
   return (
     <div className="space-y-6">
@@ -537,6 +541,29 @@ export function CustomerBook({
                   <Field label="Publisher" value={selectedCustomer.publisher} />
                   <Field label="Campaign" value={selectedCustomer.campaign} />
                 </div>
+
+                {capturedGroups.length > 0 && (
+                  <>
+                    <Separator />
+                    <div className="space-y-3">
+                      <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                        Agent intake — full captured record
+                      </p>
+                      {capturedGroups.map((g) => (
+                        <div key={g.id} className="rounded-lg border border-border/70 p-2.5">
+                          <p className="mb-2 text-[0.7rem] font-semibold tracking-wide text-brand uppercase">
+                            {g.title}
+                          </p>
+                          <div className="grid grid-cols-2 gap-2">
+                            {g.entries.map((e) => (
+                              <Field key={e.label} label={e.label} value={e.value} />
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
 
                 {customerSales.length > 0 && (
                   <>
