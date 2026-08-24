@@ -83,7 +83,7 @@ export function StatCard({
         )}
       </div>
 
-      <div className="tabular relative mt-4 font-display text-[2rem] leading-none font-bold tracking-tight text-foreground">
+      <div className="tabular relative mt-4 font-display text-[2.15rem] leading-none font-bold tracking-tight text-foreground">
         {value}
       </div>
 
