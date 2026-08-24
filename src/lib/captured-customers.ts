@@ -11,7 +11,12 @@ import { formatPhone } from "@/lib/phone";
 export const CAPTURED_CUSTOMERS_EVENT = "pb:captured-customers-updated";
 const STORE_KEY = "pb.crm.captured-customers";
 
-export type CapturedCustomer = Customer & { captured: true; capturedAt: string };
+export type CapturedCustomer = Customer & {
+  captured: true;
+  capturedAt: string;
+  /** every field the agent typed on the lead card / call script */
+  intake: LeadCardValues;
+};
 
 function digits(phone: string) {
   return (phone ?? "").replace(/\D/g, "");
@@ -78,6 +83,7 @@ function toCustomer(
     policies: values["policyNumber"]?.trim() ? 1 : 0,
     tags,
     captured: true,
+    intake: { ...values },
     capturedAt: previous?.capturedAt ?? new Date().toISOString(),
   };
 }
