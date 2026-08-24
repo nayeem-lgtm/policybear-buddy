@@ -17,6 +17,7 @@ import {
   Bell,
   BellOff,
   CalendarClock,
+  ClipboardList,
   ClipboardPaste,
   Copy,
   Delete,
@@ -94,6 +95,8 @@ import { checkDncNumber, getDncCenter } from "@/lib/dnc.functions";
 import { DNC_ACTION_LABEL, DNC_ACTION_TONE } from "@/lib/dnc-shared";
 import { CallbackDialog } from "@/components/callbacks/CallbackDialog";
 import { AddToDncDialog } from "@/components/compliance/AddToDncDialog";
+import { LeadIntakePanel } from "@/components/telephony/LeadIntakePanel";
+import { CallScriptDialog } from "@/components/telephony/CallScriptDialog";
 import { cn } from "@/lib/utils";
 import { playChirp, playDtmf, playRing } from "@/lib/dialer-tones";
 
@@ -1149,7 +1152,7 @@ export function RealtimeDialer() {
                 <LeadIntakePanel
                   phone={active?.phone_e164 ?? digits}
                   contactName={active?.contact_name ?? lead?.contact_name ?? null}
-                  onAddToDnc={(p, n) => openDnc(p, n)}
+                  onAddToDnc={(p: string, n: string | null) => openDnc(p, n)}
                 />
               </ScrollArea>
             </TabsContent>
