@@ -14,29 +14,17 @@ export function PageHeader({
   actions?: ReactNode;
   className?: string;
 }) {
+  void eyebrow;
+  void description;
+
+  if (!actions) {
+    return <h1 className="sr-only">{title}</h1>;
+  }
+
   return (
-    <div
-      className={cn(
-        "mb-6 flex flex-col gap-4 rounded-2xl border border-border/70 bg-card px-5 py-4 shadow-card md:flex-row md:items-center md:justify-between",
-        className,
-      )}
-    >
-      <div className="min-w-0">
-        {eyebrow && (
-          <span className="mb-2 inline-flex items-center rounded-full bg-accent px-2.5 py-0.5 text-[0.65rem] font-semibold tracking-[0.14em] text-brand uppercase">
-            {eyebrow}
-          </span>
-        )}
-        <h1 className="truncate font-display text-[1.6rem] leading-tight font-semibold text-foreground">
-          {title}
-        </h1>
-        {description && (
-          <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            {description}
-          </p>
-        )}
-      </div>
-      {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
+    <div className={cn("mb-4 flex flex-wrap items-center justify-end gap-2", className)}>
+      <h1 className="sr-only">{title}</h1>
+      {actions}
     </div>
   );
 }
