@@ -28,6 +28,14 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { SCRIPT_INTERNAL_WHY, SCRIPT_PHASES, SCRIPT_RULES } from "@/lib/call-script";
+import {
+  SCRIPT_DOC_EVENT,
+  deleteScriptDoc,
+  loadScriptDoc,
+  parseScriptFile,
+  saveScriptDoc,
+  type ScriptDoc,
+} from "@/lib/script-library";
 import { cn } from "@/lib/utils";
 
 export function CallScriptDialog({
