@@ -24,53 +24,57 @@ export function StatCard({
   /** When set, the whole card becomes a link to this route. */
   to?: string;
 }) {
-  const toneRing: Record<string, string> = {
-    default: "before:bg-border",
-    brand: "before:bg-brand",
-    success: "before:bg-success",
-    warning: "before:bg-warning",
-    danger: "before:bg-destructive",
-    info: "before:bg-brand-cyan",
+  const glowTone: Record<string, string> = {
+    default: "bg-muted-foreground/15 group-hover:bg-muted-foreground/25",
+    brand: "bg-brand/15 group-hover:bg-brand/25",
+    success: "bg-success/15 group-hover:bg-success/25",
+    warning: "bg-warning/20 group-hover:bg-warning/30",
+    danger: "bg-destructive/15 group-hover:bg-destructive/25",
+    info: "bg-brand-cyan/20 group-hover:bg-brand-cyan/30",
   };
 
-  const toneWash: Record<string, string> = {
-    default: "after:from-muted/30",
-    brand: "after:from-brand/8",
-    success: "after:from-success/8",
-    warning: "after:from-warning/12",
-    danger: "after:from-destructive/7",
-    info: "after:from-brand-cyan/12",
+  const barTone: Record<string, string> = {
+    default: "bg-muted-foreground/40",
+    brand: "bg-brand",
+    success: "bg-success",
+    warning: "bg-warning",
+    danger: "bg-destructive",
+    info: "bg-brand-cyan",
   };
 
   const iconTone: Record<string, string> = {
-    default: "bg-muted text-muted-foreground ring-border",
-    brand: "bg-brand/10 text-brand ring-brand/15",
-    success: "bg-success/12 text-success ring-success/15",
-    warning: "bg-warning/25 text-brand-tan ring-warning/25",
-    danger: "bg-destructive/12 text-destructive ring-destructive/15",
-    info: "bg-brand-cyan/25 text-brand-teal ring-brand-cyan/25",
+    default: "bg-muted text-muted-foreground",
+    brand: "bg-brand/10 text-brand",
+    success: "bg-success/12 text-success",
+    warning: "bg-warning/20 text-brand-tan",
+    danger: "bg-destructive/10 text-destructive",
+    info: "bg-brand-cyan/22 text-brand-teal",
   };
 
   const card = (
     <Card
       className={cn(
-        "relative h-full gap-0 overflow-hidden rounded-2xl border-border/70 p-5 shadow-card transition-all duration-200 hover:shadow-raised",
-        to && "group cursor-pointer hover:-translate-y-0.5 hover:border-brand/40",
-        "before:absolute before:inset-y-0 before:left-0 before:w-1 before:content-['']",
-        "after:pointer-events-none after:absolute after:inset-x-0 after:top-0 after:h-20 after:bg-gradient-to-b after:to-transparent after:content-['']",
-        toneRing[tone],
-        toneWash[tone],
+        "group relative h-full gap-0 overflow-hidden rounded-3xl border-white/70 bg-card/70 p-6 shadow-card backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-raised",
+        to && "cursor-pointer",
         className,
       )}
     >
-      <div className="relative flex items-start justify-between gap-2">
-        <p className="text-[0.7rem] font-semibold tracking-[0.1em] text-muted-foreground uppercase">
+      <span
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute -top-12 -right-12 size-32 rounded-full blur-3xl transition-colors duration-300",
+          glowTone[tone],
+        )}
+      />
+
+      <div className="relative flex items-start justify-between gap-3">
+        <p className="text-[0.69rem] font-bold tracking-[0.1em] text-muted-foreground uppercase">
           {label}
         </p>
         {icon && (
           <span
             className={cn(
-              "flex size-9 items-center justify-center rounded-xl ring-1",
+              "flex size-10 shrink-0 items-center justify-center rounded-xl shadow-sm [&_svg]:size-5",
               iconTone[tone],
             )}
           >
@@ -78,15 +82,16 @@ export function StatCard({
           </span>
         )}
       </div>
-      <div className="tabular relative mt-3 font-display text-[1.85rem] leading-none font-semibold tracking-tight text-foreground">
+
+      <div className="tabular relative mt-4 font-display text-[2rem] leading-none font-bold tracking-tight text-foreground">
         {value}
       </div>
 
-      <div className="mt-1 flex items-center gap-2">
+      <div className="mt-1.5 flex items-center gap-2">
         {delta && (
           <span
             className={cn(
-              "inline-flex items-center gap-0.5 text-xs font-medium",
+              "inline-flex items-center gap-0.5 text-xs font-semibold",
               delta.direction === "up" ? "text-success" : "text-destructive",
             )}
           >
@@ -98,13 +103,23 @@ export function StatCard({
             {delta.value}
           </span>
         )}
-        {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
+        {hint && <span className="text-sm text-muted-foreground">{hint}</span>}
       </div>
+
       {to && (
-        <GoIcon className="absolute right-4 bottom-4 size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+        <GoIcon className="absolute right-5 bottom-5 size-4 text-muted-foreground opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
       )}
+
+      <span
+        aria-hidden
+        className={cn(
+          "absolute bottom-0 left-0 h-1 w-0 transition-all duration-500 ease-out group-hover:w-full",
+          barTone[tone],
+        )}
+      />
     </Card>
   );
+
 
   if (!to) return card;
   return (
