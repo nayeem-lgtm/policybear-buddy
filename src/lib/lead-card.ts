@@ -23,6 +23,8 @@ export function loadLeadCard(phone: string): LeadCardValues {
 export function saveLeadCard(phone: string, values: LeadCardValues) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(leadCardKey(phone), JSON.stringify(values));
+  // mirror the capture into the Customers tab
+  void import("@/lib/captured-customers").then((m) => m.upsertCapturedCustomer(phone, values));
   window.dispatchEvent(
     new CustomEvent(LEAD_CARD_EVENT, { detail: { phone, key: leadCardKey(phone) } }),
   );
