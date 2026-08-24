@@ -72,9 +72,9 @@ function SectionHead({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="flex size-7 items-center justify-center rounded-lg bg-brand/10 text-brand">{icon}</span>
+      <span className="flex size-6 items-center justify-center rounded-md bg-brand/10 text-brand">{icon}</span>
       <div>
-        <p className="text-[0.7rem] font-semibold tracking-[0.12em] text-muted-foreground uppercase">{title}</p>
+        <p className="text-[0.65rem] font-semibold tracking-[0.1em] text-muted-foreground uppercase">{title}</p>
         {subtitle && <p className="text-xs text-muted-foreground/80">{subtitle}</p>}
       </div>
     </div>
@@ -300,7 +300,7 @@ export function RevenueCenter() {
   const collectionRate = carrierBooked > 0 ? carrierReceived / carrierBooked : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHeader eyebrow="Finance" title="Overview" />
 
       <PageHero
@@ -380,8 +380,8 @@ export function RevenueCenter() {
       )}
 
       {/* Charts */}
-      <div className="grid gap-4 xl:grid-cols-2">
-        <Card className="space-y-4 rounded-2xl border-border/70 p-5 shadow-card">
+      <div className="grid gap-3 xl:grid-cols-2">
+        <Card className="space-y-3 rounded-2xl border-border/70 p-4 shadow-card">
           <SectionHead icon={<Banknote className="size-4" />} title="Weekly premium vs cost vs net cash" />
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -402,7 +402,7 @@ export function RevenueCenter() {
           </div>
         </Card>
 
-        <Card className="space-y-4 rounded-2xl border-border/70 p-5 shadow-card">
+        <Card className="space-y-3 rounded-2xl border-border/70 p-4 shadow-card">
           <SectionHead icon={<TrendingUp className="size-4" />} title="Premium written vs carrier revenue received" />
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -516,7 +516,7 @@ export function RevenueCenter() {
       </div>
 
       {/* Ledger */}
-      <Card className="space-y-4 rounded-2xl border-border/70 p-5 shadow-card">
+      <Card className="space-y-3 rounded-2xl border-border/70 p-4 shadow-card">
         <SectionHead icon={<DollarSign className="size-4" />} title="Revenue ledger" subtitle={`${tableRows.length} of ${scopedSales.length} sales in range`} />
         <FilterBar
           search={search}
