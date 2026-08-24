@@ -545,14 +545,14 @@ export function AdminCommandCenter() {
           />
         </div>
 
-        <Separator className="my-4" />
+        <Separator className="my-3" />
 
         <div className="grid gap-3 lg:grid-cols-3">
-          <div className="rounded-xl border border-border bg-muted/25 p-4">
-            <p className="text-[0.68rem] font-semibold tracking-[0.09em] text-muted-foreground uppercase">
+          <div className="rounded-xl border border-border bg-muted/25 p-3.5">
+            <p className="text-[0.65rem] font-semibold tracking-[0.09em] text-muted-foreground uppercase">
               Money in
             </p>
-            <dl className="mt-3 space-y-2 text-sm">
+            <dl className="mt-2.5 space-y-1.5 text-xs">
               {[
                 ["Revenue collected", money2(finance.revenue)],
                 ["Revenue booked", money2(finance.booked)],
@@ -567,11 +567,11 @@ export function AdminCommandCenter() {
             </dl>
           </div>
 
-          <div className="rounded-xl border border-border bg-muted/25 p-4">
-            <p className="text-[0.68rem] font-semibold tracking-[0.09em] text-muted-foreground uppercase">
+          <div className="rounded-xl border border-border bg-muted/25 p-3.5">
+            <p className="text-[0.65rem] font-semibold tracking-[0.09em] text-muted-foreground uppercase">
               Money out
             </p>
-            <dl className="mt-3 space-y-2 text-sm">
+            <dl className="mt-2.5 space-y-1.5 text-xs">
               {[
                 ["Base payroll", money2(finance.basePayroll)],
                 ["Agent commission", money2(finance.commissionDue)],
@@ -588,12 +588,12 @@ export function AdminCommandCenter() {
             </dl>
           </div>
 
-          <div className="rounded-xl border border-border bg-gradient-to-br from-brand/10 to-transparent p-4">
-            <p className="text-[0.68rem] font-semibold tracking-[0.09em] text-muted-foreground uppercase">
+          <div className="rounded-xl border border-border bg-gradient-to-br from-brand/10 to-transparent p-3.5">
+            <p className="text-[0.65rem] font-semibold tracking-[0.09em] text-muted-foreground uppercase">
               Bottom line
             </p>
             <p
-              className={`tabular mt-2 font-display text-2xl font-semibold ${
+              className={`tabular mt-2 font-display text-xl font-semibold ${
                 finance.net >= 0 ? "text-success" : "text-destructive"
               }`}
             >
@@ -602,8 +602,8 @@ export function AdminCommandCenter() {
             <p className="mt-1 text-xs text-muted-foreground">
               Net profit on collected revenue · margin {finance.margin.toFixed(1)}%
             </p>
-            <Separator className="my-3" />
-            <dl className="space-y-2 text-sm">
+            <Separator className="my-2.5" />
+            <dl className="space-y-1.5 text-xs">
               {[
                 ["Projected net (booked)", money2(finance.netProjected)],
                 ["Revenue per sale", money2(finance.revenuePerSale)],
