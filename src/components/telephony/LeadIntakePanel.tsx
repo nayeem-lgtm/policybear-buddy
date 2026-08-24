@@ -146,15 +146,25 @@ export function LeadIntakePanel({
   contactName?: string | null;
   onAddToDnc?: (phone: string, name: string | null) => void;
 }) {
-  const [values, setValues] = useState<Record<string, string>>(() => load(phone));
+  const [values, setValues] = useState<Record<string, string>>(() => loadLeadCard(phone));
   const [dirty, setDirty] = useState(false);
   const [sms, setSms] = useState("");
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
 
   useEffect(() => {
-    setValues(load(phone));
+    setValues(loadLeadCard(phone));
     setDirty(false);
+  }, [phone]);
+
+  // the guided script writes into the same record — mirror those edits live
+  useEffect(() => {
+    const handler = () => {
+      setValues(loadLeadCard(phone));
+      setDirty(false);
+    };
+    window.addEventListener(LEAD_CARD_EVENT, handler as EventListener);
+    return () => window.removeEventListener(LEAD_CARD_EVENT, handler as EventListener);
   }, [phone]);
 
   useEffect(() => {
@@ -175,9 +185,7 @@ export function LeadIntakePanel({
   };
 
   const save = () => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(storeKey(phone), JSON.stringify(values));
-    }
+    saveLeadCard(phone, values);
     setDirty(false);
     toast.success("Lead card saved", {
       description: `${filled} field(s) stored for ${phone ? formatPhone(phone) : "this lead"}.`,
@@ -186,7 +194,8 @@ export function LeadIntakePanel({
 
   const reset = () => {
     setValues({});
-    setDirty(true);
+    saveLeadCard(phone, {});
+    setDirty(false);
     toast("Lead card cleared");
   };
 
@@ -205,7 +214,8 @@ export function LeadIntakePanel({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {dirty ? <Badge variant="secondary">Unsaved</Badge> : null}
-          <CallScriptDialog />
+          <CallScriptDialog phone={phone} contactName={contactName} />
+
           <Button variant="ghost" className="gap-1.5" onClick={reset}>
             <RotateCcw className="size-4" /> Clear
           </Button>
