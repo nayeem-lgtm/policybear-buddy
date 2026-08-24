@@ -320,6 +320,7 @@ export function CallScriptDialog({
             </div>
           </ScrollArea>
         </div>
+        )}
       </DialogContent>
     </Dialog>
   );
