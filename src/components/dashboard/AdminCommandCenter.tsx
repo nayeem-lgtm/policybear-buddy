@@ -33,6 +33,7 @@ import {
 
 import { StatCard } from "@/components/crm/StatCard";
 import { StatusBadge } from "@/components/crm/StatusBadge";
+import { PageHero } from "@/components/crm/PageHero";
 import { DateRangeTabs, presetLabel, type DateSelection } from "@/components/crm/DateRangeTabs";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -382,18 +383,19 @@ export function AdminCommandCenter() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-card p-3 shadow-card lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
-          <BadgeCheck className="size-4 shrink-0 text-brand" />
-          <span className="truncate">
-            Showing <span className="font-semibold text-foreground">{label}</span> across the
-            whole company
-          </span>
-        </div>
-        <div className="overflow-x-auto">
-          <DateRangeTabs value={sel} onChange={setSel} />
-        </div>
-      </div>
+      <PageHero
+        eyebrow="Admin"
+        title="Command Center"
+        description="The whole company on one page — calls, sales, escalations, commissions, payroll and approvals for the period you pick."
+        meta={[
+          { label: "Period", value: label },
+          { label: "Calls", value: view.callRows.length },
+          { label: "Sales", value: view.salesRows.length, tone: "success" },
+          { label: "Escalations", value: view.qaIssues.length, tone: "danger" },
+          { label: "To-dos", value: todoCount, tone: todoCount ? "warning" : "success" },
+        ]}
+        controls={<DateRangeTabs value={sel} onChange={setSel} />}
+      />
 
       {/* headline metrics */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
