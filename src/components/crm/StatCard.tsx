@@ -54,7 +54,7 @@ export function StatCard({
   const card = (
     <Card
       className={cn(
-        "group relative h-full gap-0 overflow-hidden rounded-3xl border-white/70 bg-card/70 p-6 shadow-card backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-raised",
+        "group relative h-full gap-0 overflow-hidden rounded-xl border-white/70 bg-card/70 p-3.5 shadow-card backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-raised",
         to && "cursor-pointer",
         className,
       )}
@@ -62,19 +62,19 @@ export function StatCard({
       <span
         aria-hidden
         className={cn(
-          "pointer-events-none absolute -top-12 -right-12 size-32 rounded-full blur-3xl transition-colors duration-300",
+          "pointer-events-none absolute -top-6 -right-6 size-20 rounded-full blur-2xl transition-colors duration-300",
           glowTone[tone],
         )}
       />
 
       <div className="relative flex items-start justify-between gap-3">
-        <p className="text-[0.69rem] font-bold tracking-[0.1em] text-muted-foreground uppercase">
+        <p className="max-w-[70%] text-[0.6rem] font-bold tracking-[0.08em] text-muted-foreground uppercase">
           {label}
         </p>
         {icon && (
           <span
             className={cn(
-              "flex size-10 shrink-0 items-center justify-center rounded-xl shadow-sm [&_svg]:size-5",
+              "flex size-7 shrink-0 items-center justify-center rounded-md shadow-sm [&_svg]:size-3.5",
               iconTone[tone],
             )}
           >
@@ -83,37 +83,37 @@ export function StatCard({
         )}
       </div>
 
-      <div className="tabular relative mt-4 font-display text-[2.15rem] leading-none font-bold tracking-tight text-foreground">
+      <div className="tabular relative mt-2.5 font-display text-xl leading-none font-bold tracking-tight text-foreground">
         {value}
       </div>
 
-      <div className="mt-1.5 flex items-center gap-2">
+      <div className="mt-1 flex items-center gap-2">
         {delta && (
           <span
             className={cn(
-              "inline-flex items-center gap-0.5 text-xs font-semibold",
+              "inline-flex items-center gap-0.5 text-[0.65rem] font-semibold",
               delta.direction === "up" ? "text-success" : "text-destructive",
             )}
           >
             {delta.direction === "up" ? (
-              <ArrowUpRight className="size-3.5" />
+              <ArrowUpRight className="size-3" />
             ) : (
-              <ArrowDownRight className="size-3.5" />
+              <ArrowDownRight className="size-3" />
             )}
             {delta.value}
           </span>
         )}
-        {hint && <span className="text-sm text-muted-foreground">{hint}</span>}
+        {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
       </div>
 
       {to && (
-        <GoIcon className="absolute right-5 bottom-5 size-4 text-muted-foreground opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+        <GoIcon className="absolute right-3.5 bottom-3.5 size-3 text-muted-foreground opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
       )}
 
       <span
         aria-hidden
         className={cn(
-          "absolute bottom-0 left-0 h-1 w-0 transition-all duration-500 ease-out group-hover:w-full",
+          "absolute bottom-0 left-0 h-0.5 w-0 transition-all duration-500 ease-out group-hover:w-full",
           barTone[tone],
         )}
       />

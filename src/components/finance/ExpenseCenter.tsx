@@ -62,9 +62,9 @@ function today() {
 function SectionHead({ icon, title, subtitle }: { icon: React.ReactNode; title: string; subtitle?: string }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="flex size-7 items-center justify-center rounded-lg bg-brand/10 text-brand">{icon}</span>
+      <span className="flex size-6 items-center justify-center rounded-md bg-brand/10 text-brand">{icon}</span>
       <div>
-        <p className="text-[0.7rem] font-semibold tracking-[0.12em] text-muted-foreground uppercase">{title}</p>
+        <p className="text-[0.65rem] font-semibold tracking-[0.1em] text-muted-foreground uppercase">{title}</p>
         {subtitle && <p className="text-xs text-muted-foreground/80">{subtitle}</p>}
       </div>
     </div>
@@ -200,7 +200,7 @@ export function ExpenseCenter() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHeader eyebrow="Finance" title="Expenses" />
 
       <PageHero
@@ -228,7 +228,7 @@ export function ExpenseCenter() {
         <StatCard label="Manually logged" value={money(manualTotal)} hint="added by your team" icon={<Receipt className="size-4" />} />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-3 lg:grid-cols-3">
         <Card className="space-y-3 rounded-2xl p-4 shadow-card lg:col-span-2">
           <SectionHead icon={<AlertCircle className="size-4" />} title="Cost stack" subtitle="Cash spend by category" />
           <div className="space-y-2.5">

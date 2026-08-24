@@ -381,7 +381,7 @@ export function AdminCommandCenter() {
 
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHero
         eyebrow="Admin"
         title="Command Center"
@@ -397,7 +397,7 @@ export function AdminCommandCenter() {
       />
 
       {/* headline metrics */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Calls received"
           value={view.callRows.length}
@@ -465,7 +465,7 @@ export function AdminCommandCenter() {
       </div>
 
       {/* financial summary — full P&L position, same date window */}
-      <Card className="rounded-2xl border-border/70 p-5 shadow-card">
+      <Card className="rounded-2xl border-border/70 p-4 shadow-card">
         <SectionHead
           icon={<Banknote className="size-4 text-brand" />}
           title="Financial summary"
@@ -478,7 +478,7 @@ export function AdminCommandCenter() {
             </Button>
           }
         />
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
             label="Total revenue"
             value={money(finance.revenue)}
@@ -545,14 +545,14 @@ export function AdminCommandCenter() {
           />
         </div>
 
-        <Separator className="my-5" />
+        <Separator className="my-3" />
 
-        <div className="grid gap-4 lg:grid-cols-3">
-          <div className="rounded-xl border border-border bg-muted/25 p-4">
-            <p className="text-[0.68rem] font-semibold tracking-[0.09em] text-muted-foreground uppercase">
+        <div className="grid gap-3 lg:grid-cols-3">
+          <div className="rounded-xl border border-border bg-muted/25 p-3.5">
+            <p className="text-[0.65rem] font-semibold tracking-[0.09em] text-muted-foreground uppercase">
               Money in
             </p>
-            <dl className="mt-3 space-y-2 text-sm">
+            <dl className="mt-2.5 space-y-1.5 text-xs">
               {[
                 ["Revenue collected", money2(finance.revenue)],
                 ["Revenue booked", money2(finance.booked)],
@@ -567,11 +567,11 @@ export function AdminCommandCenter() {
             </dl>
           </div>
 
-          <div className="rounded-xl border border-border bg-muted/25 p-4">
-            <p className="text-[0.68rem] font-semibold tracking-[0.09em] text-muted-foreground uppercase">
+          <div className="rounded-xl border border-border bg-muted/25 p-3.5">
+            <p className="text-[0.65rem] font-semibold tracking-[0.09em] text-muted-foreground uppercase">
               Money out
             </p>
-            <dl className="mt-3 space-y-2 text-sm">
+            <dl className="mt-2.5 space-y-1.5 text-xs">
               {[
                 ["Base payroll", money2(finance.basePayroll)],
                 ["Agent commission", money2(finance.commissionDue)],
@@ -588,12 +588,12 @@ export function AdminCommandCenter() {
             </dl>
           </div>
 
-          <div className="rounded-xl border border-border bg-gradient-to-br from-brand/10 to-transparent p-4">
-            <p className="text-[0.68rem] font-semibold tracking-[0.09em] text-muted-foreground uppercase">
+          <div className="rounded-xl border border-border bg-gradient-to-br from-brand/10 to-transparent p-3.5">
+            <p className="text-[0.65rem] font-semibold tracking-[0.09em] text-muted-foreground uppercase">
               Bottom line
             </p>
             <p
-              className={`tabular mt-3 font-display text-3xl font-semibold ${
+              className={`tabular mt-2 font-display text-xl font-semibold ${
                 finance.net >= 0 ? "text-success" : "text-destructive"
               }`}
             >
@@ -602,8 +602,8 @@ export function AdminCommandCenter() {
             <p className="mt-1 text-xs text-muted-foreground">
               Net profit on collected revenue · margin {finance.margin.toFixed(1)}%
             </p>
-            <Separator className="my-3" />
-            <dl className="space-y-2 text-sm">
+            <Separator className="my-2.5" />
+            <dl className="space-y-1.5 text-xs">
               {[
                 ["Projected net (booked)", money2(finance.netProjected)],
                 ["Revenue per sale", money2(finance.revenuePerSale)],
@@ -621,7 +621,7 @@ export function AdminCommandCenter() {
       </Card>
 
       {/* platform summary A→Z */}
-      <Card className="rounded-2xl border-border/70 p-5 shadow-card">
+      <Card className="rounded-2xl border-border/70 p-4 shadow-card">
         <SectionHead
           icon={<Activity className="size-4 text-brand" />}
           title="Platform summary"
@@ -629,7 +629,7 @@ export function AdminCommandCenter() {
         />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {platformSummary.map((group) => (
-            <div key={group.title} className="rounded-xl border border-border bg-muted/20 p-4">
+            <div key={group.title} className="rounded-xl border border-border bg-muted/20 p-3">
               <p className="text-[0.68rem] font-semibold tracking-[0.09em] text-muted-foreground uppercase">
                 {group.title}
               </p>
@@ -654,7 +654,7 @@ export function AdminCommandCenter() {
 
 
       {/* charts + approvals */}
-      <div className="grid gap-4 xl:grid-cols-3">
+      <div className="grid gap-3 xl:grid-cols-3">
         <Card className="rounded-2xl border-border/70 p-5 shadow-card xl:col-span-2">
           <SectionHead
             icon={<TrendingUp className="size-4 text-brand" />}
@@ -725,7 +725,7 @@ export function AdminCommandCenter() {
           </div>
         </Card>
 
-        <Card className="rounded-2xl border-border/70 p-5 shadow-card">
+        <Card className="rounded-2xl border-border/70 p-4 shadow-card">
           <SectionHead
             icon={<ClipboardCheck className="size-4 text-brand" />}
             title="Needs your approval"
@@ -814,7 +814,7 @@ export function AdminCommandCenter() {
       </div>
 
       {/* agent health */}
-      <div className="grid gap-4 xl:grid-cols-3">
+      <div className="grid gap-3 xl:grid-cols-3">
         <Card className="rounded-2xl border-border/70 p-5 shadow-card xl:col-span-2">
           <SectionHead
             icon={<HeartPulse className="size-4 text-destructive" />}
@@ -839,7 +839,7 @@ export function AdminCommandCenter() {
                 <Link
                   key={e.id}
                   to="/live-operations"
-                  className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-3 transition-all hover:-translate-y-0.5 hover:border-destructive/40 hover:bg-destructive/5"
+                  className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-2.5 transition-all hover:-translate-y-0.5 hover:border-destructive/40 hover:bg-destructive/5"
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <span className="flex size-9 items-center justify-center rounded-xl bg-brand/10 text-[0.7rem] font-semibold text-brand">
@@ -859,7 +859,7 @@ export function AdminCommandCenter() {
           </ScrollArea>
         </Card>
 
-        <Card className="rounded-2xl border-border/70 p-5 shadow-card">
+        <Card className="rounded-2xl border-border/70 p-4 shadow-card">
           <SectionHead
             icon={<Activity className="size-4 text-brand" />}
             title="Health signals"
@@ -870,7 +870,7 @@ export function AdminCommandCenter() {
               <Link
                 key={sig.label}
                 to={sig.to as never}
-                className="block rounded-xl border border-border p-3 transition-colors hover:border-brand/40 hover:bg-accent/40"
+                className="block rounded-lg border border-border p-2.5 transition-colors hover:border-brand/40 hover:bg-accent/40"
               >
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-xs font-semibold tracking-[0.06em] text-muted-foreground uppercase">
@@ -888,14 +888,14 @@ export function AdminCommandCenter() {
 
 
       {/* tabs: agents / finance / people */}
-      <Tabs defaultValue="agents" className="space-y-4">
+      <Tabs defaultValue="agents" className="space-y-3">
         <TabsList className="w-full justify-start overflow-x-auto sm:w-auto">
           <TabsTrigger value="agents">Agent scoreboard</TabsTrigger>
           <TabsTrigger value="finance">Finance</TabsTrigger>
           <TabsTrigger value="people">People & attendance</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="agents" className="space-y-4">
+        <TabsContent value="agents" className="space-y-3">
           <Card className="overflow-hidden rounded-2xl border-border/70 shadow-card">
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-4 py-3 sm:flex sm:justify-between">
               <p className="truncate text-sm font-semibold tracking-tight text-foreground">
@@ -962,8 +962,8 @@ export function AdminCommandCenter() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="finance" className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <TabsContent value="finance" className="space-y-3">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard
               label="Total revenue"
               value={money(finance.revenue)}
@@ -998,7 +998,7 @@ export function AdminCommandCenter() {
             />
           </div>
 
-          <div className="grid gap-4 xl:grid-cols-3">
+          <div className="grid gap-3 xl:grid-cols-3">
             <Card className="rounded-2xl border-border/70 p-5 shadow-card xl:col-span-2">
               <SectionHead
                 icon={<Banknote className="size-4 text-brand" />}
@@ -1060,7 +1060,7 @@ export function AdminCommandCenter() {
               </div>
             </Card>
 
-            <Card className="rounded-2xl border-border/70 p-5 shadow-card">
+            <Card className="rounded-2xl border-border/70 p-4 shadow-card">
               <SectionHead
                 icon={<Wallet className="size-4 text-brand" />}
                 title="Money at a glance"
@@ -1098,9 +1098,9 @@ export function AdminCommandCenter() {
           </div>
         </TabsContent>
 
-        <TabsContent value="people" className="space-y-4">
-          <div className="grid gap-4 xl:grid-cols-3">
-            <Card className="rounded-2xl border-border/70 p-5 shadow-card">
+        <TabsContent value="people" className="space-y-3">
+          <div className="grid gap-3 xl:grid-cols-3">
+            <Card className="rounded-2xl border-border/70 p-4 shadow-card">
               <SectionHead
                 icon={<CalendarClock className="size-4 text-brand-tan" />}
                 title="Agents on leave"
@@ -1181,7 +1181,7 @@ export function AdminCommandCenter() {
             </Card>
           </div>
 
-          <Card className="rounded-2xl border-border/70 p-5 shadow-card">
+          <Card className="rounded-2xl border-border/70 p-4 shadow-card">
             <SectionHead
               icon={<Users className="size-4 text-brand" />}
               title="Floor coverage right now"
@@ -1201,7 +1201,7 @@ export function AdminCommandCenter() {
                   <Link
                     key={team}
                     to="/live-operations"
-                    className="block rounded-xl border border-border p-3 transition-colors hover:border-brand/40 hover:bg-accent/40"
+                    className="block rounded-lg border border-border p-2.5 transition-colors hover:border-brand/40 hover:bg-accent/40"
                   >
                     <p className="text-[0.68rem] font-semibold tracking-[0.08em] text-muted-foreground uppercase">
                       {team}
