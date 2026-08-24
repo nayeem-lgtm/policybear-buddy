@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { PageHeader } from "@/components/crm/PageHeader";
+
 import { RealtimeDialer } from "@/components/telephony/RealtimeDialer";
 
 export const Route = createFileRoute("/_shell/agent-desk")({
@@ -25,14 +25,5 @@ export const Route = createFileRoute("/_shell/agent-desk")({
 });
 
 function AgentDeskPage() {
-  return (
-    <div>
-      <PageHeader
-        eyebrow="Sales floor"
-        title="Agent desk"
-        description="Everything you need for a call in one place. Dial out, take queued calls, handle live audio controls and log every outcome without leaving Policy Bear."
-      />
-      <RealtimeDialer />
-    </div>
-  );
+  return <RealtimeDialer />;
 }
