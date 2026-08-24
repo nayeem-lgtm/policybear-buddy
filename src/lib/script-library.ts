@@ -76,11 +76,13 @@ export async function parseScriptFile(file: File): Promise<ScriptDoc> {
   let blocks: ScriptDocBlock[];
 
   if (lower.endsWith(".docx")) {
-    const mammoth = await import("mammoth/mammoth.browser");
-    const buffer = await file.arrayBuffer();
-    const result = await (mammoth as unknown as {
+    const mammoth = (await import(
+      /* @vite-ignore */ "mammoth/mammoth.browser"
+    )) as unknown as {
       convertToHtml: (input: { arrayBuffer: ArrayBuffer }) => Promise<{ value: string }>;
-    }).convertToHtml({ arrayBuffer: buffer });
+    };
+    const buffer = await file.arrayBuffer();
+    const result = await mammoth.convertToHtml({ arrayBuffer: buffer });
     blocks = blocksFromHtml(result.value);
   } else if (lower.endsWith(".txt") || lower.endsWith(".md") || file.type.startsWith("text/")) {
     blocks = blocksFromText(await file.text());
