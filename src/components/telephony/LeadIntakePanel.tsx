@@ -29,114 +29,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { CallScriptDialog } from "@/components/telephony/CallScriptDialog";
 import { formatPhone } from "@/lib/phone";
 import { LEAD_CARD_EVENT, loadLeadCard, saveLeadCard } from "@/lib/lead-card";
+import { LEAD_FIELD_NAMES, LEAD_SECTIONS } from "@/lib/lead-fields";
 
 import { cn } from "@/lib/utils";
 
-type FieldKind = "text" | "date" | "number" | "area" | "yesno";
-type Field = { name: string; label: string; kind?: FieldKind; placeholder?: string };
-type Section = {
-  id: string;
-  title: string;
-  icon: typeof User;
-  tone: string;
-  fields: Field[];
+const SECTION_STYLE: Record<string, { icon: typeof User; tone: string }> = {
+  contact: { icon: User, tone: "bg-brand/10 text-brand" },
+  policy: { icon: BadgeCheck, tone: "bg-warning/20 text-brand-tan" },
+  compliance: { icon: ShieldCheck, tone: "bg-success/15 text-success" },
+  retention: { icon: HeartHandshake, tone: "bg-info/15 text-info" },
+  crosssell: { icon: Sparkles, tone: "bg-brand-cyan/20 text-brand" },
+  chargeback: { icon: TriangleAlert, tone: "bg-destructive/12 text-destructive" },
+  internal: { icon: StickyNote, tone: "bg-muted text-muted-foreground" },
 };
 
-const SECTIONS: Section[] = [
-  {
-    id: "contact",
-    title: "Contact & lead",
-    icon: User,
-    tone: "bg-brand/10 text-brand",
-    fields: [
-      { name: "fullName", label: "Full name" },
-      { name: "dob", label: "Date of birth", kind: "date" },
-      { name: "email", label: "Email" },
-      { name: "altPhone", label: "Alternate phone" },
-      { name: "state", label: "State" },
-      { name: "source", label: "Lead source / publisher" },
-    ],
-  },
-  {
-    id: "policy",
-    title: "Policy details",
-    icon: BadgeCheck,
-    tone: "bg-warning/20 text-brand-tan",
-    fields: [
-      { name: "policyType", label: "Policy type" },
-      { name: "policyNumber", label: "Policy number" },
-      { name: "applicationNumber", label: "Application number" },
-      { name: "writingAgent", label: "Writing agent name" },
-      { name: "policyStatus", label: "Policy status" },
-      { name: "carrier", label: "Carrier" },
-      { name: "faceAmount", label: "Coverage amount", kind: "number" },
-      { name: "premium", label: "Monthly premium", kind: "number" },
-      { name: "paymentMethod", label: "Payment method (bank draft / direct bill)" },
-      { name: "draftDate", label: "Draft date", kind: "date" },
-    ],
-  },
-  {
-    id: "compliance",
-    title: "Compliance",
-    icon: ShieldCheck,
-    tone: "bg-success/15 text-success",
-    fields: [
-      { name: "applicationPdf", label: "Application PDF URL" },
-      { name: "policyDelivery", label: "Policy delivery date", kind: "date" },
-      { name: "recordingConfirmed", label: "Recording disclosure read", kind: "yesno" },
-      { name: "beneficiary", label: "Beneficiary name & relationship" },
-    ],
-  },
-  {
-    id: "retention",
-    title: "Retention",
-    icon: HeartHandshake,
-    tone: "bg-info/15 text-info",
-    fields: [
-      { name: "satisfaction", label: "Customer satisfaction (1-10)", kind: "number" },
-      { name: "retentionNotes", label: "Retention notes", kind: "area" },
-    ],
-  },
-  {
-    id: "crosssell",
-    title: "Cross-sell opportunities",
-    icon: Sparkles,
-    tone: "bg-brand-cyan/20 text-brand",
-    fields: [
-      { name: "homeowner", label: "Homeowner", kind: "yesno" },
-      { name: "autoOwner", label: "Auto owner", kind: "yesno" },
-      { name: "spouseInterest", label: "Spouse / family interest", kind: "yesno" },
-      { name: "crossSellNotes", label: "Opportunity notes", kind: "area" },
-    ],
-  },
-  {
-    id: "chargeback",
-    title: "Chargeback prevention",
-    icon: TriangleAlert,
-    tone: "bg-destructive/12 text-destructive",
-    fields: [
-      { name: "firstDraft", label: "First draft successful", kind: "yesno" },
-      { name: "nsfCount", label: "NSF count", kind: "number" },
-      { name: "lapseDate", label: "Lapse date", kind: "date" },
-      { name: "chargebackAmount", label: "Chargeback amount", kind: "number" },
-      { name: "reinstated", label: "Reinstated", kind: "yesno" },
-      { name: "lapseReason", label: "Reason for lapse" },
-    ],
-  },
-  {
-    id: "internal",
-    title: "Internal notes & DNC",
-    icon: StickyNote,
-    tone: "bg-muted text-muted-foreground",
-    fields: [
-      { name: "agentNotes", label: "Agent notes", kind: "area" },
-      { name: "doNotContact", label: "Do not contact requested", kind: "yesno" },
-      { name: "healthNotes", label: "Health / medication notes", kind: "area" },
-    ],
-  },
-];
+const SECTIONS = LEAD_SECTIONS.map((s) => ({
+  ...s,
+  icon: SECTION_STYLE[s.id]?.icon ?? User,
+  tone: SECTION_STYLE[s.id]?.tone ?? "bg-muted text-muted-foreground",
+}));
 
-const ALL_FIELDS = SECTIONS.flatMap((s) => s.fields.map((f) => f.name));
+const ALL_FIELDS = LEAD_FIELD_NAMES;
 
 
 export function LeadIntakePanel({
