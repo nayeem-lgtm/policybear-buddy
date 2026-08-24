@@ -3,8 +3,17 @@
  * details manually in the lead intake panel — no capture fields inside the script.
  */
 
-import { useState } from "react";
-import { BookOpenText, Lock, OctagonAlert, ShieldAlert } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  BookOpenText,
+  Lock,
+  OctagonAlert,
+  ShieldAlert,
+  Trash2,
+  Upload,
+} from "lucide-react";
+import { toast } from "sonner";
+
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
