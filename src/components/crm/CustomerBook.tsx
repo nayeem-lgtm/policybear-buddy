@@ -51,6 +51,10 @@ import {
   loadCapturedCustomers,
   type CapturedCustomer,
 } from "@/lib/captured-customers";
+
+/** intake values an agent captured on the desk, if this row came from a lead card */
+const intakeOf = (r: Customer): Record<string, string> =>
+  ((r as CapturedCustomer).intake ?? {}) as Record<string, string>;
 import { groupLeadValues } from "@/lib/lead-fields";
 import { useFilters, unique } from "@/lib/use-filters";
 import { inSelection } from "@/lib/date-range";
@@ -248,7 +252,21 @@ export function CustomerBook({
       header: "Policy",
       cell: (r) => {
         const latest = salesByCustomer.get(r.name)?.[0];
-        if (!latest) return <span className="text-muted-foreground">No policy</span>;
+        const cap = intakeOf(r);
+        if (!latest) {
+          const label = [cap["policyType"], cap["carrier"]].filter(Boolean).join(" · ");
+          if (!label && !cap["policyNumber"] && !cap["applicationNumber"]) {
+            return <span className="text-muted-foreground">No policy</span>;
+          }
+          return (
+            <div>
+              <p className="text-foreground">{label || "Agent capture"}</p>
+              <p className="tabular text-xs text-muted-foreground">
+                {cap["policyNumber"] || cap["applicationNumber"] || "Pending #"}
+              </p>
+            </div>
+          );
+        }
         return (
           <div>
             <p className="text-foreground">{latest.product ?? "—"} · {latest.carrier ?? "—"}</p>
@@ -277,7 +295,9 @@ export function CustomerBook({
       align: "right",
       cell: (r) => {
         const latest = salesByCustomer.get(r.name)?.[0];
-        return latest ? <span className="tabular">{money(latest.premium)}</span> : "—";
+        if (latest) return <span className="tabular">{money(latest.premium)}</span>;
+        const v = Number(intakeOf(r)["premium"]);
+        return Number.isFinite(v) && v > 0 ? <span className="tabular">{money(v)}</span> : "—";
       },
     },
     {
@@ -286,7 +306,9 @@ export function CustomerBook({
       align: "right",
       cell: (r) => {
         const latest = salesByCustomer.get(r.name)?.[0];
-        return latest ? <span className="tabular">{money(latest.policyAmount)}</span> : "—";
+        if (latest) return <span className="tabular">{money(latest.policyAmount)}</span>;
+        const v = Number(intakeOf(r)["faceAmount"]);
+        return Number.isFinite(v) && v > 0 ? <span className="tabular">{money(v)}</span> : "—";
       },
     },
     {
@@ -294,8 +316,9 @@ export function CustomerBook({
       header: "Payment method",
       cell: (r) => {
         const latest = salesByCustomer.get(r.name)?.[0];
-        return latest?.paymentMethod ? (
-          <span className="text-xs">{latest.paymentMethod}</span>
+        const capPay = latest?.paymentMethod || intakeOf(r)["paymentMethod"];
+        return capPay ? (
+          <span className="text-xs">{capPay}</span>
         ) : (
           "—"
         );

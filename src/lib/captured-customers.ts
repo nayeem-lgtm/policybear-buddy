@@ -5,7 +5,7 @@
  */
 
 import type { Customer } from "@/lib/mock-data";
-import type { LeadCardValues } from "@/lib/lead-card";
+import { leadCardKey, type LeadCardValues } from "@/lib/lead-card";
 import { formatPhone } from "@/lib/phone";
 
 export const CAPTURED_CUSTOMERS_EVENT = "pb:captured-customers-updated";
@@ -14,6 +14,8 @@ const STORE_KEY = "pb.crm.captured-customers";
 export type CapturedCustomer = Customer & {
   captured: true;
   capturedAt: string;
+  /** stable key of the lead card that produced this record */
+  cardKey: string;
   /** every field the agent typed on the lead card / call script */
   intake: LeadCardValues;
 };
@@ -46,7 +48,7 @@ function toCustomer(
 ): CapturedCustomer {
   const today = new Date().toISOString().slice(0, 10);
   const name = (values["fullName"] ?? "").trim();
-  const key = digits(phone);
+  const key = digits(phone) || digits(values["altPhone"] ?? "");
   const status = values["doNotContact"] === "Yes"
     ? "Do Not Call"
     : values["policyNumber"]?.trim()
@@ -65,9 +67,14 @@ function toCustomer(
   ].filter(Boolean) as string[];
 
   return {
-    id: previous?.id ?? `AGT-${key || Date.now().toString().slice(-6)}`,
+    id: previous?.id ?? `AGT-${key || leadCardKey(phone).slice(-8)}`,
+    cardKey: leadCardKey(phone),
     name: name || (phone ? formatPhone(phone) : "Unnamed lead"),
-    phone: phone ? formatPhone(phone) : "",
+    phone: phone
+      ? formatPhone(phone)
+      : values["altPhone"]?.trim()
+        ? formatPhone(values["altPhone"])
+        : "",
     email: values["email"] ?? "",
     state: values["state"] ?? "",
     county: previous?.county ?? "",
@@ -93,18 +100,25 @@ export function upsertCapturedCustomer(phone: string, values: LeadCardValues) {
   if (typeof window === "undefined") return;
   const hasData = Object.values(values ?? {}).some((v) => (v ?? "").trim().length > 0);
   const list = loadCapturedCustomers();
-  const key = digits(phone);
-  const index = list.findIndex((c) => digits(c.phone) === key && key.length > 0);
+  const key = digits(phone) || digits(values["altPhone"] ?? "");
+  const name = (values["fullName"] ?? "").trim().toLowerCase();
+  // Identity of the record: the dialer number when there is one, otherwise the
+  // typed number or the lead name, so a lead card filled without a number still
+  // lands on exactly one customer instead of duplicating on every save.
+  const cardKey = key ? leadCardKey(key) : `${leadCardKey(phone)}:${name || "draft"}`;
 
-  if (!hasData) {
-    if (index >= 0) {
-      list.splice(index, 1);
-      persist(list);
-    }
-    return;
+  let index = list.findIndex((c) => c.cardKey === cardKey);
+  if (index < 0 && key.length > 0) {
+    index = list.findIndex((c) => digits(c.phone) === key);
+  }
+  if (index < 0 && !key && name) {
+    index = list.findIndex((c) => c.name.trim().toLowerCase() === name && !digits(c.phone));
   }
 
-  const record = toCustomer(phone, values, index >= 0 ? list[index] : undefined);
+  // Clearing the lead card must never delete an already saved customer.
+  if (!hasData) return;
+
+  const record = { ...toCustomer(phone, values, index >= 0 ? list[index] : undefined), cardKey };
   if (index >= 0) list[index] = record;
   else list.unshift(record);
   persist(list);

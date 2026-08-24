@@ -157,9 +157,12 @@ export function LeadIntakePanel({
                   key={f.name}
                   className={cn("space-y-1.5", f.kind === "area" && "sm:col-span-2 lg:col-span-3")}
                 >
-                  <Label className="text-xs text-muted-foreground">{f.label}</Label>
+                  <Label htmlFor={`lead-${f.name}`} className="text-xs text-muted-foreground">
+                    {f.label}
+                  </Label>
                   {f.kind === "area" ? (
                     <Textarea
+                      id={`lead-${f.name}`}
                       rows={3}
                       value={values[f.name] ?? ""}
                       placeholder={f.placeholder}
@@ -182,6 +185,7 @@ export function LeadIntakePanel({
                     </div>
                   ) : (
                     <Input
+                      id={`lead-${f.name}`}
                       type={f.kind === "date" ? "date" : f.kind === "number" ? "number" : "text"}
                       value={values[f.name] ?? ""}
                       placeholder={f.placeholder}
