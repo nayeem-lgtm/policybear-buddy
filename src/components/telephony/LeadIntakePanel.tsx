@@ -216,7 +216,7 @@ export function LeadIntakePanel({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {dirty ? <Badge variant="secondary">Unsaved</Badge> : null}
-          <CallScriptDialog phone={phone} contactName={contactName} />
+          <CallScriptDialog phone={phone} contactName={contactName ?? null} />
 
           <Button variant="ghost" className="gap-1.5" onClick={reset}>
             <RotateCcw className="size-4" /> Clear
