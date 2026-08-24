@@ -135,16 +135,7 @@ const SECTIONS: Section[] = [
 ];
 
 const ALL_FIELDS = SECTIONS.flatMap((s) => s.fields.map((f) => f.name));
-const storeKey = (phone: string) => `pb.dialer.lead.${phone.replace(/\D/g, "") || "unassigned"}`;
 
-function load(phone: string): Record<string, string> {
-  if (typeof window === "undefined") return {};
-  try {
-    return JSON.parse(window.localStorage.getItem(storeKey(phone)) ?? "{}") as Record<string, string>;
-  } catch {
-    return {};
-  }
-}
 
 export function LeadIntakePanel({
   phone,
