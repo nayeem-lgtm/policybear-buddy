@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { PageHeader } from "@/components/crm/PageHeader";
+
 import { RealtimeDialer } from "@/components/telephony/RealtimeDialer";
 
 export const Route = createFileRoute("/_shell/agent-desk")({
