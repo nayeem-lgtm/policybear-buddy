@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { PageHeader } from "@/components/crm/PageHeader";
+import { PageHero } from "@/components/crm/PageHero";
 import { StatCard } from "@/components/crm/StatCard";
 import { StatusBadge } from "@/components/crm/StatusBadge";
 import { DataTable, type Column } from "@/components/crm/DataTable";
@@ -463,10 +464,17 @@ export function PayrollCenter() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PageHeader eyebrow="Accounting" title="Payroll" />
+
+      <PageHero
         eyebrow="Accounting"
-        title="Payroll"
+        title="Payroll Suite"
         description="Mon–Fri payroll built straight from attendance. Hours count themselves and commission rolls in automatically."
+        meta={[
+          { label: "Week", value: `${fmtDay(weekStart)} – ${fmtDay(weekEnd)}` },
+          { label: "Run mode", value: mode === "weekly" ? "Weekly" : "Daily" },
+          { label: "Rows in run", value: visible.length, tone: "success" },
+        ]}
         actions={
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => register.refetch()} disabled={register.isFetching}>

@@ -33,13 +33,22 @@ export function StatCard({
     info: "before:bg-brand-cyan",
   };
 
+  const toneWash: Record<string, string> = {
+    default: "after:from-muted/30",
+    brand: "after:from-brand/8",
+    success: "after:from-success/8",
+    warning: "after:from-warning/12",
+    danger: "after:from-destructive/7",
+    info: "after:from-brand-cyan/12",
+  };
+
   const iconTone: Record<string, string> = {
-    default: "bg-muted text-muted-foreground",
-    brand: "bg-brand/10 text-brand",
-    success: "bg-success/12 text-success",
-    warning: "bg-warning/25 text-brand-tan",
-    danger: "bg-destructive/12 text-destructive",
-    info: "bg-brand-cyan/25 text-brand-teal",
+    default: "bg-muted text-muted-foreground ring-border",
+    brand: "bg-brand/10 text-brand ring-brand/15",
+    success: "bg-success/12 text-success ring-success/15",
+    warning: "bg-warning/25 text-brand-tan ring-warning/25",
+    danger: "bg-destructive/12 text-destructive ring-destructive/15",
+    info: "bg-brand-cyan/25 text-brand-teal ring-brand-cyan/25",
   };
 
   const card = (
@@ -48,18 +57,20 @@ export function StatCard({
         "relative h-full gap-0 overflow-hidden rounded-2xl border-border/70 p-5 shadow-card transition-all duration-200 hover:shadow-raised",
         to && "group cursor-pointer hover:-translate-y-0.5 hover:border-brand/40",
         "before:absolute before:inset-y-0 before:left-0 before:w-1 before:content-['']",
+        "after:pointer-events-none after:absolute after:inset-x-0 after:top-0 after:h-20 after:bg-gradient-to-b after:to-transparent after:content-['']",
         toneRing[tone],
+        toneWash[tone],
         className,
       )}
     >
-      <div className="flex items-start justify-between gap-2">
+      <div className="relative flex items-start justify-between gap-2">
         <p className="text-[0.7rem] font-semibold tracking-[0.1em] text-muted-foreground uppercase">
           {label}
         </p>
         {icon && (
           <span
             className={cn(
-              "flex size-8 items-center justify-center rounded-xl",
+              "flex size-9 items-center justify-center rounded-xl ring-1",
               iconTone[tone],
             )}
           >
@@ -67,9 +78,10 @@ export function StatCard({
           </span>
         )}
       </div>
-      <div className="tabular mt-3 font-display text-[1.75rem] leading-none font-semibold text-foreground">
+      <div className="tabular relative mt-3 font-display text-[1.85rem] leading-none font-semibold tracking-tight text-foreground">
         {value}
       </div>
+
       <div className="mt-1 flex items-center gap-2">
         {delta && (
           <span
