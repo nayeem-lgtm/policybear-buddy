@@ -34,12 +34,12 @@ export function StatCard({
   };
 
   const toneWash: Record<string, string> = {
-    default: "after:from-muted/40",
-    brand: "after:from-brand/10",
-    success: "after:from-success/10",
-    warning: "after:from-warning/18",
-    danger: "after:from-destructive/10",
-    info: "after:from-brand-cyan/18",
+    default: "after:from-muted/30",
+    brand: "after:from-brand/8",
+    success: "after:from-success/8",
+    warning: "after:from-warning/12",
+    danger: "after:from-destructive/7",
+    info: "after:from-brand-cyan/12",
   };
 
   const iconTone: Record<string, string> = {
@@ -57,7 +57,7 @@ export function StatCard({
         "relative h-full gap-0 overflow-hidden rounded-2xl border-border/70 p-5 shadow-card transition-all duration-200 hover:shadow-raised",
         to && "group cursor-pointer hover:-translate-y-0.5 hover:border-brand/40",
         "before:absolute before:inset-y-0 before:left-0 before:w-1 before:content-['']",
-        "after:pointer-events-none after:absolute after:inset-x-0 after:top-0 after:h-24 after:bg-gradient-to-b after:to-transparent after:content-['']",
+        "after:pointer-events-none after:absolute after:inset-x-0 after:top-0 after:h-20 after:bg-gradient-to-b after:to-transparent after:content-['']",
         toneRing[tone],
         toneWash[tone],
         className,
