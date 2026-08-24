@@ -28,6 +28,8 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { CallScriptDialog } from "@/components/telephony/CallScriptDialog";
 import { formatPhone } from "@/lib/phone";
+import { LEAD_CARD_EVENT, loadLeadCard, saveLeadCard } from "@/lib/lead-card";
+
 import { cn } from "@/lib/utils";
 
 type FieldKind = "text" | "date" | "number" | "area" | "yesno";
