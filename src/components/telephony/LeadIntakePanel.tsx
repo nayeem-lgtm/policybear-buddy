@@ -37,7 +37,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { CallScriptDialog } from "@/components/telephony/CallScriptDialog";
 import { formatPhone } from "@/lib/phone";
 import { LEAD_CARD_EVENT, loadLeadCard, saveLeadCard } from "@/lib/lead-card";
-import { LEAD_FIELD_NAMES, LEAD_SECTIONS } from "@/lib/lead-fields";
+import { LEAD_FIELD_NAMES, LEAD_SECTIONS, leadFieldOptions } from "@/lib/lead-fields";
 
 import { cn } from "@/lib/utils";
 
