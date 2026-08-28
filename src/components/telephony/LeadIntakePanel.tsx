@@ -24,12 +24,20 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { CallScriptDialog } from "@/components/telephony/CallScriptDialog";
 import { formatPhone } from "@/lib/phone";
 import { LEAD_CARD_EVENT, loadLeadCard, saveLeadCard } from "@/lib/lead-card";
-import { LEAD_FIELD_NAMES, LEAD_SECTIONS } from "@/lib/lead-fields";
+import { LEAD_FIELD_NAMES, LEAD_SECTIONS, leadFieldOptions } from "@/lib/lead-fields";
 
 import { cn } from "@/lib/utils";
 
@@ -160,7 +168,39 @@ export function LeadIntakePanel({
                   <Label htmlFor={`lead-${f.name}`} className="text-xs text-muted-foreground">
                     {f.label}
                   </Label>
-                  {f.kind === "area" ? (
+                  {f.kind === "select" ? (
+                    <Select
+                      value={values[f.name] ?? ""}
+                      onValueChange={(v) => set(f.name, v === "__clear" ? "" : v)}
+                    >
+                      <SelectTrigger id={`lead-${f.name}`}>
+                        <SelectValue placeholder="Select…" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-64">
+                        {leadFieldOptions(f).map((opt) => (
+                          <SelectItem key={opt} value={opt}>
+                            {opt}
+                          </SelectItem>
+                        ))}
+                        {values[f.name] ? (
+                          <SelectItem value="__clear" className="text-muted-foreground">
+                            Clear selection
+                          </SelectItem>
+                        ) : null}
+                      </SelectContent>
+                    </Select>
+                  ) : f.kind === "toggle" ? (
+                    <div className="flex h-9 items-center gap-2 rounded-md border border-border/60 px-3">
+                      <Switch
+                        id={`lead-${f.name}`}
+                        checked={values[f.name] === "Yes"}
+                        onCheckedChange={(on) => set(f.name, on ? "Yes" : "No")}
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        {values[f.name] === "Yes" ? "ON" : "OFF"}
+                      </span>
+                    </div>
+                  ) : f.kind === "area" ? (
                     <Textarea
                       id={`lead-${f.name}`}
                       rows={3}

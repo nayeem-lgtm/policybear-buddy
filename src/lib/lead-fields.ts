@@ -4,9 +4,46 @@
  * the saved values back with the exact same labels and grouping.
  */
 
-export type LeadFieldKind = "text" | "date" | "number" | "area" | "yesno";
-export type LeadField = { name: string; label: string; kind?: LeadFieldKind; placeholder?: string };
+import { agentMaster } from "@/lib/company-data";
+
+export type LeadFieldKind = "text" | "date" | "number" | "area" | "yesno" | "select" | "toggle";
+export type LeadField = {
+  name: string;
+  label: string;
+  kind?: LeadFieldKind;
+  placeholder?: string;
+  /** predefined values for kind === "select" */
+  options?: string[];
+  /** select options resolved at render time (agent / carrier databases) */
+  source?: "agents" | "carriers";
+};
 export type LeadSection = { id: string; title: string; fields: LeadField[] };
+
+/** Carrier book — replace with a carriers table when one exists. */
+export const CARRIER_OPTIONS = [
+  "Occidental",
+  "American Amicable",
+  "Cigna",
+  "Aetna",
+  "Pioneer Security",
+  "IA American",
+  "Pioneer American",
+  "Mutual of Omaha",
+  "Transamerica",
+  "Other",
+];
+
+/** Active licensed agents, pulled from the agent database. */
+export function activeAgentNames() {
+  return agentMaster.filter((a) => a.status === "Active").map((a) => a.name);
+}
+
+/** Resolve dynamic option lists for a field. */
+export function leadFieldOptions(field: LeadField): string[] {
+  if (field.source === "agents") return activeAgentNames();
+  if (field.source === "carriers") return CARRIER_OPTIONS;
+  return field.options ?? [];
+}
 
 export const LEAD_SECTIONS: LeadSection[] = [
   {
@@ -15,6 +52,12 @@ export const LEAD_SECTIONS: LeadSection[] = [
     fields: [
       { name: "fullName", label: "Full name" },
       { name: "dob", label: "Date of birth", kind: "date" },
+      {
+        name: "gender",
+        label: "Customer gender",
+        kind: "select",
+        options: ["Male", "Female", "Other", "Prefer Not to Say"],
+      },
       { name: "email", label: "Email" },
       { name: "altPhone", label: "Alternate phone" },
       { name: "state", label: "State" },
@@ -25,33 +68,69 @@ export const LEAD_SECTIONS: LeadSection[] = [
     id: "policy",
     title: "Policy details",
     fields: [
-      { name: "policyType", label: "Policy type" },
+      { name: "policyType", label: "Policy type", kind: "select", options: ["Immediate", "Graded", "ROP"] },
       { name: "policyNumber", label: "Policy number" },
       { name: "applicationNumber", label: "Application number" },
-      { name: "writingAgent", label: "Writing agent name" },
-      { name: "policyStatus", label: "Policy status" },
-      { name: "carrier", label: "Carrier" },
+      { name: "writingAgent", label: "Writing agent name", kind: "select", source: "agents" },
+      {
+        name: "policyStatus",
+        label: "Policy status",
+        kind: "select",
+        options: [
+          "Submitted",
+          "Pending",
+          "Approved",
+          "Issued",
+          "Active",
+          "Lapsed",
+          "Reinstated",
+          "Cancelled",
+        ],
+      },
+      { name: "carrier", label: "Policy carrier", kind: "select", source: "carriers" },
       { name: "faceAmount", label: "Coverage amount", kind: "number" },
       { name: "premium", label: "Monthly premium", kind: "number" },
-      { name: "paymentMethod", label: "Payment method (bank draft / direct bill)" },
+      {
+        name: "billingFrequency",
+        label: "Billing frequency",
+        kind: "select",
+        options: ["Monthly", "Quarterly", "Semi-Annual", "Annual"],
+      },
+      {
+        name: "paymentMethod",
+        label: "Payment method",
+        kind: "select",
+        options: ["Bank Draft", "Card", "Direct Bill", "Other"],
+      },
       { name: "draftDate", label: "Draft date", kind: "date" },
     ],
   },
   {
     id: "compliance",
-    title: "Compliance",
+    title: "Beneficiary & compliance",
     fields: [
       { name: "applicationPdf", label: "Application PDF URL" },
       { name: "policyDelivery", label: "Policy delivery date", kind: "date" },
       { name: "recordingConfirmed", label: "Recording disclosure read", kind: "yesno" },
-      { name: "beneficiary", label: "Beneficiary name & relationship" },
+      { name: "beneficiary", label: "Beneficiary name" },
+      {
+        name: "beneficiaryRelationship",
+        label: "Beneficiary relationship",
+        kind: "select",
+        options: ["Spouse", "Child", "Parent", "Sibling", "Relative", "Friend", "Other"],
+      },
     ],
   },
   {
     id: "retention",
     title: "Retention",
     fields: [
-      { name: "satisfaction", label: "Customer satisfaction (1-10)", kind: "number" },
+      {
+        name: "satisfaction",
+        label: "Customer satisfaction",
+        kind: "select",
+        options: ["Satisfied", "Neutral", "Unsatisfied", "Needs Follow Up"],
+      },
       { name: "retentionNotes", label: "Retention notes", kind: "area" },
     ],
   },
@@ -59,8 +138,8 @@ export const LEAD_SECTIONS: LeadSection[] = [
     id: "crosssell",
     title: "Cross-sell opportunities",
     fields: [
-      { name: "homeowner", label: "Homeowner", kind: "yesno" },
-      { name: "autoOwner", label: "Auto owner", kind: "yesno" },
+      { name: "homeowner", label: "Homeowner", kind: "toggle" },
+      { name: "autoOwner", label: "Auto owner", kind: "toggle" },
       { name: "spouseInterest", label: "Spouse / family interest", kind: "yesno" },
       { name: "crossSellNotes", label: "Opportunity notes", kind: "area" },
     ],
@@ -74,7 +153,19 @@ export const LEAD_SECTIONS: LeadSection[] = [
       { name: "lapseDate", label: "Lapse date", kind: "date" },
       { name: "chargebackAmount", label: "Chargeback amount", kind: "number" },
       { name: "reinstated", label: "Reinstated", kind: "yesno" },
-      { name: "lapseReason", label: "Reason for lapse" },
+      {
+        name: "lapseReason",
+        label: "Reason for lapse",
+        kind: "select",
+        options: [
+          "NSF",
+          "Customer Cancelled",
+          "Could Not Contact",
+          "Changed Mind",
+          "Wrong Payment Info",
+          "Other",
+        ],
+      },
     ],
   },
   {
